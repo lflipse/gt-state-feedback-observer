@@ -1,0 +1,10 @@
+#use: pip3 install -r requirements.txt
+
+numpy>=1.18.1
+pandas>=1.0.3
+PyQt5>=5.14.1
+matplotlib
+scikit-build >= 0.10.0
+CMake
+slycot
+control
