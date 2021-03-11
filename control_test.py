@@ -56,7 +56,7 @@ class DynamicsModel:
 I = 6 #kg
 D = -0.2 #N/m
 # TODO: Note that xd is fixed! If xd_dot =/= 0 this does not work!
-A = np.array([ [0, 1],[1, -D/I]])
+A = np.array([ [0, 1],[0, -D/I]])
 B = np.array([[0], [1/I]])
 Gamma = np.array([[100, 0], [0, 1]])
 
@@ -83,7 +83,7 @@ Qh_v_hat = 4
 Qh_hat = np.array([[Qh_e_hat, 0],[0, Qh_v_hat]] )
 
 # Robot cost values
-C = np.array( [[1000, 0],[0, 0]] )
+C = np.array( [[1000, 0],[0, 0.1]] )
 R = np.array([[1]])
 
 # Initial values
@@ -118,17 +118,17 @@ for i in range(n):
     labels = "Qh = " + str(Qh_e[i])
 
     ax1a.plot(T, x[i,0,:-1], label=labels)
-    ax1a.title("Position error")
+    ax1a.set_title("Position error")
     ax1a.legend()
     ax2a.plot(T, x[i,1,:-1], label=labels)
-    ax2a.title("Velocity error")
+    ax2a.set_title("Velocity error")
     ax2a.legend()
 
     ax1b.plot(T, u[i,:], label=labels)
-    ax1b.title("Robot control action")
+    ax1b.set_title("Robot control action")
     ax1b.legend()
     ax2b.plot(T, uh[i,:], label=labels)
-    ax2b.title("Human control action")
+    ax2b.set_title("Human control action")
     ax2b.legend()
 
 
