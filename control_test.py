@@ -118,17 +118,17 @@ for i in range(n):
     labels = "Qh = " + str(Qh_e[i])
 
     ax1a.plot(T, x[i,0,:-1], label=labels)
-    ax1a.set_title("Position error")
+    ax1a.set_title("Position error, C= 1000")
     ax1a.legend()
     ax2a.plot(T, x[i,1,:-1], label=labels)
-    ax2a.set_title("Velocity error")
+    ax2a.set_title("Velocity error, C= 1000")
     ax2a.legend()
 
     ax1b.plot(T, u[i,:], label=labels)
-    ax1b.set_title("Robot control action")
+    ax1b.set_title("Robot control action, C= 1000")
     ax1b.legend()
     ax2b.plot(T, uh[i,:], label=labels)
-    ax2b.set_title("Human control action")
+    ax2b.set_title("Human control action, C= 1000")
     ax2b.legend()
 
 
