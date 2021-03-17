@@ -52,7 +52,7 @@ class DynamicsModel:
         Ph_hat_dot_p = self.alpha * (x_tilde - x) * x.transpose()
         Ph_hat_dot = Ph_hat_dot_p
         # Ph_hat_dot = (Ph_hat_dot_p + Ph_hat_dot_p.transpose()) / 2 # Make symmetric
-        # Ph_hat_dot = np.array([[Ph_hat_dot_p[0,0], 0] ,[0, Ph_hat_dot_p[1,1]] ])
+        # Ph_hat_dot = np.array([[Ph_hat_dot_p[0,0], Ph_hat_dot_p[0,1]] ,[Ph_hat_dot_p[0,1], Ph_hat_dot_p[1,1]] ])
         y_dot = np.concatenate((x_dot, x_hat_dot, x_tilde_dot, Ph_hat_dot[0], Ph_hat_dot[1]), axis=None)
         return y_dot
 
@@ -70,7 +70,21 @@ class DynamicsModel:
         Qhhat = np.zeros((N + 1, 2, 2))
         Qhhat[0, :, :] = Qhhat0
 
+        counter1 = 0
+        counter2 = 0
+
         for i in range(N):
+            # if counter1 < 3:
+            #     counter1 += h
+            # else:
+            #     counter1 = 0
+            #     if counter2 == 0:
+            #         y[0, i] = y[0, i] - 0.2
+            #         y[2, i] = y[2, i] - 0.2
+            #     else:
+            #         y[0, i] = y[0, i] + 0.2
+            #         y[2, i] = y[2, i] + 0.2
+
             Q[i, :, :] = C - Qhhat[i, :, :]
             Qh[i, :, :] = Qh0
             y[:, i + 1] = self.RK4(y[:, i], R, Q[i, :, :], Qh0,  h)
@@ -97,8 +111,8 @@ class DynamicsModel:
             # print('ph, phhat', Ph, Ph_hat)
 
             Qhhat_t = 1/R * np.matmul(np.matmul(Ph_hat, self.B * self.B.transpose()), Ph_hat) - np.matmul(Ah.transpose(), Ph_hat) - np.matmul(Ph_hat, Ah)
-            Qhhat[i + 1, :, :] = np.array([[Qhhat_t[0,0], 0],[0, Qhhat_t[1, 1]]])
-            # Qhhat[i + 1, :, :] = (Qhhat_t + Qhhat_t.transpose()) / 2
+            # Qhhat[i + 1, :, :] = np.array([[Qhhat_t[0,0], 0],[0, Qhhat_t[1, 1]]])
+            Qhhat[i + 1, :, :] = (Qhhat_t + Qhhat_t.transpose()) / 2
             # print(Qhhat[i, :, :], Qh0)
             # exit()
 
@@ -110,8 +124,8 @@ D = -0.2 #N/m
 # TODO: Note that xd is fixed! If xd_dot =/= 0 this does not work!
 A = np.array([[0, 1], [0, -D/I]])
 B = np.array([[0], [1/I]])
-Gamma = np.array([[10, 0], [0, 1]])
-alpha = 1000
+Gamma = np.array([[100, 0], [0, 1]])
+alpha = 2500
 
 # Initial values
 pos0 = 0
@@ -119,8 +133,8 @@ vel0 = 0
 x_d = 0.1
 
 # Simulation
-time = 5
-h = 0.01
+time = 3
+h = 0.005
 N = round(time/h)
 T = np.array(range(N)) * h
 
@@ -132,7 +146,7 @@ Qh0 = np.array([[Qh_e, 0], [0, Qh_v]])
 
 # Estimated cost value
 Qh_e_hat = 10
-Qh_v_hat = 1
+Qh_v_hat = 0.01
 Qhhat0 = np.array([[Qh_e_hat, 0], [0, Qh_v_hat]] )
 
 # Robot cost values
