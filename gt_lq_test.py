@@ -27,6 +27,25 @@ class DynamicsModel:
     def xdot(self, x, u, uh):
          return np.matmul(self.A, x) + np.matmul(self.B, np.array([u+uh]))
 
+    def solve_coupled_riccati(self, S, Q, Qh, P0, Ph0, it):
+        P_it = np.zeros((it + 1, 2, 2))
+        Ph_it = np.zeros((it + 1, 2, 2))
+        P_it[0, :, :] = P0
+        Ph_it[0, :, :] = Ph0
+
+        for i in range(it):
+            # Acl = A - np.matmul(S, (Ph_it[i, :, :] + P_it[i, :, :]))
+            Acl = A - np.matmul(S, (Ph_it[i, :, :]))
+            Aclh = A - np.matmul(S, (P_it[i, :, :]))
+            # eigsAcl, eigsvalc = np.linalg.eig(Acl)
+            # print("eigenvalues Acl = ", eigsAcl, "and i = ", i)
+            P_it[i + 1, :, :] = cp.solve_continuous_are(Acl, B, Q, R)
+            Ph_it[i + 1, :, :] = cp.solve_continuous_are(Aclh, B, Qh, R)
+
+        Ph = Ph_it[it, :, :]
+        P = P_it[it, :, :]
+        return P, Ph
+
     def simulate(self, N, h, x0, u0, uh0, C, Qh0, R, GT):
         Q = C - Qh0
 
@@ -56,24 +75,11 @@ class DynamicsModel:
             # eigh, eigv = np.linalg.eig(A - np.matmul(S, (Ph_LQ)))
             # # print("eigenvalues total system LQ, robot and human: ", eigtot, eigr, eigh)
 
-            it = 50
-            P_it = np.zeros((it + 1, 2, 2))
-            Ph_it = np.zeros((it + 1, 2, 2))
-            P_it[0, :, :] = P_LQ
-            Ph_it[0, :, :] = Ph_LQ
-
-            for i in range(it):
-                # Acl = A - np.matmul(S, (Ph_it[i, :, :] + P_it[i, :, :]))
-                Acl = A - np.matmul(S, (Ph_it[i, :, :]))
-                Aclh = A - np.matmul(S, (P_it[i, :, :]))
-                # eigsAcl, eigsvalc = np.linalg.eig(Acl)
-                # print("eigenvalues Acl = ", eigsAcl, "and i = ", i)
-                P_it[i + 1, :, :] = cp.solve_continuous_are(Acl, B, Q, R)
-                Ph_it[i + 1, :, :] = cp.solve_continuous_are(Aclh, B, Qh0, R)
+            it = 10
+            P, Ph = self.solve_coupled_riccati(S, Q, Qh0, P_LQ, Ph_LQ, it)
 
 
-            Ph = Ph_it[it, :, :]
-            P = P_it[it, :, :]
+
 
         Lh = 1/R*np.matmul(B.transpose(), Ph)
         # Lh_hat = np.matmul(B.transpose(), Ph_hat)
