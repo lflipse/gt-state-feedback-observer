@@ -49,7 +49,7 @@ class DynamicsModel:
         x_tilde_dot = np.matmul(- self.B * (Lh_hat - Lh), x) + np.matmul((self.A - self.Gamma), x_tilde)
 
         # Compute P matrix derivative
-        Ph_hat_dot_p = self.alpha * (x_tilde - x) * x.transpose()
+        Ph_hat_dot_p = self.alpha * (x_tilde - x) * (x).transpose()
         Ph_hat_dot = Ph_hat_dot_p
         # Ph_hat_dot = (Ph_hat_dot_p + Ph_hat_dot_p.transpose()) / 2 # Make symmetric
         # Ph_hat_dot = np.array([[Ph_hat_dot_p[0,0], Ph_hat_dot_p[0,1]] ,[Ph_hat_dot_p[0,1], Ph_hat_dot_p[1,1]] ])
@@ -113,6 +113,7 @@ class DynamicsModel:
             Qhhat_t = 1/R * np.matmul(np.matmul(Ph_hat, self.B * self.B.transpose()), Ph_hat) - np.matmul(Ah.transpose(), Ph_hat) - np.matmul(Ph_hat, Ah)
             # Qhhat[i + 1, :, :] = np.array([[Qhhat_t[0,0], 0],[0, Qhhat_t[1, 1]]])
             Qhhat[i + 1, :, :] = (Qhhat_t + Qhhat_t.transpose()) / 2
+            # Qhhat[i + 1, :, :] = Qhhat_t
             # print(Qhhat[i, :, :], Qh0)
             # exit()
 
@@ -145,7 +146,7 @@ Qh_v = 0
 Qh0 = np.array([[Qh_e, 0], [0, Qh_v]])
 
 # Estimated cost value
-Qh_e_hat = 10
+Qh_e_hat = 60
 Qh_v_hat = 0.01
 Qhhat0 = np.array([[Qh_e_hat, 0], [0, Qh_v_hat]] )
 
