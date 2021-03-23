@@ -87,7 +87,9 @@ class DynamicsModel:
             A_r = A - B * L_hhat[:, i]
             P_r = cp.solve_continuous_are(A_r, B, Q, R)
             L_r[:, i] = 1 / R * np.matmul(B.transpose(), P_r)
-            L_h[:, i] = L_h0
+            A_h = A - B * L_r[:, i]
+            P_h = cp.solve_continuous_are(A_h, B, Qh0, R)
+            L_h[:, i] = 1 / R * np.matmul(B.transpose(), P_h)
             if i>0:
                 ref[:,i] = np.array([r[i], (r[i]-r[i-1])/h])
             else:
@@ -130,17 +132,17 @@ T = np.array(range(N)) * h
 
 # Simulated Human Settings
 # True cost values
-Qh_e = 100
+Qh_e = 120
 Qh_v = 0
 Qh0 = np.array([[Qh_e, 0], [0, Qh_v]])
 
 # Estimated cost value
-Qh_e_hat = 400
+Qh_e_hat = 20
 Qh_v_hat = 0.01
 Qh_hat = np.array([[Qh_e_hat, 0], [0, Qh_v_hat]])
 
 # Robot cost values
-Cval = 1400
+Cval = 200
 C = np.array([[Cval, 0], [0, 0]])
 R = np.array([[1]])
 
@@ -236,48 +238,4 @@ ax2c.set_title("velocity gain, C = " + str(Cval))
 ax2c.legend()
 
 plt.show()
-
-#
-# # Reproduce figure 1b
-# # Simulate multiple human costs
-# fractions = [0.1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-# n = len(fractions)
-# QdivQh = np.zeros(n)
-# x_LQ = np.zeros((n, 2, N + 1))
-# u_LQ = np.zeros((n, N))
-# uh_LQ = np.zeros((n, N))
-#
-# x_GT = np.zeros((n, 2, N + 1))
-# u_GT = np.zeros((n, N))
-# uh_GT = np.zeros((n, N))
-#
-# Lhv_LQ = np.zeros(n)
-# Lhe_LQ = np.zeros(n)
-# Lhv_GT = np.zeros(n)
-# Lhe_GT = np.zeros(n)
-#
-# for i in range(n):
-#     Qh_e = Cval*fractions[i]/(1+fractions[i])
-#     Qh0 = np.array([[Qh_e, 0],[0, Qh_v]])
-#     u_LQ[i, :], uh_LQ[i, :], x_LQ[i, : ,:], Lhe_LQ[i], Lhv_LQ[i] = dynamics_model.simulate(N, h, x0, u0, uh0, C, Qh0, R, GT=0)
-#     u_GT[i, :], uh_GT[i, :], x_GT[i, :, :], Lhe_GT[i], Lhv_GT[i] = dynamics_model.simulate(N, h, x0, u0, uh0, C, Qh0, R, GT=1)
-#
-# plt.figure(3)
-# plt.title("Controller gains")
-# plt.plot(fractions, Lhe_LQ, '+', label='LQ')
-# plt.plot(fractions, Lhe_GT, 'o', label='GT')
-# plt.legend()
-# plt.xlabel("Q_h/Q")
-# plt.ylabel("Lh_e")
-#
-# plt.figure(4)
-# plt.title("Controller gains")
-# plt.plot(fractions, Lhv_LQ, '+', label='LQ')
-# plt.plot(fractions, Lhv_GT, 'o', label='GT')
-# plt.legend()
-# plt.xlabel("Q_h/Q")
-# plt.ylabel("Lh_v")
-#
-# plt.show()
-#
 
