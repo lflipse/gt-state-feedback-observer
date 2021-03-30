@@ -71,13 +71,17 @@ class DynamicsModel:
         y[:, 0] = y0
         u[0] = u0
         uh[0] = uh0
+        Qh = np.zeros((N, 2, 2))
+        Qr = np.zeros((N, 2, 2))
+
+        Qr[0, :, :] = C - Qh_hat
+        Qh[0, :, :] = Qh0
 
         Qhhat[0, :, :] = Qh_hat
-        Q = C - Qh_hat
         P_hhat[:, :, 0] = np.array([[y[6, 0], y[7, 0]], [y[8, 0], y[9, 0]]])
         L_hhat[:, 0] = 1 / R * np.matmul(B.transpose(), P_hhat[:, :, 0])
         A_r = A - B * L_hhat[:, 0]
-        P_r = cp.solve_continuous_are(A_r, B, Q, R)
+        P_r = cp.solve_continuous_are(A_r, B, Qr[0, :, :], R)
         L_r[:, 0] = 1 / R * np.matmul(B.transpose(), P_r)
         A_h = A - B * L_r[:, 0]
         P_h = cp.solve_continuous_are(A_h, B, Qh0, R)
@@ -85,7 +89,8 @@ class DynamicsModel:
 
 
         for i in range(N):
-            Q = C - Qhhat[i, :, :]
+            Qr[i, :, :] = C - Qhhat[i, :, :]
+            Qh[i, :, :] = Qh0
 
             if i>0:
                 ref[:,i] = np.array([r[i], (r[i]-r[i-1])/h])
@@ -101,12 +106,12 @@ class DynamicsModel:
 
             # print(ref)
 
-            y[:, i + 1] = dynamics_model.RK4(Q, L_h[:, i], ref[:,i], y[:, i], h)
+            y[:, i + 1] = dynamics_model.RK4(Qr[i, :, :], L_h[:, i], ref[:,i], y[:, i], h)
 
             P_hhat[:, :, i+1] = np.array([[y[6, i+1], y[7, i+1]], [y[8, i+1], y[9, i+1]]])
             L_hhat[:, i+1] = 1 / R * np.matmul(B.transpose(), P_hhat[:, :, i+1])
             A_r = A - B * L_hhat[:, i+1]
-            P_r = cp.solve_continuous_are(A_r, B, Q, R)
+            P_r = cp.solve_continuous_are(A_r, B, Qr[i, :, :], R)
             L_r[:, i+1] = 1 / R * np.matmul(B.transpose(), P_r)
             A_h = A - B * L_r[:, i+1]
             P_h = cp.solve_continuous_are(A_h, B, Qh0, R)
@@ -115,9 +120,9 @@ class DynamicsModel:
                                         P_hhat[:, :, i]) - np.matmul(A_h.transpose(), P_hhat[:, :, i]) - np.matmul(
                 P_hhat[:, :, i], A_h)
             # Qhhat[i + 1, :, :] = np.array([[Qhhat_t[0, 0], 0], [0, Qhhat_t[1, 1]]])
-            Qhhat[i + 1, :, :] = (Qhhat_t+ Qhhat_t.transpose())/2
+            Qhhat[i + 1, :, :] = (Qhhat_t + Qhhat_t.transpose())/2
 
-        return u, uh, y, L_hhat, L_h, L_r, x, x_hat, x_tilde, ref, Qhhat
+        return u, uh, y, L_hhat, L_h, L_r, x, x_hat, x_tilde, ref, Qhhat, Qh, Qr
 
 
 
@@ -148,7 +153,7 @@ Qh_v = 0
 Qh0 = np.array([[Qh_e, 0], [0, Qh_v]])
 
 # Estimated cost value
-Qh_e_hat = 0
+Qh_e_hat = 70
 Qh_v_hat = 0
 Qh_hat = np.array([[Qh_e_hat, 0], [0, Qh_v_hat]])
 
@@ -207,7 +212,7 @@ plt.ylabel("Error [N]")
 # First plot a distinct GT vs LQ response
 # Qh0 = np.array([[Qh_e, 0],[0, Qh_v]])
 # u_LQ0, uh_LQ0, x_LQ0, Lhe_LQ0, Lhv_LQ0 = dynamics_model.simulate(N, h, r, y0, u0, uh0, C, Qh0, R, GT=0)
-u, uh, y, L_hhat, L_h, L_r, e, e_hat, e_tilde, ref, Qhhat = dynamics_model.simulate(N, h, r, y0, u0, uh0, C, Qh0, Qh_hat, R, GT=1)
+u, uh, y, L_hhat, L_h, L_r, e, e_hat, e_tilde, ref, Qhhat, Qh, Qr = dynamics_model.simulate(N, h, r, y0, u0, uh0, C, Qh0, Qh_hat, R, GT=1)
 labels_LQ = "LQ Qh = " + str(Qh_e)
 labels_GT = "GT Qh = " + str(Qh_e)
 
@@ -253,11 +258,15 @@ ax2c.plot(T, L_r[1,:-1],'--', label="Robot gain")
 ax2c.set_title("velocity gain, C = " + str(Cval))
 ax2c.legend()
 
-ax1e.plot(T, Qhhat[:-1,0,0],'--', label="Estimated gain")
-ax1e.set_title("error gain, C = " + str(Cval))
+ax1e.plot(T, Qhhat[:-1,0,0],'r--', label="Estimated human cost weight")
+ax1e.plot(T, Qh[:,0,0],'r-', label="Real human cost weight")
+ax1e.plot(T, Qr[:,0,0],'b-', label="Robot cost weight")
+ax1e.set_title("error weight, C = " + str(Cval))
 ax1e.legend()
-ax2e.plot(T, Qhhat[:-1,1,1],'--', label="Estimated gain")
-ax2e.set_title("velocity gain, C = " + str(Cval))
+ax2e.plot(T, Qhhat[:-1,1,1],'r--', label="Estimated human cost weight")
+ax2e.plot(T, Qh[:,1,1],'r-', label="Real human cost weight")
+ax2e.plot(T, Qr[:,1,1],'b-', label="Robot cost weight")
+ax2e.set_title("velocity weight, C = " + str(Cval))
 ax2e.legend()
 
 plt.show()

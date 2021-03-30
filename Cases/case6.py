@@ -1,17 +1,19 @@
-# CASE 5: Fix Q_0, estimate Q_h and Q_r online #
+# CASE 5: Fix Q_0, estimate Q_h and Q_r online, where Q_r changes and noise due to human action is added #
 
 import numpy as np
 import scipy.linalg as cp
 import matplotlib.pyplot as plt
 
 class DynamicsModel:
-    def __init__(self, A, B, I, D, alpha, Gamma):
+    def __init__(self, A, B, I, D, alpha, Gamma, mu, sigma):
         self.A = A
         self.B = B
         self.I = I
         self.D = D
         self.alpha = alpha
         self.Gamma = Gamma
+        self.mu = mu
+        self.sigma = sigma
 
     def RK4(self, Qr, Qh, r, y, h):
         k1 = h * self.ydot(Qr, Qh, r, y)
@@ -44,7 +46,7 @@ class DynamicsModel:
 
         # Calculate derivatives
         # Real response
-        x_dot = np.matmul(self.A, x) - np.matmul(self.B * (L_h + L_r), e)
+        x_dot = np.matmul(self.A, x) - (np.matmul(self.B * (L_h + L_r), e) + self.B * np.random.normal(self.mu, 0*self.sigma, 1))
 
         # Robot estimated response
         x_r_hat_dot = np.matmul(self.A, x_r_hat) - np.matmul(B * (L_hhat + L_r), e) - np.matmul(self.Gamma, x_r_tilde)
@@ -112,6 +114,8 @@ class DynamicsModel:
         L_h[:, 0] = 1 / R * np.matmul(B.transpose(), P_h)
 
         for i in range(N):
+            # if i == round(N*0.5):
+            #     C = -C
             Qh[i, :, :] = Qh0
             Qr[i, :, :] = C - Qhhat[i, :, :]
 
@@ -167,6 +171,8 @@ A = np.array([ [0, 1],[0, -D/I]])
 B = np.array([[0], [1/I]])
 Gamma = np.array([[100, 0], [0, 1]])
 alpha = 10000
+mu = 0
+sigma = 1
 
 # Initial values
 pos0 = 0
@@ -174,7 +180,7 @@ vel0 = 0
 x_d = 0.1
 
 # Simulation
-time = 20
+time = 30
 h = 0.01
 N = round(time/h)
 T = np.array(range(N)) * h
@@ -225,7 +231,7 @@ y0 = y0o.flatten()
 
 
 # Initialize model
-dynamics_model = DynamicsModel(A, B, I, D, alpha, Gamma)
+dynamics_model = DynamicsModel(A, B, I, D, alpha, Gamma, mu, sigma)
 
 figa, (ax1a, ax2a) = plt.subplots(2)
 figa.suptitle('State values')
