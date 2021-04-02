@@ -4,32 +4,6 @@ import numpy as np
 import scipy.linalg as cp
 import matplotlib.pyplot as plt
 
-def compute_conflict(ur, uh, h):
-    N = len(ur)
-    conflicts = []
-    n_conf = []
-    f_conflicts = []
-    n_f_conf = []
-    for i in range(N):
-        if ur[i]*uh[i] < 0:
-            conflicts.append(abs(ur[i] - uh[i]))
-            n_conf.append(i)
-        if ur[i]*uh[i] < -0.05:
-            f_conflicts.append(abs(ur[i] - uh[i]))
-            n_f_conf.append(i)
-    perc_conf_time = len(conflicts)/N
-    perc_f_conf_time = len(f_conflicts) / N
-    avg_abs_conf = np.mean(conflicts)
-    avg_abs_f_conf = np.mean(f_conflicts)
-    std_conf = np.std(conflicts)
-    std_f_conf = np.std(f_conflicts)
-    print("Average Conflict Magnitudes (unfiltered, filtered):", avg_abs_conf, avg_abs_f_conf)
-    print("Conflict time (unfiltered, filtered):", perc_conf_time, perc_f_conf_time)
-    avg_abs = np.array([avg_abs_conf, avg_abs_f_conf])
-    c_time = np.array([perc_conf_time, perc_f_conf_time])
-    c_std = np.array([std_conf, std_f_conf])
-    return n_conf, conflicts, n_f_conf, f_conflicts, avg_abs, c_time, c_std
-
 class DynamicsModel:
     def __init__(self, A, B, I, D, alpha, Gamma, mu, sigma):
         self.A = A
@@ -41,7 +15,7 @@ class DynamicsModel:
         self.mu = mu
         self.sigma = sigma
 
-    def RK4(self, r, ur, uh, urhat, uhhat, y, h):
+    def numerical_integration(self, r, ur, uh, urhat, uhhat, y, h):
         k1 = h * self.ydot(r, ur, uh, urhat, uhhat, y)
         k2 = h * self.ydot(r, ur, uh, urhat, uhhat, y + 0.5 * k1)
         k3 = h * self.ydot(r, ur, uh, urhat, uhhat, y + 0.5 * k2)
@@ -78,7 +52,6 @@ class DynamicsModel:
         P_hhat_dot = self.alpha * (x_r_tilde) * e.transpose()
         P_rhat_dot = self.alpha * (x_h_tilde) * e.transpose()
 
-
         ydot = np.array([x_dot.transpose(), x_r_tilde_dot.transpose(), x_h_tilde_dot.transpose(), x_r_hat_dot.transpose(),
                          x_h_hat_dot.transpose(), [P_hhat_dot[0]], [P_hhat_dot[1]], [P_rhat_dot[0]], [P_rhat_dot[1]]]).flatten()
 
@@ -86,7 +59,7 @@ class DynamicsModel:
 
     def compute_gain(self, A, B, Q, R, Phat, E):
         # Game-theoretical
-        if E < 2:
+        if E == 1:
             Lhat = 1 / R * np.matmul(B.transpose(), Phat)
             A_c = A - B * Lhat
             P = cp.solve_continuous_are(A_c, B, Q, R)
@@ -101,9 +74,8 @@ class DynamicsModel:
     def update_cost_estimate(self, A, B, Q, R, Phat, E):
         L = self.compute_gain(A, B, Q, R, Phat, E)
         Ahat = A - B * L
-        Qhat_t = 1 / R * np.matmul(np.matmul(Phat, self.B * self.B.transpose()),
+        Qhat_new = 1 / R * np.matmul(np.matmul(Phat, self.B * self.B.transpose()),
                                     Phat.transpose()) - np.matmul(Ahat.transpose(), Phat.transpose()) - np.matmul(Phat, Ahat)
-        Qhat_new = Qhat_t
         return Qhat_new
 
     def simulate(self, N, h, r, y0, C, Qh0, Qh_hat, Qr_hat, R, E):
@@ -136,15 +108,6 @@ class DynamicsModel:
         # Initialize cost matrices
         Qhhat[0, :, :] = Qh_hat
         Qrhat[0, :, :] = Qr_hat
-        if E == 0:
-            Qr[0, :, :] = C - Qh_hat
-            Qh[0, :, :] = Qh0
-        elif E == 1:
-            Qr[0, :, :] = Qh_hat
-            Qh[0, :, :] = Qh0
-        else:
-            Qr[0, :, :] = C - Qh0
-            Qh[0, :, :] = Qh0
 
         # Initialize estimators
         Phhat[0, :, :] = np.array([[y[0, 10], y[0, 11]], [y[0, 12], y[0, 13]]])
@@ -156,9 +119,6 @@ class DynamicsModel:
             if E == 0:
                 Qh[i, :, :] = Qh0
                 Qr[i, :, :] = C - Qhhat[i, :, :]
-            elif E == 1:
-                Qh[i, :, :] = Qh0
-                Qr[i, :, :] = Qhhat[i, :, :]
             else:
                 Qh[i, :, :] = Qh0
                 Qr[i, :, :] = C - Qh0
@@ -185,7 +145,7 @@ class DynamicsModel:
             uhhat[i] = np.inner(-Lhhat[i, :], (y[i, 0:2] - ref[i, :]))
 
             # Integrate a time-step
-            y[i + 1, :] = dynamics_model.RK4(ref[i, :], ur[i], uh[i], urhat[i], uhhat[i], y[i, :], h)
+            y[i + 1, :] = dynamics_model.numerical_integration(ref[i, :], ur[i], uh[i], urhat[i], uhhat[i], y[i, :], h)
 
             # Update cost matrices
             Phhat[i + 1, :, :] = np.array([[y[i + 1, 10], y[i + 1, 11]], [y[i + 1, 12], y[i + 1, 13]]])
@@ -195,12 +155,9 @@ class DynamicsModel:
 
         return ref, ur, uhbar, vh, uh, y, Lhhat, Lh, Lrhat, Lr, Qhhat, Qh, Qrhat, Qr
 
-
-
 # Dynamics
 I = 6 #kg
 D = -0.2 #N/m
-# TODO: Note that xd is fixed! If xd_dot =/= 0 this does not work!
 A = np.array([[0, 1], [0, -D/I]])
 B = np.array([[0], [1/I]])
 Gamma = np.array([[100, 0], [0, 1]])
@@ -221,37 +178,28 @@ T = np.array(range(N)) * h
 
 # Simulated Human Settings
 # True cost values
-Qh_e = 100
+Qh_e = 40
 Qh_v = 0
 Qh0 = np.array([[Qh_e, 0], [0, Qh_v]])
 
 # Estimated cost value
-Qh_e_hat = 70
+Qh_e_hat = 0
 Qh_v_hat = 0
 Qh_hat = np.array([[Qh_e_hat, 0], [0, Qh_v_hat]])
-
-# Estimated cost value
-Qr_e_hat = 40
-Qr_v_hat = 0
-Qr_hat = np.array([[Qr_e_hat, 0], [0, Qr_v_hat]])
 
 # Robot cost values
 Cval = 200
 C = np.array([[Cval, 0], [0, 0]])
 R = np.array([[1]])
+Qr_hat = C - Qh_hat
 
 # Initial values
-# r = np.array([x_d * T, x_d * np.ones(N)])
-# r = np.array([x_d * np.ones(N), x_d * np.zeros(N)])
 fs = 1/5
-# r = np.array([x_d * np.sin(2*np.pi*fs*T), 2*np.pi*fs * x_d * np.cos(2*np.pi*fs*T)])
 r = x_d * np.sin(2*np.pi*fs*T)
-# r = np.array([x_d * np.sin(2*np.pi*fs*T), np.zeros(N)])
 
 # Robot estimate has an estimator for the human cost
 # Human estimate has an estimator for the robot cots
 x0 = np.array([pos0, vel0])
-# e0 = x0 - r[:, 0]
 x_r_hat0 = x0
 x_h_hat0 = x0
 x_r_tilde0 = np.array([0, 0])
@@ -266,6 +214,18 @@ y0 = y0o.flatten()
 # Initialize model
 dynamics_model = DynamicsModel(A, B, I, D, alpha, Gamma, mu, sigma)
 
+# Simulate
+ref, u_0, uh_bar_0, vh_0, uh_0, y_0, L_hhat_0, L_h_0, L_rhat_0, L_r_0, Qhhat_0, Qh_0, Qrhat_0, Qr_0 = dynamics_model.simulate(
+    N, h, r, y0, C, Qh0, Qh_hat, Qr_hat, R, E=0)
+
+
+labels_robot = "Robot"
+labels_human = "Human"
+label_E0 = "A. Robot GT + Q-Obs"
+label_E1 = "B. Robot static gain"
+label_E0r = "A. Human"
+label_E1r = "B. Human"
+
 figa, (ax1a, ax2a) = plt.subplots(2)
 figa.suptitle('State values')
 plt.xlabel("Time [s]")
@@ -277,149 +237,43 @@ plt.xlabel("Time [s]")
 plt.ylabel("Force [N]")
 
 figc, (ax1c, ax2c) = plt.subplots(2)
-figc.suptitle('Robot perspective: Human controller gains')
+figc.suptitle('Controller gains')
 plt.xlabel("Time [s]")
 plt.ylabel("Gain")
 
-# figd, (ax1d, ax2d) = plt.subplots(2)
-# figd.suptitle('Human perspective: Robot controller gains')
-# plt.xlabel("Time [s]")
-# plt.ylabel("Error")
-
-fige, (ax1e, ax2e) = plt.subplots(2)
-fige.suptitle('Robot perspective: Human error weights')
+fige, (ax1e, ax2e, ax3e) = plt.subplots(3)
+fige.suptitle('Error weights')
 plt.xlabel("Time [s]")
 plt.ylabel("Error weight")
 
-# figf, (ax1f, ax2f, ax3f) = plt.subplots(3)
-# figf.suptitle('Human perspective: Robot error weights')
-# plt.xlabel("Time [s]")
-# plt.ylabel("Error weight")
-
-figg, (ax1g) = plt.subplots(1)
-figg.suptitle('Conflict')
-plt.xlabel("Conflict time")
-plt.ylabel("Average magnitude")
-
-# First plot a distinct GT vs LQ response
-# Qh0 = np.array([[Qh_e, 0],[0, Qh_v]])
-# u_LQ0, uh_LQ0, x_LQ0, Lhe_LQ0, Lhv_LQ0 = dynamics_model.simulate(N, h, r, y0, u0, uh0, C, Qh0, R, GT=0)
-ref, u_0, uh_bar_0, vh_0, uh_0, y_0, L_hhat_0, L_h_0, L_rhat_0, L_r_0, Qhhat_0, Qh_0, Qrhat_0, Qr_0 = dynamics_model.simulate(
-    N, h, r, y0, C, Qh0, Qh_hat, Qr_hat, R, E=0)
-ref, u_1, uh_bar_1, vh_1, uh_1, y_1, L_hhat_1, L_h_1, L_rhat_1, L_r_1, Qhhat_1, Qh_1, Qrhat_1, Qr_1 = dynamics_model.simulate(
-    N, h, r, y0, C, Qh0, Qh_hat, Qr_hat, R, E=1)
-
-
-print(0)
-n_conf_0, conf_0, n_f_conf_0, f_conf_0, mags_0, ctime_0, c_std_0 = compute_conflict(u_0, uh_0, h)
-print(1)
-n_conf_1, conf_1, n_f_conf_1, f_conf_1, mags_1, ctime_1, c_std_1 = compute_conflict(u_1, uh_1, h)
-
-
-labels_robot = "Robot"
-labels_human = "Human"
-label_E0 = "A. Robot GT + Q-Obs"
-label_E1 = "B. Robot static gain"
-
-# x = y[:-1, 0:2]
-# e = x - ref
-# x_r_tilde = y[:-1, 2:4]
-# x_h_tilde = y[:-1, 6:8]
-
 ax1a.plot(T, y_0[:-1, 0], 'r-', label=label_E0)
-ax1a.plot(T, y_1[:-1, 0], 'g--', label=label_E1)
 ax1a.plot(T, ref[:, 0], 'k-', label="Reference signal")
 ax1a.set_title("Position")
 ax1a.legend()
 ax2a.plot(T, y_0[:-1, 1], 'r-', label=label_E0)
-ax2a.plot(T, y_1[:-1, 1], 'g--', label=label_E1)
 ax2a.plot(T, ref[:, 1], 'k-', label="Reference signal")
 ax2a.set_title("Velocity")
 ax2a.legend()
 
 ax1b.plot(T, u_0, 'r-', label=label_E0)
-ax1b.plot(T, u_1, 'g--', label=label_E1)
 ax1b.set_title("Robot control action")
 ax1b.legend()
 ax2b.plot(T, uh_0, 'r-', alpha=0.3, label=label_E0)
 ax2b.plot(T, uh_bar_0, 'r-', label="Noiseless Signal")
-ax2b.plot(T, uh_1, 'g--', alpha=0.3, label=label_E1)
-ax2b.plot(T, uh_bar_1, 'g--', label="Noiseless Signal")
 ax2b.set_title("Human control action")
 ax2b.legend()
 
 ax1c.plot(T, L_hhat_0[:-1, 0],'r-', label=label_E0)
 ax1c.plot(T, L_h_0[:-1, 0],'r-', alpha=0.3, label="Real human gain")
-ax1c.plot(T, L_hhat_1[:-1, 0],'g--', label=label_E1)
-ax1c.plot(T, L_h_1[:-1, 0],'g--', alpha=0.3, label="Real human gain")
+ax1c.plot(T, L_rhat_0[:-1, 0],'b-', label=label_E0r)
+ax1c.plot(T, L_r_0[:-1, 0],'b-', alpha=0.3, label="Real robot gain")
 ax1c.set_title("Human position error gains")
 ax1c.legend()
 ax2c.plot(T, L_hhat_0[:-1, 1],'r-', label=label_E0)
 ax2c.plot(T, L_h_0[:-1, 1],'r-', alpha=0.3, label="Real human gain")
-ax2c.plot(T, L_hhat_1[:-1, 1],'g--', label=label_E1)
-ax2c.plot(T, L_h_1[:-1, 1],'g--', alpha=0.3, label="Real human gain")
+ax2c.plot(T, L_rhat_0[:-1, 1],'b-', label=label_E0r)
+ax2c.plot(T, L_r_0[:-1, 1],'b-', alpha=0.3, label="Real human gain")
 ax2c.set_title("Human velocity error gains" )
 ax2c.legend()
 
-# ax1d.plot(T, L_rhat_0[:-1, 0],'r-', label=label_E0)
-# ax1d.plot(T, L_r_0[:-1, 0],'r-', alpha=0.3, label="Real robot gain")
-# ax1d.plot(T, L_rhat_1[:-1, 0],'g--', label=label_E1)
-# ax1d.plot(T, L_r_1[:-1, 0],'g--', alpha=0.3, label="Real robot gain")
-# ax1d.plot(T, L_rhat_2[:-1, 0],'b-.', label=label_E2)
-# ax1d.plot(T, L_r_2[:-1, 0],'b-.', alpha=0.3, label="Real robot gain")
-# ax1d.set_title("Robot position error gains")
-# ax1d.legend()
-# ax2d.plot(T, L_rhat_0[:-1, 1],'r-', label=label_E0)
-# ax2d.plot(T, L_r_0[:-1, 1],'r-', alpha=0.3, label="Real robot gain")
-# ax2d.plot(T, L_rhat_1[:-1, 1],'g--', label=label_E1)
-# ax2d.plot(T, L_r_1[:-1, 1],'g--', alpha=0.3, label="Real robot gain")
-# ax2d.plot(T, L_rhat_2[:-1, 1],'b-.', label=label_E2)
-# ax2d.plot(T, L_r_2[:-1, 1],'b-.', alpha=0.3, label="Real robot gain")
-# ax2d.set_title("Robot velocity error gains" )
-# ax2d.legend()
-
-ax1e.plot(T, Qhhat_0[:-1,0,0], 'r-', label=label_E0)
-ax1e.plot(T, Qh_0[:-1,0,0], 'r-', alpha=0.3, label="Real human weight")
-ax1e.plot(T, Qhhat_1[:-1,0,0], 'g--', label=label_E1)
-ax1e.plot(T, Qh_1[:-1,0,0], 'g--', alpha=0.3, label="Real human weight")
-ax1e.set_title("Human error weights")
-ax1e.legend()
-ax2e.plot(T, Qhhat_0[:-1,1,1], 'r-', label=label_E0)
-ax2e.plot(T, Qh_0[:-1,1,1], 'r-', alpha=0.3, label="Real human weight")
-ax2e.plot(T, Qhhat_1[:-1,1,1], 'g--', label=label_E1)
-ax2e.plot(T, Qh_1[:-1,1,1], 'g--', alpha=0.3, label="Real human weight")
-ax2e.set_title("Human velocity error weight")
-ax2e.legend()
-
-# ax1f.plot(T, Qrhat_0[:-1,0,0], 'r-', label=label_E0)
-# ax1f.plot(T, Qr_0[:-1,0,0], 'r-', alpha=0.3, label="Real robot weight")
-# ax1f.plot(T, Qrhat_1[:-1,0,0], 'g--', label=label_E1)
-# ax1f.plot(T, Qr_1[:-1,0,0], 'g--', alpha=0.3, label="Real robot weight")
-# ax1f.plot(T, Qrhat_2[:-1,0,0], 'b-.', label=label_E2)
-# ax1f.plot(T, Qr_2[:-1,0,0], 'b-.', alpha=0.3, label="Real robot weight")
-# ax1f.set_title("Robot error weights")
-# ax1f.legend()
-# ax2f.plot(T, Qrhat_0[:-1,1,1], 'r-', label=label_E0)
-# ax2f.plot(T, Qr_0[:-1,1,1], 'r-', alpha=0.3, label="Real robot weight")
-# ax2f.plot(T, Qrhat_1[:-1,1,1], 'g--', label=label_E1)
-# ax2f.plot(T, Qr_1[:-1,1,1], 'g--', alpha=0.3, label="Real robot weight")
-# ax2f.plot(T, Qrhat_2[:-1,1,1], 'b-.', label=label_E2)
-# ax2f.plot(T, Qr_2[:-1,1,1], 'b-.', alpha=0.3, label="Real robot weight")
-# ax2f.set_title("Robot velocity error weight")
-# ax2f.legend()
-# ax3f.plot(T, Qrhat_0[:-1,1,0], 'r-', label=label_E0)
-# ax3f.plot(T, Qr_0[:-1,1,0], 'r-', alpha=0.3, label="Real robot weight")
-# ax3f.plot(T, Qrhat_1[:-1,1,0], 'g--', label=label_E1)
-# ax3f.plot(T, Qr_1[:-1,1,0], 'g--', alpha=0.3, label="Real robot weight")
-# ax3f.plot(T, Qrhat_2[:-1,1,0], 'b-.', label=label_E2)
-# ax3f.plot(T, Qr_2[:-1,1,0], 'b-.', alpha=0.3, label="Real robot weight")
-# ax3f.set_title("Robot off-diagonal error weights")
-# ax3f.legend()
-
-
-ax1g.errorbar(ctime_0[0], mags_0[0], yerr=c_std_0[0], ecolor='r', linestyle="", marker='o', label=label_E0)
-ax1g.errorbar(ctime_1[0], mags_1[0], yerr=c_std_1[0], ecolor='g', linestyle="", marker='o', label=label_E1)
-
-ax1g.set_title("Conflict")
-ax1g.legend()
 plt.show()

@@ -32,7 +32,6 @@ class DynamicsModel:
         e_tilde = np.array([[y[4]], [y[5]]])
         Ph_hat = np.array([y[6:8], y[8:10]])
         Lh_hat = 1/R * np.matmul(B.transpose(), Ph_hat)
-        S = 1 / R * np.matmul(B, B.transpose())
 
         # Compute robot response
         Ar = self.A - self.B * Lh_hat
@@ -51,7 +50,7 @@ class DynamicsModel:
         e_tilde_dot = np.matmul(- self.B * (Lh_hat - Lh), e) + np.matmul((self.A - self.Gamma), e_tilde)
 
         # Compute P matrix derivative
-        Ph_hat_dot_p = self.alpha * (e_tilde - e) * e.transpose()
+        Ph_hat_dot_p = self.alpha * e_tilde * (e).transpose()
         Ph_hat_dot = Ph_hat_dot_p
         # Ph_hat_dot = (Ph_hat_dot_p + Ph_hat_dot_p.transpose()) / 2 # Make symmetric
         # Ph_hat_dot = np.array([[Ph_hat_dot_p[0,0], Ph_hat_dot_p[0,1]] ,[Ph_hat_dot_p[0,1], Ph_hat_dot_p[1,1]] ])
@@ -109,12 +108,11 @@ class DynamicsModel:
             eigsAh, eigsvalh = np.linalg.eig(Ah)
             # print("eigenvalues Ar = ", eigsAr)
             # print("eigenvalues Ah = ", eigsAh)
-
             # print('ph, phhat', Ph, Ph_hat)
 
             Qhhat_t = 1/R * np.matmul(np.matmul(Ph_hat, self.B * self.B.transpose()), Ph_hat) - np.matmul(Ah.transpose(), Ph_hat) - np.matmul(Ph_hat, Ah)
-            # Qhhat[i + 1, :, :] = np.array([[Qhhat_t[0,0], 0],[0, Qhhat_t[1, 1]]])
-            Qhhat[i + 1, :, :] = (Qhhat_t + Qhhat_t.transpose()) / 2
+            Qhhat[i + 1, :, :] = np.array([[Qhhat_t[0,0], 0], [0, Qhhat_t[1, 1]]])
+            # Qhhat[i + 1, :, :] = (Qhhat_t + Qhhat_t.transpose()) / 2
             # Qhhat[i + 1, :, :] = Qhhat_t
             # print(Qhhat[i, :, :], Qh0)
             # exit()
@@ -127,20 +125,21 @@ D = -0.2 #N/m
 # TODO: Note that xd is fixed! If xd_dot =/= 0 this does not work!
 A = np.array([[0, 1], [0, -D/I]])
 B = np.array([[0], [1/I]])
-Gamma = np.array([[100, 0], [0, 1]])
-alpha = 2500
+Gamma = np.array([[20, 0], [0, 1]])
+alpha = 100000
 
 # Initial values
 pos0 = 0
 vel0 = 0
-x_d = 0.1
+x_d = 0.25
 
 # Simulation
-time = 4
+time = 6
 h = 0.005
 N = round(time/h)
 T = np.array(range(N)) * h
 r = np.array([x_d * T, x_d * np.ones(N)])
+# r = np.array([x_d * np.ones(N), x_d * np.zeros(N)])
 # r = np.array([x_d * np.sin(T), x_d * np.cos(T)])
 # r = np.array([np.array([x_d * np.ones(round(0.5*N)), -x_d * np.ones(round(0.5*N))]).flatten(), x_d * np.zeros(N)])
 # print(r)
@@ -153,9 +152,9 @@ Qh_v = 0
 Qh0 = np.array([[Qh_e, 0], [0, Qh_v]])
 
 # Estimated cost value
-Qh_e_hat = 60
+Qh_e_hat = 70
 Qh_v_hat = 0.01
-Qhhat0 = np.array([[Qh_e_hat, 0], [0, Qh_v_hat]] )
+Qhhat0 = np.array([[Qh_e_hat, 0], [0, Qh_v_hat]])
 
 # Robot cost values
 Cval = 200
@@ -167,7 +166,7 @@ x0 = np.array([pos0, vel0])
 x_hat0 = x0
 x_tilde0 = np.array([0, 0])
 Lhhat0 = np.array([0, 0])
-Phhat0 = np.array([[1, 0], [0, 0.1]])
+# Phhat0 = np.array([[1, 0], [0, 0.1]])
 Phhat0 = cp.solve_continuous_are(A, B, Qhhat0, R)
 # print(Phhat0)
 # print(Phhat0[0])
@@ -193,6 +192,11 @@ plt.xlabel("Time [s]")
 
 figc, (ax1c, ax2c) = plt.subplots(2)
 figb.suptitle('Values of the cost matrix')
+plt.xlabel("Time [s]")
+# plt.ylabel("Gain [-]")
+
+figd, (ax1d, ax2d) = plt.subplots(2)
+figb.suptitle('Errors')
 plt.xlabel("Time [s]")
 # plt.ylabel("Gain [-]")
 
@@ -244,6 +248,17 @@ ax2c.plot(T, Qhhat[:-1, 1, 1],'g--', label=labels_Qhhat)
 ax2c.plot(T, Qh[:, 1, 1],'r-.', label=labels_Qh)
 ax2c.set_title("Velocity weight, C " + str(Cval))
 ax2c.legend()
+
+ax1d.plot(T, y[2, :-1], label="Estimated Error")
+ax1d.plot(T, y[4, :-1], label="Estimation Error")
+# ax1a.plot(T, x_GT0[1, :-1],'--', label=labels_GT)
+ax1d.set_title("Position, C = " + str(Cval))
+ax1d.legend()
+ax2d.plot(T, y[3, :-1], label="Estimated Error")
+ax2d.plot(T, y[5, :-1], label="Estimation Error")
+# ax2a.plot(T, x_GT0[1, :-1],'--', label=labels_GT)
+ax2d.set_title("Velocity, C = " + str(Cval))
+ax2d.legend()
 
 # ax1b.plot(T, u_LQ0, label=labels_LQ)
 # ax1b.plot(T, u_GT0,'--', label=labels_GT)
