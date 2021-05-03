@@ -48,18 +48,16 @@ class DynamicsModel:
         # print(e, x_r_tilde)
 
         # Update estimates of P
+        # print(x_tilde)
+        # print(e)
 
-        P_hhat_dot = self.alpha * (x_tilde) * (e).transpose()
-        P_hhat_dot[1, 0] = P_hhat_dot[0, 1]
+
+        # P_hhat_dot = self.alpha * (x_tilde) * (e).transpose()
+        # P_hhat_dot[1,0] = P_hhat_dot[0,1]
         # print(P_hhat_dot[0,1])
 
-        # For C = 250,25: 2.1
-        # For C = 150, 15: 1.3
-
-        # P_hhat_dot = self.alpha * np.array([[(2.1/2.1)*(e[1,0])*(x_tilde[1,0]), x_tilde[1,0]*e[0,0]],
-        #                                     [x_tilde[1,0] * e[0,0], x_tilde[1, 0] * (e[1, 0])]])
-        # P_hhat_dot = self.alpha * np.array([[(2.1) * (e[1, 0] + e[0, 0]) * (x_tilde[1, 0]), x_tilde[1, 0] * e[0, 0]],
-        #                                     [x_tilde[1, 0] * e[0, 0], x_tilde[1, 0] * (e[1, 0])]])
+        # print(x_tilde[1,0]*e[1,0])
+        P_hhat_dot = self.alpha * np.array([[x_tilde[0,0]*e[0,0], x_tilde[1,0]*e[0,0]],[x_tilde[1,0]*e[0,0], x_tilde[1,0]*e[1,0]]])
         # print(P_hhat_dot)
 
         ydot = np.array([x_dot.transpose(), x_tilde_dot.transpose(), x_hat_dot.transpose(), [P_hhat_dot[0]], [P_hhat_dot[1]]]).flatten()
@@ -81,9 +79,9 @@ class DynamicsModel:
 
     def update_costs(self, Q, R, Phat, Phatdot):
         Lhat, L, P = self.compute_gains(Q, R, Phat)
-        A_c = self.A - self.B * L - self.B * Lhat
-        Qhat = - np.matmul(A_c.transpose(), Phat.transpose()) - np.matmul(Phat, A_c)
-        print(Qhat)
+        A_c = self.A - self.B * L
+        Qhat = - np.matmul(A_c.transpose(), Phat.transpose()) - np.matmul(Phat, A_c) + 1/R * np.matmul(Phat, self.B) \
+               * np.matmul(self.B.transpose(), Phat.transpose()) #- Phatdot
         # Qhat = - np.matmul(A_c.transpose(), Phat) - np.matmul(Phat, A_c) + 1 / R * np.matmul(Phat, self.B) \
         #        * np.matmul(self.B.transpose(), Phat)
         return Qhat
@@ -147,13 +145,16 @@ class DynamicsModel:
             x_tilde_new = np.array([[y[i+1, 2]], [y[i+1, 3]]])
             x_hat_new = np.array([[y[i+1, 4]], [y[i+1, 5]]])
 
-
+            # Calculate error vector
+            e_new = x_new - np.array([[ref[i + 1, 0]], [ref[i + 1, 1]]])
+            P_hhat_dot = self.alpha * np.array([[x_tilde_new[0,0]*e_new[0,0], x_tilde_new[1,0]*e_new[0,0]],
+                                                [x_tilde_new[1,0]*e_new[0,0], x_tilde_new[1,0]*e_new[1,0]]])
 
 
             # Update cost matrices
             Qhhat[i + 1, :, :] = self.update_costs(Qr[i, :, :], R, Phhat[i + 1, :, :], P_hhat_dot)
-            # Qhhat[i + 1, 0, 1] = 0
-            # Qhhat[i + 1, 1, 0] = 0
+            Qhhat[i + 1, 0, 1] = 0
+            Qhhat[i + 1, 1, 0] = 0
 
         return ref, ur, uhbar, vh, uh, y, Lhhat, Lh, Lr, Qhhat, Qh, Qr, Phhat, Ph, Pr, e, xrhat, xhhat
 
@@ -166,7 +167,7 @@ B = np.array([[0], [1/I]])
 Gamma = np.array([[1, 0], [0, 1]])
 # alpha = 100000 * (Gamma)
 # alpha = 100000 * np.array([[1, 0], [0, 1]])
-alpha = 10000
+alpha = 100000
 mu = 0.0
 sigma = 0.0
 
@@ -184,7 +185,7 @@ T = np.array(range(N)) * h
 # Simulated Human Settings
 # True cost values
 Qh_e = 100
-Qh_v = 10
+Qh_v = 50
 Qh0 = np.array([[Qh_e, 0], [0, Qh_v]])
 
 # Estimated cost value
@@ -194,7 +195,7 @@ Qh_hat = np.array([[Qh_e_hat, 0], [0, Qh_v_hat]])
 
 # Robot cost values
 Cval = np.array([120 * np.ones(round(0.5*N)), 300 * np.ones(round(0.5*N))]).flatten()
-# Cval = np.array([250 * np.ones(round(N))]).flatten()
+# Cval = np.array([300 * np.ones(round(N))]).flatten()
 C = np.array([[Cval[0], 0], [0, 100]])
 R = np.array([[1]])
 Qr_hat = C - Qh_hat
@@ -215,10 +216,8 @@ x_r_tilde0 = np.array([0, 0])
 x_h_tilde0 = np.array([0, 0])
 # Ph0 = cp.solve_continuous_are(A, B, Qh_hat, R)
 # Pr0 = cp.solve_continuous_are(A - 1/R * B * np.matmul(B.transpose(), Ph0), B, Qr_hat, R)
-# Ph0 = np.zeros((2, 2))
-# Pr0 = np.zeros((2, 2))
-Ph0 = np.array([[10, 10], [10, 10]])
-Pr0 = Ph0
+Ph0 = np.zeros((2, 2))
+Pr0 = np.zeros((2, 2))
 
 # y = [x, x_r_hat, x_r_tilde, Ph_hat, x_h_hat, x_h_tilde, Pr_hat]
 y0o = np.array([x0, x_h_tilde0, x_h_hat0, Ph0[0], Ph0[1]])
