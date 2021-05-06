@@ -207,7 +207,7 @@ inputs = {
 }
 
 # Some options to choose which simulations/algorithms to do/use
-if e < 2:
+if e < 3:
     if c == 0:
         # Full-information w/ Newton-Rhapson method
         controls = ControllerLQ(A, B, mu, sigma)
@@ -237,11 +237,11 @@ if e < 2:
     elif c == 3:
         # Normalized Gradient Cost Observer
         if d == 0:
-            alpha = 8000
+            alpha = 10000
         elif d == 1:
-            alpha = 25000
+            alpha = 10000
         elif d == 2:
-            alpha = 50
+            alpha = 400
         Gamma = alpha * np.array([[5, 0], [0, 1]])
         kappa = 2
         controls = ControllerNG(A, B, mu, sigma)
@@ -284,7 +284,7 @@ if e < 2:
             # Lyapunov (Li2019)
             # Different convergence rates for different dynamics
             if d == 0:
-                alpha = 50000
+                alpha = 100000
             elif d == 1:
                 alpha = 100000
             elif d == 2:
@@ -299,11 +299,11 @@ if e < 2:
         elif c_compare == 3:
             # Normalized Gradient Cost Observer
             if d == 0:
-                alpha = 8000
+                alpha = 10000
             elif d == 1:
-                alpha = 25000
+                alpha = 10000
             elif d == 2:
-                alpha = 50
+                alpha = 400
             Gamma = alpha * np.array([[5, 0], [0, 1]])
             kappa = 2
             controls2 = ControllerNG(A, B, mu, sigma)
@@ -314,90 +314,35 @@ if e < 2:
         else:
             exit('Something seems to have gone wrong, try again')
 else:
-    print("Choose which variable to test: 0: kappa, 1: alpha")
-    v = input()
-    if int(v) == 0:
-        variable = "kappa"
-    elif int(v) == 1:
-        variable = "alpha"
-    else:
-        exit("Something went wrong, that was no option.")
-
-    print("You chose ", variable)
-    print("Brace yourselve, this will take some time!")
-
-    inputs = {
-        "simulation_steps": N,
-        "step_size": h,
-        "time_vector": T,
-        "reference_signal": r,
-        "human_weight": Qh,
-        "c": c,
-        "d": d,
-        "controller_type_name": controller_name,
-        "dynamics_type_name": dynamics_name,
-        "controller_type": controller,
-        "dynamics_type": dynamics,
-        "save": save,
-        "variable": variable
-    }
-
+    print("Choose which variable to test:")
 
     # Normalized Gradient Cost Observer
     if d == 0:
-        alpha = 8000
+        alpha = 10000
     elif d == 1:
-        alpha = 25000
+        alpha = 10000
     elif d == 2:
-        alpha = 50
+        alpha = 400
     Gamma = alpha * np.array([[5, 0], [0, 1]])
     kappa = 2
     controls = ControllerNG(A, B, mu, sigma)
     inputs["kappa"] = kappa
-    inputs["alpha"] = alpha
     inputs["Gamma"] = Gamma
     inputs["sharing_rule"] = C
-    inputs2 = inputs.copy()
-    inputs3 = inputs.copy()
-    # inputs4 = inputs.copy()
-    controls = ControllerNG(A, B, mu, sigma)
-
-    # change 1 parameter
-    if int(v) == 0:
-        # Change kappa
-        inputs["kappa"] = 0.01 * kappa
-        inputs2["kappa"] = 1 * kappa
-        inputs3["kappa"] = 100 * kappa
-        # inputs4["kappa"] = 10 * kappa
-    elif int(v) == 1:
-        # Change alpha
-        inputs["alpha"] = 0.01 * alpha
-        inputs["Gamma"] = inputs["alpha"] * np.array([[5, 0], [0, 1]])
-        inputs2["alpha"] = 1 * alpha
-        inputs2["Gamma"] = inputs2["alpha"] * np.array([[5, 0], [0, 1]])
-        inputs3["alpha"] = 10 * alpha
-        inputs3["Gamma"] = inputs3["alpha"] * np.array([[5, 0], [0, 1]])
-        # inputs4["alpha"] = 10 * alpha
-        # inputs4["Gamma"] = inputs4["alpha"] * np.array([[5, 0], [0, 1]])
-    else:
-        exit("Something went wrong in line 383")
 
 # Simulate
 outputs = controls.simulate(inputs)
-if e == 1:
+if e > 0:
     outputs2 = controls2.simulate(inputs2)
 
 if e == 2:
-    outputs3 = controls.simulate(inputs3)
-    outputs2 = controls.simulate(inputs2)
-    # outputs4 = controls.simulate(inputs4)
+    outputs3 = controls3.simulate(inputs3)
+    outputs4 = controls4.simulate(inputs4)
 
 # Plot
 plot_object = PlotStuff()
 if e == 0:
     plot_object.plot_stuff(inputs, outputs)
 elif e == 1:
-    plot_object.plot_comparison(inputs, inputs2, outputs, outputs2)
-elif e == 2:
-    # plot_object.plot_sensitivity(inputs, inputs2, inputs3, inputs4, outputs, outputs2, outputs3, outputs4)
-    plot_object.plot_sensitivity(inputs, inputs2, inputs3, outputs, outputs2, outputs3)
+    plot_object.plot_comparison(inputs, outputs)
+
