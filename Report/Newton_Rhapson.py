@@ -52,23 +52,22 @@ class ControllerNR:
         N = inputs["simulation_steps"]
         h = inputs["step_size"]
         r = inputs["reference_signal"]
-        Qh = inputs["human_weight"]
-        Qr = inputs["robot_weight"]
+        Qh0 = inputs["human_weight"]
+        Qr0 = inputs["robot_weight"]
 
 
         # Newon-Raphson method
         # (https://link-springer-com.tudelft.idm.oclc.org/content/pdf/10.1007%2Fs10287-006-0030-z.pdf#page=28&zoom=100,-34,154)
         it = 10
         S = np.matmul(self.B, self.B.transpose())
-        Pr, Ph = self.solve_coupled_riccati(S, Qr, Qh, it)
+        Pr0, Ph0 = self.solve_coupled_riccati(S, Qr0, Qh0, it)
 
-        print("P matrices are computed as: P_r = ", Pr, " and P_h = ", Ph)
+        print("P matrices are computed as: P_r = ", Pr0, " and P_h = ", Ph0)
 
+        Lh0 = np.matmul(self.B.transpose(), Ph0)
+        Lr0 = np.matmul(self.B.transpose(), Pr0)
 
-        Lh = np.matmul(self.B.transpose(), Ph)
-        Lr = np.matmul(self.B.transpose(), Pr)
-
-        print("Controller gains then are computed as: L_r = ", Lr, " and L_h = ", Lh)
+        print("Controller gains then are computed as: L_r = ", Lr0, " and L_h = ", Lh0)
 
         x = np.zeros((N + 1, 2))
         ref = np.zeros((N, 2))
@@ -77,6 +76,10 @@ class ControllerNR:
         uh = np.zeros(N)
         Jr = np.zeros(N)
         Jh = np.zeros(N)
+        Lh = np.zeros((N, 2))
+        Lr = np.zeros((N, 2))
+        Qh = np.zeros((N, 2, 2))
+        Qr = np.zeros((N, 2, 2))
 
 
         for i in range(N):
@@ -87,11 +90,15 @@ class ControllerNR:
                 ref[i, :] = np.array([r[i], (r[i]) / h])
 
             # Derive inputs
+            Qr[i, :, :] = Qr0
+            Qh[i, :, :] = Qh0
+            Lh[i, :] = Lh0
+            Lr[i, :] = Lr0
             e[i, :] = x[i, :] - ref[i, :]
-            ur[i] = np.matmul(-Lr, e[i, :])
-            uh[i] = np.matmul(-Lh, e[i, :])
-            Jh[i] = self.compute_costs(e[i, :], uh[i], Qh)
-            Jr[i] = self.compute_costs(e[i, :], ur[i], Qr)
+            ur[i] = np.matmul(-Lr0, e[i, :])
+            uh[i] = np.matmul(-Lh0, e[i, :])
+            Jh[i] = self.compute_costs(e[i, :], uh[i], Qh0)
+            Jr[i] = self.compute_costs(e[i, :], ur[i], Qr0)
 
             x[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], x[i, :], h)
 
@@ -103,6 +110,10 @@ class ControllerNR:
             "robot_input": ur,
             "human_costs": Jh,
             "robot_costs": Jr,
+            "human_gain": Lh,
+            "robot_gain": Lr,
+            "human_Q": Qh,
+            "robot_Q": Qr,
         }
 
         return outputs

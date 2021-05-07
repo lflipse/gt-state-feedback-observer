@@ -85,7 +85,7 @@ def ask_input():
         print("You chose wisely, your choice was: ", controller)
 
         # For the case we are comparing
-        if e == 1:
+        if int(e) == 1:
             print(
                 "Choose which controller to compare the ", controller, " with, 0: Full-information Optimal Control, 1: Full-information Differential Game",
                 " 2: Differential Game Lyapunov cost estimator (Li2019)",
@@ -226,7 +226,7 @@ if e < 2:
         elif d == 1:
             alpha = 100000
         elif d == 2:
-            alpha = 700
+            alpha = 400
 
         Gamma = np.array([[2, 0], [0, 2]])
         controls = ControllerLi(A, B, mu, sigma)
@@ -261,7 +261,7 @@ if e < 2:
             "time_vector": T,
             "reference_signal": r,
             "human_weight": Qh,
-            "c": c,
+            "c": c_compare,
             "d": d,
             "controller_type_name": controller_name,
             "dynamics_type_name": dynamics_name,
@@ -288,7 +288,7 @@ if e < 2:
             elif d == 1:
                 alpha = 100000
             elif d == 2:
-                alpha = 700
+                alpha = 400
 
             Gamma = np.array([[2, 0], [0, 2]])
             controls2 = ControllerLi(A, B, mu, sigma)
@@ -303,8 +303,8 @@ if e < 2:
             elif d == 1:
                 alpha = 25000
             elif d == 2:
-                alpha = 50
-            Gamma = alpha * np.array([[5, 0], [0, 1]])
+                alpha = 80
+            Gamma = alpha * np.array([[5, 0], [0, 2]])
             kappa = 2
             controls2 = ControllerNG(A, B, mu, sigma)
             inputs2["kappa"] = kappa
@@ -345,7 +345,7 @@ else:
 
     # Normalized Gradient Cost Observer
     if d == 0:
-        alpha = 8000
+        alpha = 15000
     elif d == 1:
         alpha = 25000
     elif d == 2:
@@ -371,11 +371,11 @@ else:
         # inputs4["kappa"] = 10 * kappa
     elif int(v) == 1:
         # Change alpha
-        inputs["alpha"] = 0.01 * alpha
+        inputs["alpha"] = 0.2 * alpha
         inputs["Gamma"] = inputs["alpha"] * np.array([[5, 0], [0, 1]])
         inputs2["alpha"] = 1 * alpha
         inputs2["Gamma"] = inputs2["alpha"] * np.array([[5, 0], [0, 1]])
-        inputs3["alpha"] = 10 * alpha
+        inputs3["alpha"] = 5 * alpha
         inputs3["Gamma"] = inputs3["alpha"] * np.array([[5, 0], [0, 1]])
         # inputs4["alpha"] = 10 * alpha
         # inputs4["Gamma"] = inputs4["alpha"] * np.array([[5, 0], [0, 1]])
