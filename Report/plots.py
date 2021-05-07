@@ -427,7 +427,7 @@ class PlotStuff:
         ax1a = fig1.add_subplot(gs1[0, :])
         ax1c = fig1.add_subplot(gs1[1, :])
 
-        var_tex = "$\\" + var + "$"
+        var_tex = "$" + var + "$"
 
         label1 = var_tex + " = " + str(inputs[var])
         label2 = var_tex + " = " + str(inputs2[var])

@@ -174,6 +174,7 @@ T = np.array(range(N)) * h
 # Noise parameters
 mu = 0.0
 sigma = 0.0
+bias = np.array([0, 0])
 
 # Initial values
 pos0 = 0
@@ -204,6 +205,7 @@ inputs = {
     "controller_type": controller,
     "dynamics_type": dynamics,
     "save": save,
+    "gain_estimation_bias": bias,
 }
 
 # Some options to choose which simulations/algorithms to do/use
@@ -268,6 +270,7 @@ if e < 2:
             "controller_type": controller,
             "dynamics_type": dynamics,
             "save": save,
+            "gain_estimation_bias": bias,
         }
 
         if c_compare == 0:
@@ -314,12 +317,14 @@ if e < 2:
         else:
             exit('Something seems to have gone wrong, try again')
 else:
-    print("Choose which variable to test: 0: kappa, 1: alpha")
+    print("Choose which variable to test: 0: kappa, 1: alpha, 2: velocity gain bias")
     v = input()
     if int(v) == 0:
         variable = "kappa"
     elif int(v) == 1:
         variable = "alpha"
+    elif int(v) == 2:
+        variable = "gain_estimation_bias"
     else:
         exit("Something went wrong, that was no option.")
 
@@ -339,7 +344,8 @@ else:
         "controller_type": controller,
         "dynamics_type": dynamics,
         "save": save,
-        "variable": variable
+        "variable": variable,
+        "gain_estimation_bias": bias,
     }
 
 
@@ -379,6 +385,10 @@ else:
         inputs3["Gamma"] = inputs3["alpha"] * np.array([[5, 0], [0, 1]])
         # inputs4["alpha"] = 10 * alpha
         # inputs4["Gamma"] = inputs4["alpha"] * np.array([[5, 0], [0, 1]])
+    elif int(v) == 2:
+        inputs["gain_estimation_bias"] = np.array([0, -2])
+        inputs2["gain_estimation_bias"] = np.array([0, 0])
+        inputs3["gain_estimation_bias"] = np.array([0, 2])
     else:
         exit("Something went wrong in line 383")
 

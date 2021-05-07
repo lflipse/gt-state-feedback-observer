@@ -48,28 +48,28 @@ class ControllerNG:
 
         return ydot
 
-    def compute_gains(self, Q, Phat):
-        Lhat = np.matmul(self.B.transpose(), Phat)
+    def compute_gains(self, Q, Phat, bias):
+        Lhat = np.matmul(self.B.transpose(), Phat) + bias
         A_c = self.A - self.B * Lhat
         P = cp.solve_continuous_are(A_c, self.B, Q, 1)
         L = np.matmul(self.B.transpose(), P)
         return Lhat, L, P
 
-    def compute_inputs(self, Q, Phat, e):
-        Lhat, L, P = self.compute_gains(Q, Phat)
+    def compute_inputs(self, Q, Phat, e, bias):
+        Lhat, L, P = self.compute_gains(Q, Phat, bias)
         u = np.inner(-L, e)
         uhat = np.inner(-Lhat, e)
         return u, uhat, L, Lhat, P
 
-    def update_costs(self, Q, Phat):
-        Lhat, L, P = self.compute_gains(Q, Phat)
+    def update_costs(self, Q, Phat, bias):
+        Lhat, L, P = self.compute_gains(Q, Phat, bias)
         A_c = self.A - self.B * L
         Qhat = - np.matmul(A_c.transpose(), Phat.transpose()) - np.matmul(Phat, A_c) +  np.matmul(Phat, self.B) \
                * np.matmul(self.B.transpose(), Phat.transpose())
         return Qhat
 
-    def update_parameters(self, Q, Phat):
-        Lhat, L, P = self.compute_gains(Q, Phat)
+    def update_parameters(self, Q, Phat, bias):
+        Lhat, L, P = self.compute_gains(Q, Phat, bias)
         gamma_1 = self.alpha_1 - self.beta ** 2 * (P[0, 1] )
         gamma_2 = self.alpha_2 - self.beta ** 2 * (P[1, 1] )
         a_hhat = - gamma_1 * Phat[1, 1] - gamma_2 * Phat[0, 1] + self.beta**2*Phat[0,1]*Phat[1,1]
@@ -95,6 +95,7 @@ class ControllerNG:
         kappa = inputs["kappa"]
         Gamma = inputs["Gamma"]
         C = inputs["sharing_rule"]
+        bias = inputs["gain_estimation_bias"]
 
         y = np.zeros((N + 1, 4))
 
@@ -136,8 +137,8 @@ class ControllerNG:
 
             # Compute inputs
             e[i, :] = (y[i, 0:2] - ref[i, :])
-            ur[i], uhhat[i], Lr[i, :], Lhhat[i, :], Pr[i, :, :] = self.compute_inputs(Qr[i, :, :], Phhat[i, :], e[i, :])
-            uhbar[i], urhat, Lh[i, :], Lrhat, Ph[i, :, :] = self.compute_inputs(Qh[i, :, :],  Pr[i, :], e[i, :])
+            ur[i], uhhat[i], Lr[i, :], Lhhat[i, :], Pr[i, :, :] = self.compute_inputs(Qr[i, :, :], Phhat[i, :], e[i, :], bias)
+            uhbar[i], urhat, Lh[i, :], Lrhat, Ph[i, :, :] = self.compute_inputs(Qh[i, :, :],  Pr[i, :], e[i, :], bias)
             vh[i] = np.random.normal(self.mu, self.sigma, 1)
             uh[i] = uhbar[i] + vh[i]
             # uh[i] = uhbar[i]
@@ -147,7 +148,7 @@ class ControllerNG:
             Phhat[i + 1, :, :] = np.array([[0, y[i + 1, 2]], [y[i + 1, 2], y[i + 1, 3]]])
 
             # Update P and Q
-            phi = self.update_parameters(Qr[i, :, :], Phhat[i + 1, :, :])
+            phi = self.update_parameters(Qr[i, :, :], Phhat[i + 1, :, :], bias)
             Qhhat[i + 1, 0, 0] = phi[0]
             Qhhat[i + 1, 1, 1] = phi[1]
             Phhat[i + 1, 0, 0] = phi[2]
