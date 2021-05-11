@@ -58,7 +58,7 @@ class ControllerNG:
         phi = np.array([q_hhat1, q_hhat2, a_hhat])
         return phi
 
-    def simulate(self, x, y, xdot, e, Phhat, Qhhat, C, h):
+    def update_gain(self, x, y, xdot, e, Phhat, Qhhat, C, h):
         Qr = C
         ur, uhhat, Lr, Lhhat, Pr = self.compute_inputs(Qr, Phhat, e)
 
