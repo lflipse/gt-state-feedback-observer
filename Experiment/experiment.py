@@ -1,6 +1,7 @@
 import pygame
 import time
 import numpy as np
+import matplotlib.pyplot as plt
 import multiprocessing as mp
 from Experiment.SensoDrive.PCANBasic import *
 import math
@@ -21,7 +22,7 @@ PEDAL_MESSAGE_RECEIVE_ID = 0x21C
 PEDAL_MESSAGE_LENGTH = 2
 
 class Experiment:
-    def __init__(self, screen_width, screen_height, robot, human):
+    def __init__(self, damping, stiffness, screen_width, screen_height, robot, human):
         ## PCAN initializatie tjak
         self.steering_wheel_message = TPCANMsg()
         self.state_message = TPCANMsg()
@@ -32,8 +33,8 @@ class Experiment:
         self._steering_data = dict()
         self._steering_data['torque']  = 0
         self._steering_data['friction'] = 0
-        self._steering_data['damping'] = 0
-        self._steering_data['spring_stiffness'] = 0
+        self._steering_data['damping'] = int(damping)
+        self._steering_data['spring_stiffness'] = int(stiffness)
         self.current_values = dict()
         self._time_step_in_ns = None
         self._time = None
@@ -75,14 +76,16 @@ class Experiment:
         icon = pygame.image.load("images/ufo.png")
         pygame.display.set_icon(icon)
 
-        playerImg = pygame.image.load("images/player.png")
+        playerImg = pygame.image.load("images/x-wing.png")
+        enemyImg = pygame.image.load("images/player.png")
         self.playerImg = pygame.transform.scale(playerImg, (50, 50))
+        self.enemyImg = pygame.transform.scale(enemyImg, (50, 50))
         self.playerX = 370
-        self.playerY = 480
+        self.playerY = 500
         self.bg_color = (255, 255, 255)
-        self.border_color = (0, 0, 0)
-        self.rect_width = 80
-        self.rect_height = 50
+        self.border_color = (120, 120, 120)
+        self.rect_width = -1
+        self.rect_height = 60
         self.rect_surf = self.create_rect(self.rect_width, self.rect_height, 4, self.bg_color, self.border_color)
 
     def create_rect(self, width, height, border, color, border_color):
@@ -94,25 +97,21 @@ class Experiment:
 
     def translate_to_position(self, r):
         # Translate from angle between -30 to 30 degrees to
-        angle_deg = r * 180 * np.pi / 30
+        angle_deg = r * 180 * np.pi / 45
         x_r = angle_deg/60 * self.screen_width + 0.5 * self.screen_width
         return x_r
 
-    def player(self, x, y):
-        self.screen.blit(self.playerImg, (x, y))
+    def show_player(self, player, x, y):
+        self.screen.blit(player, (x, y))
 
     def rectangle(self, rect_surf, r, y):
         self.screen.blit(rect_surf, (r, y))
 
-    def do_experiment(self, r, N, h):
-        # Game loop
-        running = True
-
-        y = np.zeros((N + 1, 4))
-
+    def do_experiment(self, T, r, N, h):
         # Estimator vectors
-        Qhhat = np.zeros((N + 1, 2, 2))
-        Phhat = np.zeros((N + 1, 2, 2))
+        y_h = np.zeros((N, 4))
+        Qhhat = np.zeros((N, 2, 2))
+        Phhat = np.zeros((N, 2, 2))
         Ph = np.zeros((N, 2, 2))
         Pr = np.zeros((N, 2, 2))
         Qh = np.zeros((N, 2, 2))
@@ -126,12 +125,16 @@ class Experiment:
         ref = np.zeros((N, 2))
         e = np.zeros((N, 2))
         x = np.zeros((N, 2))
+        x_hat = np.zeros((N, 2))
         xdot = np.zeros((N, 2))
         xhhat = np.zeros((N, 2))
         ur = np.zeros(N)
         uhbar = np.zeros(N)
         vh = np.zeros(N)
         uh = np.zeros(N)
+
+        # Sharing rule
+        C = np.array([[0, 0], [0, 0]])
 
 
         for i in range(N):
@@ -141,26 +144,6 @@ class Experiment:
                     exit("Quited the game")
 
             # Measure stuff
-            # Calcuate derivative(s) of reference
-            if i > 0:
-                ref[i, :] = np.array([r[i], (r[i] - r[i - 1]) / h])
-                xdot[i, :] = (x[i, :] - x[i - 1, :]) / h
-            else:
-                ref[i, :] = np.array([r[i], (r[i]) / (2 * h)])
-                xdot[i, :] = (x[i, :]) / (2 * h)
-
-            e[i, :] = x[i, :] - ref[i, :]  # Assuming x is measured
-
-            if i > 0:
-                # Calculated control inputs
-                # uh[i], Lh = self.human.compute_controls()
-                # Pr[i, :], Phhat[i, :], Qhhat[i, :, :] = self.robot.update_gain()
-                a = 1
-
-            # Integrate dynamics
-
-
-
             ## PCAN communication loop
             self.write_message_steering_wheel(self.pcan_object, self.steering_wheel_message,
                                               self._steering_data)
@@ -179,17 +162,39 @@ class Experiment:
 
             if received[0] or received2[0] == PCAN_ERROR_OK:
                 mydata1 = self._sensodrive_data_to_si(received)
-
-                mydata2 =self._sensodrive_data_to_si(received2)
-                playerX = self.translate_to_position(mydata1['steering_angle'])
+                mydata2 = self._sensodrive_data_to_si(received2)
+                x[i, 0] = (mydata1['steering_angle'])
+                # x[i, 1] = (mydata2['steering_rate'])
             else:
-                playerX = 0
+                x[i, 0] = x[i - 1, 0]
+                x[i, 1] = x[i - 1, 1]
+
+            # Calcuate derivative(s) of reference
+            if i > 0:
+                ref[i, :] = np.array([r[i], (r[i] - r[i - 1]) / h])
+                x[i, 1] = (x[i, 0] - x[i - 1, 0]) / h
+                xdot[i, :] = (x[i, :] - x[i - 1, :]) / h
+            else:
+                ref[i, :] = np.array([r[i], (r[i]) / (2 * h)])
+                x[i, 1] = (x[i, 0]) / (2 * h)
+                xdot[i, :] = (x[i, :]) / (2 * h)
+
+            e[i, :] = x[i, :] - ref[i, :]  # Assuming x is measured
+
+            if i > 0:
+                # Calculated control inputs
+                ur[i], uhhat[i], y_h[i, :], Pr[i, :, :], \
+                Phhat[i, :, :], Qhhat[i, :, :], x_hat[i, :] = self.robot.update_gain(x[i, :], y_h[i - 1, :], xdot[i, :],
+                                                                                  e[i, :], Phhat[i - 1, :, :],
+                                                                                  Qhhat[i - 1, :, :], C, h)
 
             self.screen.fill(self.bg_color)
             x_r = self.translate_to_position(r[i])
-            self.rectangle(self.rect_surf, x_r, self.playerY)
 
-            self.player(playerX, self.playerY)
+            self.show_player(self.enemyImg, x_r - 25, self.playerY - 100)
+            playerX = self.translate_to_position(x[i, 0])
+            self.show_player(self.playerImg, playerX - 25, self.playerY)
+            # self.rectangle(self.rect_surf, playerX, self.playerY - 50)
             pygame.display.update()
 
             d = time.time() - t1
@@ -202,6 +207,29 @@ class Experiment:
 
 
         print("Finished the game")
+
+        pygame.display.quit()
+        pygame.quit()
+
+        print("Wanna show some performance plots?")
+        print("0: No, 1: Yes please")
+        p = input()
+        if int(p) > 0:
+            plt.plot(T, x, 'k-', label="state")
+            plt.plot(T, x_hat, 'r-', label="estimated state")
+            plt.plot(T, ref, 'y--', label="reference")
+            plt.legend()
+
+            plt.figure()
+            plt.plot(T, Qhhat[:, 0, 0])
+            plt.plot(T, Qhhat[:, 1, 1])
+
+            plt.figure()
+            plt.plot(T, Phhat[:, 0, 0])
+            plt.plot(T, Phhat[:, 1, 1])
+            # plt.plot(T, Pr[:, 1, 1])
+
+            plt.show()
 
 
     def write_message_steering_wheel(self, pcan_object, pcan_message, data):

@@ -14,24 +14,25 @@ class ControllerNG:
         self.kappa = kappa
         self.Gamma = Gamma
 
-    def numerical_integration(self, y, x, xdot, e, ur, uhhat, h):
-        y_dot = h * self.ydot(x, xdot, e, ur, uhhat)
+    def numerical_integration(self, y, x, xdot, e, uhhat, h):
+        y_dot = h * self.ydot(x, xdot, e, uhhat)
 
         # Update next value of y
         y_new = y + h * y_dot
         return y_new
 
-    def ydot(self, x, xdot, e, ur, uhhat):
+    def ydot(self, x, xdot, e, uhhat):
         # Estimated responses
         x_vec = np.array([[x[0]], [x[1]]])
         e_vec = np.array([[e[0]], [e[1]]])
-        x_hat_dot = np.matmul(self.A, x_vec) + self.B * (ur + uhhat)
+        x_hat_dot = np.matmul(self.A, x_vec) + self.B * (uhhat)
         # Estimation error
         x_tilde_dot = x_hat_dot - np.array([[xdot[0]], [xdot[1]]])
+        # print(xdot)
 
         # Compute P vector
         u_h_tilde = np.matmul(1/(np.matmul(self.B.transpose(), self.B)) * self.B.transpose(), x_tilde_dot)
-        print(x_tilde_dot[1])
+        # print(x_tilde_dot[1])
         m_squared = 1 + self.kappa * np.matmul(e_vec.transpose(), e_vec)
         P_hhat_vec_dot = (1/(m_squared*self.beta)) * np.matmul(np.matmul(self.Gamma, e_vec), u_h_tilde)
 
@@ -66,7 +67,7 @@ class ControllerNG:
         ur, uhhat, Lr, Lhhat, Pr = self.compute_inputs(Qr, Phhat, e)
 
         # Integrate a time-step
-        y_new = self.numerical_integration(y, x, xdot, e, ur, uhhat, h)
+        y_new = self.numerical_integration(y, x, xdot, e, uhhat, h)
         p_new = y_new[0:2]
         x_hat = y_new[2:4]
         Phhat_new = np.array([[0, p_new[0]], [p_new[0], p_new[1]]])
