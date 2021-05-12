@@ -512,7 +512,7 @@ class PCANBasic:
             res = self.__m_dllBasic.CAN_GetStatus(Channel)
             return TPCANStatus(res)
         except:
-            print ("Exception on PCANBasic.GetStatus")
+            print("Exception on PCANBasic.GetStatus")
             raise
 
     # Reads a CAN message from the receive queue of a PCAN Channel
