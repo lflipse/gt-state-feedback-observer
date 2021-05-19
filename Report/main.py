@@ -182,7 +182,7 @@ vel0 = 0
 
 # Simulated Human Settings
 # True cost values
-Qh = np.array([[100, 0], [0, 10]])
+Qh = np.array([[0, 0], [0, 0]])
 C = np.array([[50, 0], [0, 5]])
 
 A, B, c, d, s, e, c_compare, save, controller, controller_name, controller_compare, \
