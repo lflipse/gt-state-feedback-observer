@@ -2,7 +2,7 @@ import numpy as np
 import scipy.linalg as cp
 import time
 
-class ControllerNR:
+class ControllerDG:
     def __init__(self, A, B, mu, sigma):
         self.A = A
         self.B = B

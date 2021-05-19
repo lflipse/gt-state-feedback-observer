@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import time
 from Lyapunov_Li2019 import ControllerLi
 from Normalized_Gradient_Flipse import ControllerNG
-from Newton_Rhapson import ControllerNR
+from Differential_Game import ControllerDG
 from LQR import ControllerLQ
 from plots import PlotStuff
 
@@ -217,7 +217,7 @@ if e < 2:
 
     elif c == 1:
         # Full-information w/ Newton-Rhapson method
-        controls = ControllerNR(A, B, mu, sigma)
+        controls = ControllerDG(A, B, mu, sigma)
         inputs["robot_weight"] = 0.5 * Qh
 
     elif c == 2:
@@ -280,7 +280,7 @@ if e < 2:
 
         elif c_compare == 1:
             # Full-information w/ Newton-Rhapson method
-            controls2 = ControllerNR(A, B, mu, sigma)
+            controls2 = ControllerDG(A, B, mu, sigma)
             inputs2["robot_weight"] = 0.5 * Qh
 
         elif c_compare == 2:
