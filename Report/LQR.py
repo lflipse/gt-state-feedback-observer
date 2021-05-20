@@ -54,6 +54,7 @@ class ControllerLQ:
         r = inputs["reference_signal"]
         Qh0 = inputs["human_weight"]
         Qr0 = inputs["robot_weight"]
+        T = np.array(range(N)) * h
 
         Pr = cp.solve_continuous_are(self.A, self.B, Qr0, 1)
         Ph = cp.solve_continuous_are(self.A, self.B, Qh0, 1)
@@ -99,6 +100,7 @@ class ControllerLQ:
             x[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], x[i, :], h)
 
         outputs = {
+            "time": T,
             "states": x,
             "reference_signal": ref,
             "error_states": e,

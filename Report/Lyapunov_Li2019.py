@@ -81,6 +81,7 @@ class ControllerLi:
         alpha = inputs["alpha"]
         Gamma = inputs["Gamma"]
         C = inputs["sharing_rule"]
+        T = np.array(range(N)) * h
 
         # State vector
         y = np.zeros((N + 1, 10))
@@ -141,6 +142,7 @@ class ControllerLi:
 
         outputs = {
             "states": y[:, 0:2],
+            "time": T,
             "reference_signal": ref,
             "error_states": e,
             "human_input": uh,

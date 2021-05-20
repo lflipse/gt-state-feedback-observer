@@ -15,9 +15,9 @@ def ask_input():
     D = -0.2  # N/m
 
     # Steering wheel dynamics
-    Jw = 0.22
-    Bw = 0.1
-    Kw = 1
+    Jw = 0.5
+    Bw = 1
+    Kw = 4
 
     # Option to choose what kind of experiment
     # Option 0, show 1 controller. Option 1, compare 2 controllers, Option 3, sensitivity analysis (Normalized Gradient)
@@ -173,7 +173,7 @@ T = np.array(range(N)) * h
 
 # Noise parameters
 mu = 0.0
-sigma = 0.0
+sigma = 0.05
 bias = np.array([0, 0])
 
 # Initial values
@@ -243,7 +243,7 @@ if e < 2:
         elif d == 1:
             alpha = 25000
         elif d == 2:
-            alpha = 50
+            alpha = 1
         Gamma = alpha * np.array([[5, 0], [0, 1]])
         kappa = 2
         controls = ControllerNG(A, B, mu, sigma)

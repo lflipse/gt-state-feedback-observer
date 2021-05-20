@@ -54,6 +54,7 @@ class ControllerDG:
         r = inputs["reference_signal"]
         Qh0 = inputs["human_weight"]
         Qr0 = inputs["robot_weight"]
+        T = np.array(range(N)) * h
 
 
         # Newon-Raphson method
@@ -104,6 +105,7 @@ class ControllerDG:
 
         outputs = {
             "states": x,
+            "time": T,
             "reference_signal": ref,
             "error_states": e,
             "human_input": uh,

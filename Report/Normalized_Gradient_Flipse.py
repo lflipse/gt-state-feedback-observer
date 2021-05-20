@@ -96,6 +96,7 @@ class ControllerNG:
         Gamma = inputs["Gamma"]
         C = inputs["sharing_rule"]
         bias = inputs["gain_estimation_bias"]
+        T = np.array(range(N)) * h
 
         y = np.zeros((N + 1, 4))
 
@@ -145,6 +146,7 @@ class ControllerNG:
 
             # Integrate a time-step
             y[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], uhhat[i], y[i, :], h, Gamma, kappa)
+            y[i + 1, 1] = y[i + 1, 1] + vh[i]
             Phhat[i + 1, :, :] = np.array([[0, y[i + 1, 2]], [y[i + 1, 2], y[i + 1, 3]]])
 
             # Update P and Q
@@ -159,6 +161,7 @@ class ControllerNG:
 
         outputs = {
             "states": y[:, 0:2],
+            "time": T,
             "reference_signal": ref,
             "error_states": e,
             "human_input": uh,
