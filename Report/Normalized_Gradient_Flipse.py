@@ -123,7 +123,6 @@ class ControllerNG:
         Jhhat = np.zeros(N)
         Jr = np.zeros(N)
 
-
         for i in range(N):
             # Human cost is fixed, Robot cost based on estimator
             Qr[i, :, :] = C

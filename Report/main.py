@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import time
 from Lyapunov_Li2019 import ControllerLi
 from Normalized_Gradient_Flipse import ControllerNG
-from Newton_Rhapson import ControllerNR
+from Differential_Game import ControllerNR
 from LQR import ControllerLQ
 from plots import PlotStuff
 
@@ -302,12 +302,12 @@ if e < 2:
         elif c_compare == 3:
             # Normalized Gradient Cost Observer
             if d == 0:
-                alpha = 8000
+                alpha = 10000
             elif d == 1:
                 alpha = 25000
             elif d == 2:
                 alpha = 80
-            Gamma = alpha * np.array([[5, 0], [0, 2]])
+            Gamma = alpha * np.array([[1, 0], [0, 1]])
             kappa = 2
             controls2 = ControllerNG(A, B, mu, sigma)
             inputs2["kappa"] = kappa
