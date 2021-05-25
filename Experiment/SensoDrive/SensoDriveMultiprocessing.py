@@ -4,6 +4,7 @@ import math
 import multiprocessing as mp
 
 
+
 class SensoDriveModule(mp.Process):
     def __init__(self, Bw, Kw, parent_conn, child_conn):
 
@@ -56,30 +57,19 @@ class SensoDriveModule(mp.Process):
 
     # Function to send torque and read out states
     def run(self):
-        t = time.time()
+        print("running process has started")
         self.initialize()
-        i = 0
         while not self.exit:
-            # self.settings['mp_damping'] = self.bw
-            # self.settings['mp_spring_stiffness'] = 0
-
             sensor_data = self.write_and_read(msgtype="201", data=self.settings)
             data_available = self.child_channel.poll()
             if data_available is True:
                 msg = self.child_channel.recv()
                 self.settings['mp_torque'] = msg["torque"]
-                print("torque = ", msg["torque"])
+                self.settings['mp_damping'] = msg["damping"]
+                self.settings['mp_spring_stiffness'] = msg["stiffness"]
                 self.exit = msg["exit"]
-                self.child_channel.send("hey right back at ya!")
-                print(msg["msg"])
+                self.child_channel.send(sensor_data)
 
-            # # What happens is we print continuously?
-            # self.send.send("hey right back at ya!") # Pollutes the channel
-
-            # print(time.time() - t)
-            i += 1
-        print("Closed the loop ", i, " times!")
-        # (Note that we get these sensor values for free each time we send data)
 
     # Function to send torque and read out states
     def read(self):
