@@ -141,7 +141,7 @@ class ControllerNG:
             ur[i], uhhat[i], Lr[i, :], Lhhat[i, :], Pr[i, :, :] = self.compute_inputs(Qr[i, :, :], Phhat[i, :], e[i, :], bias)
             uhbar[i], urhat, Lh[i, :], Lrhat, Ph[i, :, :] = self.compute_inputs(Qh[i, :, :],  Pr[i, :], e[i, :], bias)
             vh[i] = np.random.normal(self.mu, self.sigma, 1)
-            uh[i] = uhbar[i] + vh[i]
+            uh[i] = uhbar[i] + 0*vh[i]
             # uh[i] = uhbar[i]
 
             # Integrate a time-step

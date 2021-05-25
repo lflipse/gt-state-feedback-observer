@@ -32,7 +32,6 @@ class ControllerNG:
 
         # Compute P vector
         u_h_tilde = np.matmul(1/(np.matmul(self.B.transpose(), self.B)) * self.B.transpose(), x_tilde_dot)
-        # print(x_tilde_dot[1])
         m_squared = 1 + self.kappa * np.matmul(e_vec.transpose(), e_vec)
         P_hhat_vec_dot = (1/(m_squared*self.beta)) * np.matmul(np.matmul(self.Gamma, e_vec), u_h_tilde)
 

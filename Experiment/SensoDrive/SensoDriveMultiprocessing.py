@@ -1,13 +1,19 @@
 import time
 from Experiment.SensoDrive.PCANBasic import *
 import math
+import multiprocessing as mp
 
 
-class SensoDriveModule:
-    def __init__(self, Bw, Kw):
+class SensoDriveModule(mp.Process):
+    def __init__(self, Bw, Kw, parent_conn, child_conn):
+
+        super().__init__(daemon=True)
         # Establish communication
+        self.parent_channel = parent_conn
+        self.child_channel = child_conn
         self.message = TPCANMsg()
         self._pcan_channel = None
+        self.exit = False
 
         # Steering wheel setting
         self.settings = {}
@@ -49,13 +55,31 @@ class SensoDriveModule:
         self.settings_operation[7] = 0x14
 
     # Function to send torque and read out states
-    def drive(self, torque, Bw, Kw):
-        self.settings['mp_damping'] = Bw
-        self.settings['mp_spring_stiffness'] = Kw
-        self.settings['mp_torque'] = torque
-        sensor_data = self.write_and_read(msgtype="201", data=self.settings)
+    def run(self):
+        t = time.time()
+        self.initialize()
+        i = 0
+        while not self.exit:
+            # self.settings['mp_damping'] = self.bw
+            # self.settings['mp_spring_stiffness'] = 0
+
+            sensor_data = self.write_and_read(msgtype="201", data=self.settings)
+            data_available = self.child_channel.poll()
+            if data_available is True:
+                msg = self.child_channel.recv()
+                self.settings['mp_torque'] = msg["torque"]
+                print("torque = ", msg["torque"])
+                self.exit = msg["exit"]
+                self.child_channel.send("hey right back at ya!")
+                print(msg["msg"])
+
+            # # What happens is we print continuously?
+            # self.send.send("hey right back at ya!") # Pollutes the channel
+
+            # print(time.time() - t)
+            i += 1
+        print("Closed the loop ", i, " times!")
         # (Note that we get these sensor values for free each time we send data)
-        return sensor_data
 
     # Function to send torque and read out states
     def read(self):
@@ -78,6 +102,7 @@ class SensoDriveModule:
         self.write_and_read(msgtype="2001F", data=None)
         self.write_and_read(msgtype="20012", data=None)
         self.write_and_read(msgtype="20014", data=None)
+        print("Initialization succesful!")
 
     def write_and_read(self, msgtype, data):
         # Check message type
@@ -117,9 +142,10 @@ class SensoDriveModule:
 
         self.pcan_object.Write(self._pcan_channel, self.message)
 
-        received = {0: 1}
-        while received[0] > 0:
+        received_ok = 1
+        while received_ok > 0:
             received = self.pcan_object.Read(self._pcan_channel)
+            received_ok = received[0]
 
         output = self.map_sensodrive_to_si(received)
 

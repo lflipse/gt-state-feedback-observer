@@ -73,6 +73,7 @@ class ControllerLQ:
         uh = np.zeros(N)
         Jr = np.zeros(N)
         Jh = np.zeros(N)
+        v = np.zeros(N)
         Lh = np.zeros((N, 2))
         Lr = np.zeros((N, 2))
         Qh = np.zeros((N, 2, 2))
@@ -91,13 +92,16 @@ class ControllerLQ:
             Qh[i, :, :] = Qh0
             Lh[i, :] = Lh0
             Lr[i, :] = Lr0
-            e[i, :] = x[i, :] - ref[i, :]
+            if i > 4:
+                e[i, :] = x[i, :] - ref[i, :]
             ur[i] = np.matmul(-Lr0, e[i, :])
             uh[i] = np.matmul(-Lh0, e[i, :])
             Jh[i] = self.compute_costs(e[i, :], uh[i], Qh0)
             Jr[i] = self.compute_costs(e[i, :], ur[i], Qr0)
 
             x[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], x[i, :], h)
+            v[i] = np.random.normal(self.mu, self.sigma, 1)
+            x[i + 1, 1] += v[i]
 
         outputs = {
             "time": T,
