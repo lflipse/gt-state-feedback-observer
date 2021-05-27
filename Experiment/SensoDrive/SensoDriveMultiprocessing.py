@@ -16,6 +16,10 @@ class SensoDriveModule(mp.Process):
         self._pcan_channel = None
         self.exit = False
 
+        self.count_loop = 0
+        self.count_senso = 0
+        self.received_ok = 1
+
         # Steering wheel setting
         self.settings = {}
         self.settings['mp_torque'] = 0
@@ -31,10 +35,9 @@ class SensoDriveModule(mp.Process):
         self.STEERINGWHEEL_MESSAGE_RECEIVE_ID = 0x211
         self.STEERINGWHEEL_MESSAGE_LENGTH = 8
 
-        # TODO: Fix settings this way!
         endstops_bytes = int.to_bytes(int(math.degrees(180)), 2, byteorder='little',
                                       signed=True)
-        torque_limit_between_endstops_bytes = int.to_bytes(100, 1,
+        torque_limit_between_endstops_bytes = int.to_bytes(200, 1,
                                                            byteorder='little',
                                                            signed=False)
         torque_limit_beyond_endstops_bytes = int.to_bytes(100, 1,
@@ -45,30 +48,37 @@ class SensoDriveModule(mp.Process):
         self.settings_operation[0] = 0x1F
         self.settings_operation[1] = 0
         # Endstop position
-        self.settings_operation[2] = 0
-        self.settings_operation[3] = 0xB4
+        self.settings_operation[2] = endstops_bytes[0]
+        self.settings_operation[3] = endstops_bytes[1]
         # reserved
         self.settings_operation[4] = 0
         self.settings_operation[5] = 0
         # Torque between endstops:
-        self.settings_operation[6] = 0x14
+        self.settings_operation[6] = torque_limit_between_endstops_bytes[0]
         # Torque beyond endstops:
-        self.settings_operation[7] = 0x14
+        self.settings_operation[7] = torque_limit_beyond_endstops_bytes[0]
 
     # Function to send torque and read out states
     def run(self):
         print("running process has started")
         self.initialize()
         while not self.exit:
+            self.count_senso += 1
             sensor_data = self.write_and_read(msgtype="201", data=self.settings)
+            # state_data = self.write_and_read(msgtype="20011", data=self.settings)
             data_available = self.child_channel.poll()
             if data_available is True:
+                self.count_loop += 1
                 msg = self.child_channel.recv()
                 self.settings['mp_torque'] = msg["torque"]
                 self.settings['mp_damping'] = msg["damping"]
                 self.settings['mp_spring_stiffness'] = msg["stiffness"]
                 self.exit = msg["exit"]
                 self.child_channel.send(sensor_data)
+                time.sleep(0.003)
+
+        print("sent ", self.count_senso, " messages to sensodrive")
+        print("received ", self.count_loop, " messages from controller")
 
 
     # Function to send torque and read out states
@@ -83,7 +93,7 @@ class SensoDriveModule(mp.Process):
         """
         self._pcan_channel = PCAN_USBBUS1
         # Here we can initialize our PCAN Communication (WE HAVE TO DO THIS HERE ELSE WE WONT HAVE THE PCAN
-        # OBJECT IN OUR DESIRED PROCESS
+        # OBJECT IN OUR DESIRED PROCESS)
 
         self.pcan_object = PCANBasic()
         self.pcan_initialization_result = self.pcan_object.Initialize(self._pcan_channel, PCAN_BAUD_1M)
@@ -93,6 +103,8 @@ class SensoDriveModule(mp.Process):
         self.write_and_read(msgtype="20012", data=None)
         self.write_and_read(msgtype="20014", data=None)
         print("Initialization succesful!")
+
+        # TODO: Referencing mode to align steering wheel to 0 position!
 
     def write_and_read(self, msgtype, data):
         # Check message type
@@ -111,6 +123,11 @@ class SensoDriveModule(mp.Process):
             self.message.ID = 0x200
             message = self.settings_operation
             message[0] = 0x14
+        elif msgtype == "20011":
+            # State message (ON)
+            self.message.ID = 0x200
+            message = self.settings_operation
+            message[0] = 0x11
         elif msgtype == "201":
             # State message
             self.message.ID = 0x201
@@ -132,10 +149,10 @@ class SensoDriveModule(mp.Process):
 
         self.pcan_object.Write(self._pcan_channel, self.message)
 
-        received_ok = 1
-        while received_ok > 0:
+        self.received_ok = 1
+        while self.received_ok > 0:
             received = self.pcan_object.Read(self._pcan_channel)
-            received_ok = received[0]
+            self.received_ok = received[0]
 
         output = self.map_sensodrive_to_si(received)
 
@@ -146,6 +163,7 @@ class SensoDriveModule(mp.Process):
         """
         Converts settings to sensodrive message
         """
+        print(settings['mp_torque'])
         if settings != None:
             torque = int(settings['mp_torque'] * 1000.0)
             friction = int(settings['mp_friction'] * 1000.0)
@@ -164,7 +182,6 @@ class SensoDriveModule(mp.Process):
         data = {}
         data[0] = torque_bytes[0]
         data[1] = torque_bytes[1]
-        # print("gives: ",data[0], data[1])
         data[2] = friction_bytes[0]
         data[3] = friction_bytes[1]
         data[4] = damping_bytes[0]

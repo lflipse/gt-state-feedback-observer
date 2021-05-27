@@ -1,4 +1,4 @@
-# import pygame
+import pygame
 import multiprocessing as mp
 import time
 import numpy as np
@@ -39,7 +39,7 @@ class Experiment:
 
 
         # Initialize pygame visualization
-        # self.visualize = Visualize(screen_width, screen_height)
+        self.visualize = Visualize(screen_width, screen_height)
 
         # States
         self.states = {"steering_angle": 0.0,
@@ -67,7 +67,7 @@ class Experiment:
         for i in range(N):
             t0 = time.perf_counter_ns()
 
-            # self.visualize.check_quit()
+            self.visualize.check_quit()
 
             # Let's first start by reading out some values
             x = np.array([self.states["steering_angle"], self.states["steering_rate"]])
@@ -117,7 +117,7 @@ class Experiment:
             self.torque = torque
 
             # Update states
-            self.send_dict["torque"] = torque
+            self.send_dict["torque"] = 2*torque
             self.send_dict["damping"] = self.damping
             self.send_dict["stiffness"] = self.stiffness
             self.parent_conn.send(self.send_dict)  # Child is for sending
@@ -132,7 +132,7 @@ class Experiment:
 
 
             # Visualize and rest
-            # self.visualize.visualize_experiment(r[i], x[0])
+            self.visualize.visualize_experiment(r[i], x[0])
             self.ref = r[i]
             execution_time = time.perf_counter_ns() - t0
             # print(execution_time * 1e-9)
@@ -167,7 +167,7 @@ class Experiment:
         self.send_dict["exit"] = True
         self.parent_conn.send(self.send_dict)  # Child is for s
 
-        # self.visualize.quit()
+        self.visualize.quit()
 
         return self.variables
 
@@ -199,7 +199,7 @@ class Experiment:
         for j in range(N):
             # First three seconds countdown
             t0 = time.perf_counter_ns()
-            # self.visualize.check_quit()
+            self.visualize.check_quit()
             torque = 0
             damp = self.damping * j * t_step / 1
             stiff = self.stiffness * j * t_step / 1
@@ -211,7 +211,7 @@ class Experiment:
             self.send_dict["damping"] = self.damp
             self.send_dict["stiffness"] = self.stiff
             self.parent_conn.send(self.send_dict)  # Child is for sending
-            new_states = self.parent_conn.recv()  # Receive from child
+            self.new_states = self.parent_conn.recv()  # Receive from child
 
             if self.new_states == None:
                 print("Double check with error")
@@ -220,7 +220,7 @@ class Experiment:
                 self.states["steering_rate"] = (self.new_states["steering_angle"] - self.states["steering_angle"]) / t_step
                 self.states["steering_angle"] = self.new_states["steering_angle"]
 
-            # self.visualize.visualize_experiment(0, angle=self.new_states["steering_angle"])
+            self.visualize.visualize_experiment(0, angle=self.new_states["steering_angle"])
             execution_time = time.perf_counter_ns() - t0
             # print(execution_time * 1e-9)
             time.sleep(max(0.0, (self._time_step_in_ns - execution_time) * 1e-9))
@@ -232,7 +232,7 @@ class Experiment:
         for j in range(N):
             # First three seconds countdown
             t0 = time.perf_counter_ns()
-            # self.visualize.check_quit()
+            self.visualize.check_quit()
             torque = 0
             damp = self.damping - self.damping * j * t_step / duration
             stiff = self.stiffness - self.stiffness * j * t_step / duration
@@ -244,7 +244,7 @@ class Experiment:
             self.send_dict["damping"] = self.damp
             self.send_dict["stiffness"] = self.stiff
             self.parent_conn.send(self.send_dict)  # Child is for sending
-            new_states = self.parent_conn.recv()  # Receive from child
+            self.new_states = self.parent_conn.recv()  # Receive from child
 
             if self.new_states == None:
                 print("Double check with error")
@@ -255,7 +255,7 @@ class Experiment:
                 self.states["steering_angle"] = self.new_states["steering_angle"]
             ref = 0.98*self.ref
             self.ref = ref
-            # self.visualize.visualize_experiment(ref, angle=self.new_states["steering_angle"])
+            self.visualize.visualize_experiment(ref, angle=self.new_states["steering_angle"])
             execution_time = time.perf_counter_ns() - t0
             # print(execution_time * 1e-9)
             time.sleep(max(0.0, (self._time_step_in_ns - execution_time) * 1e-9))

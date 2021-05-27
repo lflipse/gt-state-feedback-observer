@@ -31,13 +31,15 @@ class TesterClass:
             parent = self.parent
             parent.send(self.send_dict)  # Child is for sending
             msg = self.parent.recv()  # Receive from child
-            print(msg["steering_angle"], "<-- angle")
+            print(msg["steering_angle"], "<-- Angle")
+            print(i*0.2, "<-- Desired torque")
+            print(msg["measured_torque"], "<-- Actual torque")
             t = time.time() - t0
             time.sleep(max(0, delta - t))
 
         # Finish process
         self.send_dict["exit"] = True
-        parent_conn.send(self.send_dict)  # Child is for s
+        parent_conn.send(self.send_dict)
 
 
 if __name__ == "__main__":

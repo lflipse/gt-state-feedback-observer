@@ -40,9 +40,9 @@ if __name__ == "__main__":
     r = generate_reference(T, fr_max, fr_min, increments)
 
     # Dynamics
-    Jw = 0.4
+    Jw = 0.0447
     Bw = 0.4  # Max = 0.5
-    Kw = 2  # Max = 2.5
+    Kw = 2.0  # Max = 2.5
     A = np.array([[0, 1], [- Bw / Jw, - Kw / Jw]])
     B = np.array([[0], [1 / Jw]])
 
