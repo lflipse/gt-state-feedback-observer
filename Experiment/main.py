@@ -41,8 +41,8 @@ if __name__ == "__main__":
 
     # Dynamics
     Jw = 0.0447
-    Bw = 0.4  # Max = 0.5
-    Kw = 2.0  # Max = 2.5
+    Bw = 1.0  # Max = 0.5
+    Kw = 4.0  # Max = 2.5
     A = np.array([[0, 1], [- Bw / Jw, - Kw / Jw]])
     B = np.array([[0], [1 / Jw]])
 
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     alpha = 20
     Gamma = alpha * np.array([[5, 0], [0, 1]])
     kappa = 0.7
-    Qr = np.array([[10.0, 0.0], [0.0, 1.0]])
+    Qr = 10*np.array([[10.0, 0.0], [0.0, 0.4]])
     Qh = np.array([[0.0, 0.0], [0.0, 0.0]])
     C = Qr
 

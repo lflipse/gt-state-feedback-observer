@@ -2,6 +2,7 @@ import time
 from Experiment.SensoDrive.PCANBasic import *
 import math
 import multiprocessing as mp
+import numpy as np
 
 
 
@@ -75,6 +76,7 @@ class SensoDriveModule(mp.Process):
                 self.settings['mp_spring_stiffness'] = msg["stiffness"]
                 self.exit = msg["exit"]
                 self.child_channel.send(sensor_data)
+                # time.sleep(0.005) # <-- has no effect
 
         print("sent ", self.count_senso, " messages to sensodrive")
         print("received ", self.count_loop, " messages from controller")
@@ -116,6 +118,7 @@ class SensoDriveModule(mp.Process):
         self.write_and_read(msgtype="20014", data=None)
         self.write_and_read(msgtype="20012", data=None)
         self.write_and_read(msgtype="2001F", data=None)
+        self.pcan_initialization_result = self.pcan_object.Uninitialize(self._pcan_channel)
 
         print("Uninitialization succesful!")
 

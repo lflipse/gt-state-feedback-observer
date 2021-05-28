@@ -23,23 +23,6 @@ class ControllerLQ:
         x = y
         return np.matmul(self.A, x) + np.matmul(self.B, np.array([u+uh]))
 
-    def solve_coupled_riccati(self, S, Q, Qh, it):
-        P_it = np.zeros((it + 1, 2, 2))
-        Ph_it = np.zeros((it + 1, 2, 2))
-        P_it[0, :, :] = cp.solve_continuous_are(self.A, self.B, Q, 1)
-        Ph_it[0, :, :] = cp.solve_continuous_are(self.A, self.B, Qh, 1)
-
-        for i in range(it):
-            # Acl = A - np.matmul(S, (Ph_it[i, :, :] + P_it[i, :, :]))
-            Acl = self.A - np.matmul(S, (Ph_it[i, :, :]))
-            Aclh = self.A - np.matmul(S, (P_it[i, :, :]))
-            P_it[i + 1, :, :] = cp.solve_continuous_are(Acl, self.B, Q, 1)
-            Ph_it[i + 1, :, :] = cp.solve_continuous_are(Aclh, self.B, Qh, 1)
-
-        Ph = Ph_it[it, :, :]
-        P = P_it[it, :, :]
-        return P, Ph
-
     def compute_costs(self, x, u, Q):
         return np.matmul(np.matmul(x.transpose(), Q), x) + u**2
 
@@ -92,8 +75,7 @@ class ControllerLQ:
             Qh[i, :, :] = Qh0
             Lh[i, :] = Lh0
             Lr[i, :] = Lr0
-            if i > 4:
-                e[i, :] = x[i, :] - ref[i, :]
+            e[i, :] = x[i, :] - ref[i, :]
             ur[i] = np.matmul(-Lr0, e[i, :])
             uh[i] = np.matmul(-Lh0, e[i, :])
             Jh[i] = self.compute_costs(e[i, :], uh[i], Qh0)

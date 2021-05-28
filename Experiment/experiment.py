@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as cp
 
-
+from Experiment.Controllers.Lowpassfilter_Biquad import LowPassFilterBiquad
 from Experiment.visuals import Visualize
 
 class Experiment:
@@ -36,7 +36,8 @@ class Experiment:
         self.xddot_array = []
 
         # Filter values
-
+        self._bq_filter_velocity = LowPassFilterBiquad(fc=30, fs=100)
+        # self._bq_filter_heading = LowPassFilterBiquad(fc=30, fs=100)
 
         # Initialize pygame visualization
         self.visualize = Visualize(screen_width, screen_height)
@@ -70,7 +71,7 @@ class Experiment:
             self.visualize.check_quit()
 
             # Let's first start by reading out some values
-            x = np.array([self.states["steering_angle"], self.states["steering_rate"]])
+
 
             # Calculate derivative(s) of reference
             h = t_step
@@ -79,12 +80,15 @@ class Experiment:
             else:
                 ref = np.array([r[i], (r[i]) / (2 * h)])
 
+            # x_ddot = (x[1] - self.x[1]) / t_step
+            # x_ddot_filt, self.xddot_array = self.filter(x_ddot, self.xddot_array)
+
+            steering_rate_filt = self._bq_filter_velocity.step(self.states["steering_rate"])
+            x = np.array([self.states["steering_angle"], steering_rate_filt])
+            self.x = x
+            x_ddot_filt = 0 # TODO: Fixx!!!
             # Compute error states
             xi = x - ref
-
-            x_ddot = (x[1] - self.x[1]) / t_step
-            x_ddot_filt, self.xddot_array = self.filter(x_ddot, self.xddot_array)
-            self.x = x
 
             # TODO: Mooier maken!
             max_torque = 20.0
@@ -117,16 +121,18 @@ class Experiment:
             self.torque = torque
 
             # Update states
-            self.send_dict["torque"] = 2*torque
+            self.send_dict["torque"] = torque
             self.send_dict["damping"] = self.damping
             self.send_dict["stiffness"] = self.stiffness
             self.parent_conn.send(self.send_dict)  # Child is for sending
             new_states = self.parent_conn.recv()  # Receive from child
 
+
             if new_states != None:
                 self.new_states = new_states
-            new_speed = (self.new_states["steering_angle"] - self.states["steering_angle"]) / t_step
-            self.states["steering_rate"], self.angle_array = self.filter(new_speed, self.angle_array)
+            else:
+                print("missed a state here")
+            self.states["steering_rate"] = (self.new_states["steering_angle"] - self.states["steering_angle"]) / t_step
             self.states["steering_angle"] = self.new_states["steering_angle"]
             real_torque = self.new_states["measured_torque"]
 
