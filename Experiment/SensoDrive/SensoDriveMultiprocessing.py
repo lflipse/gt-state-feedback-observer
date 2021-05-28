@@ -37,7 +37,7 @@ class SensoDriveModule(mp.Process):
 
         endstops_bytes = int.to_bytes(int(math.degrees(180)), 2, byteorder='little',
                                       signed=True)
-        torque_limit_between_endstops_bytes = int.to_bytes(200, 1,
+        torque_limit_between_endstops_bytes = int.to_bytes(120, 1,
                                                            byteorder='little',
                                                            signed=False)
         torque_limit_beyond_endstops_bytes = int.to_bytes(100, 1,
@@ -75,10 +75,10 @@ class SensoDriveModule(mp.Process):
                 self.settings['mp_spring_stiffness'] = msg["stiffness"]
                 self.exit = msg["exit"]
                 self.child_channel.send(sensor_data)
-                time.sleep(0.003)
 
         print("sent ", self.count_senso, " messages to sensodrive")
         print("received ", self.count_loop, " messages from controller")
+        self.uninitialize()
 
 
     # Function to send torque and read out states
@@ -103,6 +103,21 @@ class SensoDriveModule(mp.Process):
         self.write_and_read(msgtype="20012", data=None)
         self.write_and_read(msgtype="20014", data=None)
         print("Initialization succesful!")
+
+        # TODO: Referencing mode to align steering wheel to 0 position!
+
+    def uninitialize(self):
+        """
+        Initializes the PCAN Dongle and sends appropriate initialization messages to the SensoDrive.
+        :return:
+        """
+
+        # Stop the controller
+        self.write_and_read(msgtype="20014", data=None)
+        self.write_and_read(msgtype="20012", data=None)
+        self.write_and_read(msgtype="2001F", data=None)
+
+        print("Uninitialization succesful!")
 
         # TODO: Referencing mode to align steering wheel to 0 position!
 
@@ -163,7 +178,7 @@ class SensoDriveModule(mp.Process):
         """
         Converts settings to sensodrive message
         """
-        print(settings['mp_torque'])
+        # print(settings['mp_torque'])
         if settings != None:
             torque = int(settings['mp_torque'] * 1000.0)
             friction = int(settings['mp_friction'] * 1000.0)

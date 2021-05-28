@@ -102,8 +102,8 @@ class ControllerDG:
             Jr[i] = self.compute_costs(e[i, :], ur[i], Qr0)
 
             x[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], x[i, :], h)
-            v[i] = np.random.normal(self.mu, self.sigma, 1)
-            x[i + 1, 1] += v[i]
+            v = np.random.normal(self.mu, self.sigma, 1)
+            x[i + 1, 1] += v
 
         outputs = {
             "states": x,

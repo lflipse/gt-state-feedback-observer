@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\lflipse\PycharmProjects\gt-state-feedback-observer\JOAN\joan\core\module_process.py", line 97, in run
+    with wres.set_resolution(10000):
+NameError: name 'wres' is not defined

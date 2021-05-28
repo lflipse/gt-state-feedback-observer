@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     # Simulation parameters
     t_exp = 10
-    t_step = 0.012
+    t_step = 0.007
     N = round(t_exp/t_step) + 1
     T = np.array(range(N)) * t_step
     fr_min = 1/(20 * np.pi)
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     alpha = 20
     Gamma = alpha * np.array([[5, 0], [0, 1]])
     kappa = 0.7
-    Qr = np.array([[50.0, 0.0], [0.0, 1.0]])
+    Qr = np.array([[10.0, 0.0], [0.0, 1.0]])
     Qh = np.array([[0.0, 0.0], [0.0, 0.0]])
     C = Qr
 
@@ -122,9 +122,6 @@ if __name__ == "__main__":
     experiment_handler = Experiment(Bw, Kw, parent_conn, child_conn, screen_width, screen_height, controller, controller_type)
     experiment_data = experiment_handler.experiment(T, r, N, t_step)
     senso_drive_process.join()
-# else:
-#     exit("Something went terribly wrong")
-
 
     # Plot stuff
     plot_stuff = PlotStuff()
