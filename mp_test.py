@@ -23,7 +23,7 @@ class TesterClass:
 
     def do(self):
         N = 10
-        delta = 4 / N
+        delta = 5 / N
         # Send 10 messages
         for i in range(N):
             t0 = time.time()
@@ -31,9 +31,14 @@ class TesterClass:
             parent = self.parent
             parent.send(self.send_dict)  # Child is for sending
             msg = self.parent.recv()  # Receive from child
-            print(msg["steering_angle"], "<-- Angle")
-            print(i*0.2, "<-- Desired torque")
-            print(msg["measured_torque"], "<-- Actual torque")
+            if i == 0:
+                steer_init = msg["steering_angle"]
+                print("initial angle = ", steer_init)
+            else:
+                print(msg["steering_angle"], "<-- Angle")
+                print(i*0.2, "<-- Sent torque")
+                tau_f = - min(i*0.2, 0.183)
+                print("equilibrium angle: ", (i * 0.2 + tau_f)/self.send_dict["stiffness"] + steer_init)
             t = time.time() - t0
             time.sleep(max(0, delta - t))
 

@@ -9,22 +9,33 @@ from Experiment.Controllers.Lowpassfilter_Biquad import LowPassFilterBiquad
 from Experiment.visuals import Visualize
 
 class Experiment:
-    def __init__(self, Bw, Kw, parent_conn, child_conn, screen_width, screen_height, controller, controller_type):
+    def __init__(self, Bw, Kw, data_plotter_conn, parent_conn, child_conn, screen_width, screen_height, full_screen, controller, controller_type, preview):
         # 2 OBJECTS TO DRIVE THE EXPERIMENT
         # 1. Sensodrive, can be called to drive some torque and get sensor data
         super().__init__()
         self.parent_conn = parent_conn
         self.child_conn = child_conn
-        self.send_dict = {"torque": 0,
+        self.data_plotter_conn = data_plotter_conn
+        self.send_dict = {
+            "torque": 0,
             "damping": Bw,
             "stiffness": Kw,
-            "exit": False}
-
+            "exit": False
+        }
+        self.visualize_dict = {
+            "time_stamp": 0,
+            "position": 0,
+            "velocity": 0,
+            "torque": 0,
+            "exit": False
+        }
+        self.preview = preview
         self.damping = Bw
         self.stiffness = Kw
         self.damp = 0
         self.stiff = 0
         self.new_states = {"steering_angle": 0, "measured_torque": 0}
+
 
         # 2. Controller, which manages the inputs to the sensodrive
         self.controller = controller
@@ -40,11 +51,10 @@ class Experiment:
         # self._bq_filter_heading = LowPassFilterBiquad(fc=30, fs=100)
 
         # Initialize pygame visualization
-        self.visualize = Visualize(screen_width, screen_height)
+        self.visualize = Visualize(screen_width, screen_height, self.preview, full_screen)
 
         # States
-        self.states = {"steering_angle": 0.0,
-                       "steering_rate": 0.0,}
+        self.states = {"steering_angle": 0.0, "steering_rate": 0.0}
         self.x = np.array([0.0, 0.0])
         self.estimated_human_gain = np.array([0.0, 0.0])
         self.torque = 0
@@ -52,12 +62,13 @@ class Experiment:
 
         print("init complete!")
 
-    def experiment(self, T, r, N, t_step):
+    def experiment(self, r, N, t_step):
         # Initialize the senso_drive
         self._time_step_in_ns = t_step * 1e9
         self.states['steering_angle'] = 0.0
         self.states['steering_rate'] = 0.0
         self.estimated_human_gain = np.array([0.0, 0.0])
+        preview_samples = round(0.8 / t_step)  # 0.8 seconds of preview
 
         # 3 second start screen
         self.warm_up(duration=3.0, t_step=t_step)
@@ -68,10 +79,8 @@ class Experiment:
         for i in range(N):
             t0 = time.perf_counter_ns()
 
+            # Check whether the process has not been quited
             self.visualize.check_quit()
-
-            # Let's first start by reading out some values
-
 
             # Calculate derivative(s) of reference
             h = t_step
@@ -80,41 +89,26 @@ class Experiment:
             else:
                 ref = np.array([r[i], (r[i]) / (2 * h)])
 
-            # x_ddot = (x[1] - self.x[1]) / t_step
-            # x_ddot_filt, self.xddot_array = self.filter(x_ddot, self.xddot_array)
-
+            # Filter steering rate
             steering_rate_filt = self._bq_filter_velocity.step(self.states["steering_rate"])
             x = np.array([self.states["steering_angle"], steering_rate_filt])
             self.x = x
             x_ddot_filt = 0 # TODO: Fixx!!!
-            # Compute error states
-            xi = x - ref
 
-            # TODO: Mooier maken!
-            max_torque = 20.0
+            # Compute error states
+            xi = np.array([[x[0] - ref[0]], [x[1] - ref[1]]])
+
             if self.controller_type != "Manual":
                 if self.controller_type == "Gain_observer":
+                    # Update human gain estimate and calculate torque
                     torque, estimated_human_torque, robot_gain, estimated_human_gain, uhtilde, cost = \
                         self.controller.compute_control_input(xi, x, x_ddot_filt, self.estimated_human_gain, t_step)
                     self.estimated_human_gain = estimated_human_gain
-                    if float(torque) > max_torque:
-                        # print(torque)
-                        torque = max_torque
-                        print("torque is too high")
-                    elif float(torque) < -max_torque:
-                        print(torque)
-                        torque = -max_torque
-                        print("torque is too high")
                 else:
+                    # Calculate torque
                     torque, cost = self.controller.compute_control_input(xi)
-                    if torque > max_torque:
-                        torque = max_torque
-                        print("torque is too high")
-                    elif float(torque) < -max_torque:
-                        print(torque)
-                        torque = -max_torque
-                        print("torque is too high")
             else:
+                # Manual control, no torque delivered
                 torque = 0
                 cost = 0
 
@@ -127,7 +121,6 @@ class Experiment:
             self.parent_conn.send(self.send_dict)  # Child is for sending
             new_states = self.parent_conn.recv()  # Receive from child
 
-
             if new_states != None:
                 self.new_states = new_states
             else:
@@ -136,12 +129,22 @@ class Experiment:
             self.states["steering_angle"] = self.new_states["steering_angle"]
             real_torque = self.new_states["measured_torque"]
 
-
             # Visualize and rest
-            self.visualize.visualize_experiment(r[i], x[0])
+            if i+preview_samples > N:
+                r_prev = r[i:]
+            else:
+                r_prev = r[i:(i+preview_samples)]
+            self.visualize.visualize_experiment(r[i], r_prev, x[0], text="")
             self.ref = r[i]
+
+            # Visualize realtime
+            self.visualize_dict["time_stamp"] = i*t_step
+            self.visualize_dict["steering_angle"] = self.states["steering_angle"]
+            self.visualize_dict["steering_rate"] = self.states["steering_rate"]
+            self.visualize_dict["torque"] = torque
+            self.data_plotter_conn.send(self.visualize_dict)
+
             execution_time = time.perf_counter_ns() - t0
-            # print(execution_time * 1e-9)
             time.sleep(max(0.0, (self._time_step_in_ns - execution_time) * 1e-9))
 
             output = {
@@ -169,9 +172,12 @@ class Experiment:
             self.store_variables(output)
 
         # Cool down for 3 seconds
+        self.visualize_dict["exit"] = True
+        self.data_plotter_conn.send(self.visualize_dict)
         self.cool_down(duration=3.0, t_step=t_step)
         self.send_dict["exit"] = True
-        self.parent_conn.send(self.send_dict)  # Child is for s
+        self.parent_conn.send(self.send_dict)
+
 
         self.visualize.quit()
 
@@ -181,27 +187,11 @@ class Experiment:
         for key in output.keys():
             self.variables.setdefault(key, []).append(output[key])
 
-    def filter(self, value_new, value_array):
-        # TODO: moet beter dit!
-        max_len = 50
-        value_array.append(value_new)
-        t = range(len(value_array))
-        if len(value_array) > max_len:
-            del value_array[0]
-        if len(value_array) > 27:
-            fc = 10  # Cut-off frequency of the filter
-            fs = 1 / 0.015
-            w = fc / (fs / 2)  # Normalize the frequency
-            b, a = cp.butter(8, w, 'low')
-            v_array_filt = cp.filtfilt(b, a, value_array)
-        else:
-            v_array_filt = value_array
-
-        return v_array_filt[-1], value_array
-
     def warm_up(self, duration, t_step):
         # Slowly activate the damping and stiffness to desired values and show countdown screen
         N = int(duration/t_step)
+        t_start = time.time()
+        i = 0
         for j in range(N):
             # First three seconds countdown
             t0 = time.perf_counter_ns()
@@ -226,7 +216,12 @@ class Experiment:
                 self.states["steering_rate"] = (self.new_states["steering_angle"] - self.states["steering_angle"]) / t_step
                 self.states["steering_angle"] = self.new_states["steering_angle"]
 
-            self.visualize.visualize_experiment(0, angle=self.new_states["steering_angle"])
+            dt = time.time() - t_start
+            if dt < 1:
+                text = "Experiment starts in:"
+            else:
+                text = str(round(duration - dt + 1, 1))
+            self.visualize.visualize_experiment(0, angle=self.new_states["steering_angle"], r_prev=[], text=text)
             execution_time = time.perf_counter_ns() - t0
             # print(execution_time * 1e-9)
             time.sleep(max(0.0, (self._time_step_in_ns - execution_time) * 1e-9))
@@ -261,7 +256,7 @@ class Experiment:
                 self.states["steering_angle"] = self.new_states["steering_angle"]
             ref = 0.98*self.ref
             self.ref = ref
-            self.visualize.visualize_experiment(ref, angle=self.new_states["steering_angle"])
+            self.visualize.visualize_experiment(ref, angle=self.new_states["steering_angle"], r_prev=[], text="Experiment Finished")
             execution_time = time.perf_counter_ns() - t0
             # print(execution_time * 1e-9)
             time.sleep(max(0.0, (self._time_step_in_ns - execution_time) * 1e-9))

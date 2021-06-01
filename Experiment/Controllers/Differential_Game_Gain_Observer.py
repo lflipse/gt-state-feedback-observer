@@ -16,7 +16,7 @@ class ControllerDG_GObs:
         return np.matmul(np.matmul(x.transpose(), self.Qr), x) + u**2
 
     def compute_control_input(self, xi, x, x_dot, Lhhat, time_step):
-        xi_vec = np.array([[xi[0]], [xi[1]]])
+        xi_vec = xi
         x_vec = np.array([[x[0]], [x[1]]])
         x_dot_vec = np.array([[x[1]], [x_dot]])
         uhhat = np.matmul(-Lhhat, xi_vec)
@@ -43,4 +43,4 @@ class ControllerDG_GObs:
         Lhhat_new = Lhhat + Lhhat_dot * time_step
 
         Jr = self.compute_costs(xi, ur)
-        return ur, uhhat, Lr, Lhhat_new, uh_tilde, Jr
+        return ur.flatten(), uhhat, Lr, Lhhat_new, uh_tilde, Jr

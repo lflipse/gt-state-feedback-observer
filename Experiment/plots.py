@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 from datetime import datetime
+import numpy as np
 
 class PlotStuff:
     def __init__(self):
@@ -317,11 +318,20 @@ class PlotStuff:
         ax3b.legend(prop={"size": 8}, loc='lower right')
         ax3b.set(xlim=(0, t[-1]))
 
-        ax3c.plot(t, ureal, tud_red, linewidth=2.5, linestyle="-", alpha=1, label="Measured input $u_{meas}(t)$")
-        ax3c.plot(t, ur, tud_blue, linewidth=2.5, linestyle="--", alpha=1, label="Commanded input $u(t)$")
-        ax3c.plot(t, ur_sim, tud_blue, linewidth=2.5, linestyle="-", alpha=0.7, label="Simulated input $u_{sim}(t)$")
-        ax3c.set_title('Input torque', **csfont)
-        ax3c.set_xlabel('Time (s)', **hfont)
+        delta = x - x_sim[:-1]
+        deltadot = xdot - xdot_sim[:-1]
+        u = np.array(ur)
+        u_sim = np.array(ur_sim)
+        du = u.flatten() - u_sim
+
+
+        ax3c.plot(t, r, tud_black, linewidth=2.5, linestyle="-", alpha=1, label="$r(t)$")
+        ax3c.plot(t, rdot, tud_black, linewidth=1.5, linestyle="-.", alpha=1, label="$\dot{r}(t)$")
+        ax3c.plot(t, delta, tud_blue, linewidth=2.5, linestyle="--", alpha=1, label="$\Delta x(t)$")
+        ax3c.plot(t, deltadot, tud_red, linewidth=1.5, linestyle="-", alpha=0.5, label="$\Delta \dot{x}(t)$")
+        ax3c.plot(t, du, tud_green, linewidth=1.5, linestyle="-", alpha=0.5, label="$\Delta u(t)$")
+        ax3c.set_title('Extra dynamics', **csfont)
+        ax3c.set_xlabel('$\Delta$ position (m)', **hfont)
         ax3c.set_ylabel('Time (s)', **hfont)
         ax3c.legend(prop={"size": 8}, loc='upper right')
         ax3c.set(xlim=(0, t[-1]))

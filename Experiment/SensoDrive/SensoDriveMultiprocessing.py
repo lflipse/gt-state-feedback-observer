@@ -76,7 +76,10 @@ class SensoDriveModule(mp.Process):
                 self.settings['mp_spring_stiffness'] = msg["stiffness"]
                 self.exit = msg["exit"]
                 self.child_channel.send(sensor_data)
+                # print("sent: ", sensor_data)
                 # time.sleep(0.005) # <-- has no effect
+
+            # time.sleep(0.005)
 
         print("sent ", self.count_senso, " messages to sensodrive")
         print("received ", self.count_loop, " messages from controller")
@@ -105,6 +108,8 @@ class SensoDriveModule(mp.Process):
         self.write_and_read(msgtype="20012", data=None)
         self.write_and_read(msgtype="20014", data=None)
         print("Initialization succesful!")
+
+        # TODO : FIXX ---->> when motor is not turned on stop process and give warning.
 
         # TODO: Referencing mode to align steering wheel to 0 position!
 
@@ -168,9 +173,13 @@ class SensoDriveModule(mp.Process):
         self.pcan_object.Write(self._pcan_channel, self.message)
 
         self.received_ok = 1
+        t0 = time.time()
         while self.received_ok > 0:
             received = self.pcan_object.Read(self._pcan_channel)
             self.received_ok = received[0]
+            if time.time() - t0 > 2:
+                exit("This should not take this long. Check if the motor is connected!")
+
 
         output = self.map_sensodrive_to_si(received)
 
@@ -181,8 +190,17 @@ class SensoDriveModule(mp.Process):
         """
         Converts settings to sensodrive message
         """
-        # print(settings['mp_torque'])
+
         if settings != None:
+            # print(settings['mp_torque'])
+            # Limit the torque manually if it goes over a barrier of 10 Nm and output warning!
+            if settings["mp_torque"] > 10:
+                settings["mp_torque"] = 10
+                print("Torque is too high, what happend?")
+            elif settings["mp_torque"] < -10:
+                settings["mp_torque"] = -10
+                print("Torque is too high, what happend?")
+
             torque = int(settings['mp_torque'] * 1000.0)
             friction = int(settings['mp_friction'] * 1000.0)
             damping = int(settings['mp_damping'] * 1000.0 * (2.0 * math.pi) / 60.0)

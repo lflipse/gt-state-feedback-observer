@@ -36,4 +36,4 @@ class ControllerDG:
     def compute_control_input(self, xi):
         ur = - np.matmul(self.Lr, xi)
         Jr = self.compute_costs(xi, ur)
-        return ur, Jr
+        return ur.flatten(), Jr

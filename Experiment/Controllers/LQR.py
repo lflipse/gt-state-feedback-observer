@@ -15,5 +15,6 @@ class ControllerLQ:
 
     def compute_control_input(self, xi):
         ur = - np.matmul(self.Lr, xi)
+        # print("L, xi, ur: ", self.Lr, xi, ur)
         Jr = self.compute_costs(xi, ur)
-        return ur, Jr
+        return ur.flatten(), Jr
