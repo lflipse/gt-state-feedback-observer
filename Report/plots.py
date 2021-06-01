@@ -298,18 +298,18 @@ class PlotStuff:
         ax2f = fig2.add_subplot(gs2[1, 0:3])
         ax2g = fig2.add_subplot(gs2[1, 3:6])
 
-        ax2a.plot(T, Lh1[:, 0], tud_red, linestyle="-", label="$L_{h,1}^1(t)$")
-        ax2b.plot(T, Lh1[:, 1], tud_red, linestyle="-", label="$L_{h,2}^1(t)$")
-        ax2a.plot(T, Lh2[:, 0], tud_blue, linestyle="-", label="$L_{h,1}^2(t)$")
-        ax2b.plot(T, Lh2[:, 1], tud_blue, linestyle="-", label="$L_{h,2}^2(t)$")
+        ax2a.plot(T, Lh1[:, 0], tud_red, linestyle="-", alpha=0.5, linewidth=2, label="$L_{h,1}^1(t)$")
+        ax2b.plot(T, Lh1[:, 1], tud_red, linestyle="-", alpha=0.5, linewidth=2, label="$L_{h,2}^1(t)$")
+        ax2a.plot(T, Lh2[:, 0], tud_blue, linestyle="-", alpha=0.5, linewidth=2, label="$L_{h,1}^2(t)$")
+        ax2b.plot(T, Lh2[:, 1], tud_blue, linestyle="-", alpha=0.5, linewidth=2, label="$L_{h,2}^2(t)$")
         # ax2a.plot(T, Lr2[:, 0], tud_blue, linestyle="-", label="$L_{r,1}(t)$")
         # ax2b.plot(T, Lr2[:, 1], tud_blue, linestyle="-", label="$L_{r,2}(t)$")
         if c > 1:
-            ax2a.plot(T, Lhhat1[:, 0], tud_red, linestyle="--", alpha=0.5, label="$\hat{L}_{h,1}^1(t)$")
-            ax2b.plot(T, Lhhat1[:, 1], tud_red, linestyle="--", alpha=0.5, label="$\hat{L}_{h,2}^1(t)$")
+            ax2a.plot(T, Lhhat1[:, 0], tud_red, linestyle="--", alpha=1, linewidth=2, label="$\hat{L}_{h,1}^1(t)$")
+            ax2b.plot(T, Lhhat1[:, 1], tud_red, linestyle="--", alpha=1, linewidth=2, label="$\hat{L}_{h,2}^1(t)$")
         if c_compare > 1:
-            ax2a.plot(T, Lhhat2[:, 0], tud_blue, linestyle="--", alpha=0.5, label="$\hat{L}_{h,1}^2(t)$")
-            ax2b.plot(T, Lhhat2[:, 1], tud_blue, linestyle="--", alpha=0.5, label="$\hat{L}_{h,2}^2(t)$")
+            ax2a.plot(T, Lhhat2[:, 0], tud_blue, linestyle="--", alpha=1, linewidth=2, label="$\hat{L}_{h,1}^2(t)$")
+            ax2b.plot(T, Lhhat2[:, 1], tud_blue, linestyle="--", alpha=1, linewidth=2, label="$\hat{L}_{h,2}^2(t)$")
 
         ax2a.set_title('Human position gain', **csfont)
         ax2a.set_xlabel('Time (s)', **hfont)
@@ -323,18 +323,18 @@ class PlotStuff:
         ax2b.legend(prop={"size": 8}, loc='upper right')
         ax2b.set(xlim=(0, t))
 
-        ax2f.plot(T, Qh1[:, 0, 0], tud_red, label="$Q_{h,(1,1)}^1(t)$")
+        ax2f.plot(T, Qh1[:, 0, 0], tud_black, alpha=0.5, linewidth=2, label="$Q_{h,(1,1)}(t)$")
         if c > 1:
-            ax2f.plot(T, Qhhat1[:-1, 0, 0], tud_red, linestyle="--", alpha=0.5, label="$\hat{Q}_{h,(1,1)}^1(t)$")
+            ax2f.plot(T, Qhhat1[:-1, 0, 0], tud_red, linestyle="--", linewidth=2, alpha=1, label="$\hat{Q}_{h,(1,1)}^1(t)$")
         if c_compare > 1:
-            ax2f.plot(T, Qhhat2[:-1, 0, 0], tud_red, linestyle="-.", alpha=0.5, label="$\hat{Q}_{h,(1,1)}^1(t)$")
-        ax2f.plot(T, Qr1[:, 0, 0], tud_blue, label="$Q_{r,(1,1)}^1(t)$")
-        ax2g.plot(T, Qh2[:, 1, 1], tud_red, label="$Q_{h,(2,2)}^1(t)$")
+            ax2f.plot(T, Qhhat2[:-1, 0, 0], tud_blue, linestyle="--", linewidth=2, alpha=1, label="$\hat{Q}_{h,(1,1)}^2(t)$")
+        # ax2f.plot(T, Qr1[:, 0, 0], tud_blue, label="$Q_{r,(1,1)}^1(t)$")
+        ax2g.plot(T, Qh2[:, 1, 1], tud_black, alpha=0.5, linewidth=2, label="$Q_{h,(2,2)}(t)$")
         if c > 1:
-            ax2g.plot(T, Qhhat1[:-1, 1, 1], tud_red, linestyle="--", alpha=0.5, label="$\hat{Q}_{h,(2,2)}^1(t)$")
+            ax2g.plot(T, Qhhat1[:-1, 1, 1], tud_red, linestyle="--", linewidth=2, alpha=1, label="$\hat{Q}_{h,(2,2)}^1(t)$")
         if c_compare > 1:
-            ax2g.plot(T, Qhhat2[:-1, 1, 1], tud_red, linestyle="-.", alpha=0.5, label="$\hat{Q}_{h,(2,2)}^1(t)$")
-        ax2g.plot(T, Qr2[:, 1, 1], tud_blue, label="$Q_{r,(2,2)}^1(t)$")
+            ax2g.plot(T, Qhhat2[:-1, 1, 1], tud_blue, linestyle="--", linewidth=2, alpha=1, label="$\hat{Q}_{h,(2,2)}^2(t)$")
+        # ax2g.plot(T, Qr2[:, 1, 1], tud_blue, label="$Q_{r,(2,2)}^1(t)$")
 
 
 

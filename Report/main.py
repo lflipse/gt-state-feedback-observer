@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from Lyapunov_Li2019 import ControllerLi
-from Normalized_Gradient_Flipse import ControllerNG
+# from Normalized_Gradient_Flipse import ControllerNG
+from Normalized_Gradient_Flipse_w_Observer import ControllerNG
 from Differential_Game import ControllerDG
 from LQR import ControllerLQ
 from plots import PlotStuff
@@ -15,7 +16,7 @@ def ask_input():
     D = -0.2  # N/m
 
     # Steering wheel dynamics
-    Jw = 0.5
+    Jw = 0.044
     Bw = 1
     Kw = 4
 
@@ -182,7 +183,7 @@ vel0 = 0
 
 # Simulated Human Settings
 # True cost values
-Qh = np.array([[0, 0], [0, 0]])
+Qh = np.array([[20, 0], [0, 2]])
 C = np.array([[50, 0], [0, 5]])
 
 A, B, c, d, s, e, c_compare, save, controller, controller_name, controller_compare, \
@@ -213,12 +214,12 @@ if e < 2:
     if c == 0:
         # Full-information w/ Newton-Rhapson method
         controls = ControllerLQ(A, B, mu, sigma)
-        inputs["robot_weight"] = 0.5 * Qh
+        inputs["robot_weight"] = C
 
     elif c == 1:
         # Full-information w/ Newton-Rhapson method
         controls = ControllerDG(A, B, mu, sigma)
-        inputs["robot_weight"] = 0.5 * Qh
+        inputs["robot_weight"] = C
 
     elif c == 2:
         # Lyapunov (Li2019)
@@ -228,7 +229,7 @@ if e < 2:
         elif d == 1:
             alpha = 100000
         elif d == 2:
-            alpha = 400
+            alpha = 6
 
         Gamma = np.array([[2, 0], [0, 2]])
         controls = ControllerLi(A, B, mu, sigma)
@@ -243,7 +244,7 @@ if e < 2:
         elif d == 1:
             alpha = 25000
         elif d == 2:
-            alpha = 1
+            alpha = 2
         Gamma = alpha * np.array([[5, 0], [0, 1]])
         kappa = 2
         controls = ControllerNG(A, B, mu, sigma)
@@ -291,7 +292,7 @@ if e < 2:
             elif d == 1:
                 alpha = 100000
             elif d == 2:
-                alpha = 400
+                alpha = 6
 
             Gamma = np.array([[2, 0], [0, 2]])
             controls2 = ControllerLi(A, B, mu, sigma)
@@ -306,7 +307,7 @@ if e < 2:
             elif d == 1:
                 alpha = 25000
             elif d == 2:
-                alpha = 80
+                alpha = 2
             Gamma = alpha * np.array([[5, 0], [0, 2]])
             kappa = 2
             controls2 = ControllerNG(A, B, mu, sigma)

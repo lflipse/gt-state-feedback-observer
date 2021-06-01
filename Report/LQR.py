@@ -8,6 +8,7 @@ class ControllerLQ:
         self.B = B
         self.mu = mu
         self.sigma = sigma
+        print(A, B)
 
     def numerical_integration(self, r, ur, uh, y, h):
         k1 = h * self.ydot(r, ur, uh, y)
@@ -16,12 +17,22 @@ class ControllerLQ:
         k4 = h * self.ydot(r, ur, uh, y + k3)
 
         # Update next value of y
-        y_new = y + (1.0 / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
-        return y_new
+        # y_new = y + (1.0 / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
+
+        y_new = y + h * self.ydot(r, ur, uh, y)
+
+        return y_new.flatten()
 
     def ydot(self, r, u, uh, y):
         x = y
-        return np.matmul(self.A, x) + np.matmul(self.B, np.array([u+uh]))
+        # Compensate friction
+        # if u > 0:
+        #     tau_f = - min(u, 0.183)
+        # else:
+        #     tau_f = max(u, -0.183)
+        tau_f = 0
+        xdot = np.matmul(self.A, x) + self.B * (u + uh + tau_f)
+        return xdot
 
     def compute_costs(self, x, u, Q):
         return np.matmul(np.matmul(x.transpose(), Q), x) + u**2
@@ -37,6 +48,7 @@ class ControllerLQ:
         r = inputs["reference_signal"]
         Qh0 = inputs["human_weight"]
         Qr0 = inputs["robot_weight"]
+        x0 = inputs["initial_state"]
         T = np.array(range(N)) * h
 
         Pr = cp.solve_continuous_are(self.A, self.B, Qr0, 1)
@@ -50,6 +62,7 @@ class ControllerLQ:
         print("Controller gains then are computed as: L_r = ", Lr0, " and L_h = ", Lh0)
 
         x = np.zeros((N + 1, 2))
+        x[0, :] = x0
         ref = np.zeros((N, 2))
         e = np.zeros((N, 2))
         ur = np.zeros(N)
@@ -68,7 +81,7 @@ class ControllerLQ:
             if i > 0:
                 ref[i, :] = np.array([r[i], (r[i] - r[i - 1]) / h])
             else:
-                ref[i, :] = np.array([r[i], (r[i]) / h])
+                ref[i, :] = np.array([r[i], (r[i]) / (2 * h)])
 
             # Derive inputs
             Qr[i, :, :] = Qr0
@@ -81,7 +94,9 @@ class ControllerLQ:
             Jh[i] = self.compute_costs(e[i, :], uh[i], Qh0)
             Jr[i] = self.compute_costs(e[i, :], ur[i], Qr0)
 
-            x[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], x[i, :], h)
+            x_vec = np.array([[x[i, 0]], [x[i, 1]]])
+
+            x[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], x_vec, h)
             v[i] = np.random.normal(self.mu, self.sigma, 1)
             x[i + 1, 1] += v[i]
 

@@ -90,6 +90,8 @@ class ControllerDG:
             else:
                 ref[i, :] = np.array([r[i], (r[i]) / h])
 
+            v = np.random.normal(self.mu, self.sigma, 1)
+
             # Derive inputs
             Qr[i, :, :] = Qr0
             Qh[i, :, :] = Qh0
@@ -102,7 +104,7 @@ class ControllerDG:
             Jr[i] = self.compute_costs(e[i, :], ur[i], Qr0)
 
             x[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], x[i, :], h)
-            v = np.random.normal(self.mu, self.sigma, 1)
+
             x[i + 1, 1] += v
 
         outputs = {
