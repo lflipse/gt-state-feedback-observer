@@ -26,11 +26,10 @@ class ControllerLQ:
     def ydot(self, r, u, uh, y):
         x = y
         # Compensate friction
-        # if u > 0:
-        #     tau_f = - min(u, 0.183)
-        # else:
-        #     tau_f = max(u, -0.183)
+        mag = 0.2
+        # tau_f = - mag / (1 + np.exp(-2*x[1])) + mag / (1 + np.exp(2*x[1]))
         tau_f = 0
+
         xdot = np.matmul(self.A, x) + self.B * (u + uh + tau_f)
         return xdot
 
@@ -49,6 +48,7 @@ class ControllerLQ:
         Qh0 = inputs["human_weight"]
         Qr0 = inputs["robot_weight"]
         x0 = inputs["initial_state"]
+        r0 = inputs["initial_ref"]
         T = np.array(range(N)) * h
 
         Pr = cp.solve_continuous_are(self.A, self.B, Qr0, 1)
@@ -75,30 +75,33 @@ class ControllerLQ:
         Qh = np.zeros((N, 2, 2))
         Qr = np.zeros((N, 2, 2))
 
+        # r.flatten()
 
-        for i in range(N):
+
+
+        for l in range(N):
             # print(r[i])
-            if i > 0:
-                ref[i, :] = np.array([r[i], (r[i] - r[i - 1]) / h])
+            if l > 0:
+                ref[l, :] = np.array([r[l], (r[l] - r[l - 1]) / h])
             else:
-                ref[i, :] = np.array([r[i], (r[i]) / (2 * h)])
+                ref[l, :] = r0
 
             # Derive inputs
-            Qr[i, :, :] = Qr0
-            Qh[i, :, :] = Qh0
-            Lh[i, :] = Lh0
-            Lr[i, :] = Lr0
-            e[i, :] = x[i, :] - ref[i, :]
-            ur[i] = np.matmul(-Lr0, e[i, :])
-            uh[i] = np.matmul(-Lh0, e[i, :])
-            Jh[i] = self.compute_costs(e[i, :], uh[i], Qh0)
-            Jr[i] = self.compute_costs(e[i, :], ur[i], Qr0)
+            Qr[l, :, :] = Qr0
+            Qh[l, :, :] = Qh0
+            Lh[l, :] = Lh0
+            Lr[l, :] = Lr0
+            e[l, :] = x[l, :] - ref[l, :]
+            ur[l] = np.matmul(-Lr0, e[l, :])
+            uh[l] = np.matmul(-Lh0, e[l, :])
+            Jh[l] = self.compute_costs(e[l, :], uh[l], Qh0)
+            Jr[l] = self.compute_costs(e[l, :], ur[l], Qr0)
 
-            x_vec = np.array([[x[i, 0]], [x[i, 1]]])
+            x_vec = np.array([[x[l, 0]], [x[l, 1]]])
 
-            x[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], x_vec, h)
-            v[i] = np.random.normal(self.mu, self.sigma, 1)
-            x[i + 1, 1] += v[i]
+            x[l + 1, :] = self.numerical_integration(ref[l, :], ur[l], uh[l], x_vec, h)
+            v[l] = np.random.normal(self.mu, self.sigma, 1)
+            x[l + 1, 1] += v[l]
 
         outputs = {
             "time": T,
