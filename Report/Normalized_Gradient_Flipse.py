@@ -88,17 +88,23 @@ class ControllerNG:
         start = time.time()
 
         # Unpack dictionary
+        # Unpack dictionary
         N = inputs["simulation_steps"]
-        h = inputs["step_size"]
-        r = inputs["reference_signal"]
+        h = inputs["step_size"] + 0.00098
         Qh0 = inputs["human_weight"]
+        Qr0 = inputs["robot_weight"]
+        x0 = inputs["initial_state"]
+        u0 = inputs["u_initial"]
+        e0 = inputs["e_initial"]
         kappa = inputs["kappa"]
         Gamma = inputs["Gamma"]
         C = inputs["sharing_rule"]
         bias = inputs["gain_estimation_bias"]
+        ref = np.array(inputs["reference"])
         T = np.array(range(N)) * h
 
         y = np.zeros((N + 1, 4))
+        y[0, 0:2] = x0
 
         # Estimator vectors
         Qhhat = np.zeros((N + 1, 2, 2))
@@ -113,7 +119,6 @@ class ControllerNG:
         # Real vectors
         Lh = np.zeros((N, 2))
         Lr = np.zeros((N, 2))
-        ref = np.zeros((N, 2))
         e = np.zeros((N, 2))
         xhhat = np.zeros((N, 2))
         ur = np.zeros(N)
@@ -123,6 +128,9 @@ class ControllerNG:
         Jh = np.zeros(N)
         Jhhat = np.zeros(N)
         Jr = np.zeros(N)
+        e[0, :] = e0
+        ur[0] = u0
+
 
 
         for i in range(N):
@@ -131,10 +139,6 @@ class ControllerNG:
             Qh[i, :, :] = Qh0
 
             # Calcuate derivative(s) of reference
-            if i > 0:
-                ref[i, :] = np.array([r[i], (r[i] - r[i - 1]) / h])
-            else:
-                ref[i, :] = np.array([r[i], (r[i]) / h])
 
             # Compute inputs
             e[i, :] = (y[i, 0:2] - ref[i, :])
