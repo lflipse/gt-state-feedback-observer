@@ -38,6 +38,8 @@ class GreyBox:
         self.phidot_sim_init = None
         self.phi_sim_final = None
         self.phidot_sim_final = None
+        self.phi_sim_lin = None
+        self.phidot_sim_lin = None
 
         self.file_csv = "file.csv"
 
@@ -51,8 +53,8 @@ class GreyBox:
 
     def generate_data_set(self):
         for i in range(self.n):
-            self.Bw = 0.2
-            self.Kw = 0.5
+            self.Bw = 0.5
+            self.Kw = 0.0
             self.send_dict["stiffness"] = self.Kw
             self.send_dict["damping"] = self.Bw
             time.sleep(1.0)
@@ -108,34 +110,42 @@ class GreyBox:
 
     def optimize(self):
         # Initial guess
-        J = 0.0447
-        m = 0.5
+        J = 0.01
+        m = 0.1
         dh = 0.0
         dl = 0.0
         # tau_fric = -0.2
         # tau_kin = 0.1
-        vt = 1
-        tau_f = 0.0
-        tau_d = 0.0
+        vt = 0.2
+        tau_f = -0.1
+        tau_d = -0.1
 
         p0 = np.array([J, m, dh, dl, vt, tau_f, tau_d])
-        bounds_vec = np.array([(0.001, 0.07), (0.2, 0.8), (-0.15, 0.15), (-0.15, 0.15), (0.05, 3),
+        bounds_vec = np.array([(0.001, 0.1), (0.2, 0.8), (-0.15, 0.15), (-0.15, 0.15), (0.05, 3),
                                (-0.4, 0.0), (-0.5, 0.0)])
 
-        self.simulate_experiment(p0)
+        self.simulate_experiment(p0, linear=False)
         self.phi_sim_init = self.saved_states["steering_angle"]
         self.phidot_sim_init = self.saved_states["steering_rate"]
 
         # Optimize
-        p = cp.minimize(self.fun, p0, method='SLSQP', bounds=bounds_vec)
-        print("Results: ", p)
-        p_opt = np.array(p["x"])
+        # Cold-start
+        p_cs = cp.minimize(self.fun, p0, method='SLSQP', bounds=bounds_vec)
+        print("Results cold-start: ", p_cs)
+
+        # Warm-start
+        # p_ws = cp.minimize(self.fun, p0, method='trust-constr', bounds=bounds_vec)
+        # print("Results warm-start: ", p_ws)
+        p_opt = np.array(p_cs["x"])
 
         self.show_nonlins(p_opt[5], p_opt[6], p_opt[4])
 
-        self.simulate_experiment(p_opt)
+        self.simulate_experiment(p_opt, linear=False)
         self.phi_sim_final = self.saved_states["steering_angle"]
         self.phidot_sim_final = self.saved_states["steering_rate"]
+        self.simulate_experiment(p_opt, linear=True)
+        self.phi_sim_lin = self.saved_states["steering_angle"]
+        self.phidot_sim_lin = self.saved_states["steering_rate"]
 
     def plot_data(self):
         csfont = {'fontname': 'Georgia'}
@@ -170,6 +180,7 @@ class GreyBox:
         plt.plot(t, phi, tud_blue, linewidth=2.5, label="Measured $\phi(t)$")
         plt.plot(t, self.phi_sim_init, tud_red, linewidth=2.5, label="Initial $\hat{\phi}(t)$")
         plt.plot(t, self.phi_sim_final, tud_green, linewidth=2.5, label="Final $\hat{\phi}(t)$")
+        plt.plot(t, self.phi_sim_lin, tud_yellow, linewidth=2.5, label="Linear $\dot{\hat{\phi}}(t)$")
         plt.title("Steering angle comparison", **csfont)
         plt.xlabel("Time (s)", **hfont)
         plt.ylabel("Steering angle (rad)", **hfont)
@@ -179,9 +190,19 @@ class GreyBox:
         plt.plot(t, phidot, tud_blue, linewidth=2.5, label="Measured $\dot{\phi}(t)$")
         plt.plot(t, self.phidot_sim_init, tud_red, linewidth=2.5, label="Initial $\dot{\hat{\phi}}(t)$")
         plt.plot(t, self.phidot_sim_final, tud_green, linewidth=2.5, label="Final $\dot{\hat{\phi}}(t)$")
+        plt.plot(t, self.phidot_sim_lin, tud_yellow, linewidth=2.5, label="Linear $\dot{\hat{\phi}}(t)$")
         plt.title("Steering rate comparison", **csfont)
         plt.xlabel("Time (s)", **hfont)
         plt.ylabel("Steering rate (rad/s)", **hfont)
+        plt.legend()
+
+        plt.figure()
+        plt.plot(t, u, tud_black, linewidth=1.5, label="input $u(t)$")
+        plt.plot(t, np.array(phi) - np.array(self.phi_sim_final), tud_red, linewidth=2.5, label="$\Delta \phi(t)$")
+        plt.plot(t, np.array(phidot) - np.array(self.phidot_sim_final), tud_green, linewidth=2.5, label="$\Delta \dot{\hat{\phi}}(t)$")
+        plt.title("Difference measured and simulated states", **csfont)
+        plt.xlabel("Time (s)", **hfont)
+        plt.ylabel("Difference in magnitude", **hfont)
         plt.legend()
 
         plt.show()
@@ -199,7 +220,7 @@ class GreyBox:
         return torque
 
     def fun(self, p):
-        self.simulate_experiment(p)
+        self.simulate_experiment(p, linear=False)
         phi = self.data_set["steering_angle"]
         phi_sim = self.saved_states["steering_angle"]
         phidot = self.data_set["steering_rate"]
@@ -273,7 +294,7 @@ class GreyBox:
         for key in save_state.keys():
             self.saved_states.setdefault(key, []).append(save_state[key])
 
-    def dynamics(self, x, u, p, b, k):
+    def dynamics(self, x, u, p, b, k, linear):
         g = 9.81
         J = p[0]
         m = p[1]
@@ -296,11 +317,14 @@ class GreyBox:
 
         # Dynamic equations
         phidot = x[1]
-        phiddot = 1/J * (-(b+tau_kin) * x[1] - k * x[0] + u + tau_g + tau_f)
+        if linear is not True:
+            phiddot = 1/J * (-(b+tau_kin) * x[1] - k * x[0] + u + tau_g + tau_f)
+        else:
+            phiddot = 1 / J * (-(b + tau_kin) * x[1] - k * x[0] + u)
         xdot = np.array([phidot, phiddot])
         return xdot
 
-    def simulate_experiment(self, p):
+    def simulate_experiment(self, p, linear):
         t_ex = self.data_set["execution_time"]
         u = self.data_set["torque"]
         b = self.data_set["damping"]
@@ -314,7 +338,7 @@ class GreyBox:
 
         for i in range(N-1):
             h = t_ex[i]
-            xdot = self.dynamics(self.x, u[i], p, b[i], k[i])
+            xdot = self.dynamics(self.x, u[i], p, b[i], k[i], linear)
 
             x_new = h * xdot + self.x
             save_state = {"steering_angle": x_new[0], "steering_rate": x_new[1]}
