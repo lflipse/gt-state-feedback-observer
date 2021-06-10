@@ -22,8 +22,8 @@ class GreyBox:
         self.Bw = 0
         self.Kw = 0
 
-        self.n = 1  # No. settings
-        self.duration = 10  # Seconds per experiment
+        self.n = 3  # No. settings
+        self.duration = 40  # Seconds per experiment
 
         self.parent_conn = parent_conn
         self.child_conn = child_conn
@@ -43,23 +43,54 @@ class GreyBox:
 
         self.file_csv = "file.csv"
 
+        # Forcing function
+        period = [5, 8, 11, 17, 26, 43, 71, 131, 233, 431]
+        phases = np.random.randn(10)
+        # print(phases)
+        amp = 0.3
+        amplitude = amp * np.array([1, 1, 1, 1, 1, 1, 1, 1, 0.22, 0.22])
+        self.forcing_function = {
+            'period': period,
+            'phases': phases,
+            'amplitude': amplitude,
+        }
+
+        # Show forcing function:
+        fs = 100
+        n = int(fs * self.duration)
+        t = np.array(range(n)) /fs
+        u = np.zeros(n)
+        for i in range(n):
+            u[i] = self.compute_torque(t[i])
+
+        # plt.plot(t,u)
+        # plt.show()
+
     def do(self):
         # Check whether to create or load dataset
         if self.senso_drive_process is not None:
-            self.generate_data_set()
+            self.generate_data_set(validation=False)
         self.load_data_set()
         self.optimize()
         self.plot_data()
 
-    def generate_data_set(self):
-        for i in range(self.n):
-            self.Bw = 0.5
+    def generate_data_set(self, validation):
+        if validation is False:
+            # Identification set
+            b = [0.4, 0.6, 0.8]
+        else:
+            # Validation set
+            b = [0.45, 0.6, 0.75]
+
+        time.sleep(1.0)
+        t0 = time.time()
+        t_last = time.time()
+
+        for i in range(len(b)):
+            self.Bw = b[i]
             self.Kw = 0.0
             self.send_dict["stiffness"] = self.Kw
             self.send_dict["damping"] = self.Bw
-            time.sleep(1.0)
-            t0 = time.time()
-            t_last = time.time()
             while time.time() - t0 < self.duration:
                 self.send_dict["torque"] = self.compute_torque(t_last - t0)
                 self.send_dict["exit"] = False
@@ -110,18 +141,19 @@ class GreyBox:
 
     def optimize(self):
         # Initial guess
-        J = 0.01
-        m = 0.1
+        J = 0.047
+        m = 0.26
         dh = 0.0
         dl = 0.0
         # tau_fric = -0.2
         # tau_kin = 0.1
-        vt = 0.2
-        tau_f = -0.1
-        tau_d = -0.1
+        vt = 0.8
+        tau_f = -0.4
+        tau_d = -0.5
+        tau_k = 0
 
         p0 = np.array([J, m, dh, dl, vt, tau_f, tau_d])
-        bounds_vec = np.array([(0.001, 0.1), (0.2, 0.8), (-0.15, 0.15), (-0.15, 0.15), (0.05, 3),
+        bounds_vec = np.array([(0.001, 0.1), (0.2, 1.0), (-0.15, 0.15), (-0.15, 0.15), (0.05, 3),
                                (-0.4, 0.0), (-0.5, 0.0)])
 
         self.simulate_experiment(p0, linear=False)
@@ -130,7 +162,14 @@ class GreyBox:
 
         # Optimize
         # Cold-start
-        p_cs = cp.minimize(self.fun, p0, method='SLSQP', bounds=bounds_vec)
+        options = {
+            'maxiter': 10000,
+            'maxcor': 20,
+            'ftol': 1e-10,
+            'gtol': 1e-7,
+            'eps': 1e-9,
+        }
+        p_cs = cp.minimize(self.fun, p0, method='L-BFGS-B', bounds=bounds_vec, options=options)
         print("Results cold-start: ", p_cs)
 
         # Warm-start
@@ -138,7 +177,7 @@ class GreyBox:
         # print("Results warm-start: ", p_ws)
         p_opt = np.array(p_cs["x"])
 
-        self.show_nonlins(p_opt[5], p_opt[6], p_opt[4])
+        self.show_nonlins(p_opt[1], p_opt[2], p_opt[3], p_opt[5], p_opt[6], p_opt[4])
 
         self.simulate_experiment(p_opt, linear=False)
         self.phi_sim_final = self.saved_states["steering_angle"]
@@ -215,8 +254,13 @@ class GreyBox:
         df.to_csv(self.file_csv)
 
     def compute_torque(self, t):
-        fs = 4
-        torque = 0.7 * np.sin(2 * np.pi * t / fs) + 0.4 * np.cos(2 * np.pi * t / (3.7*fs))
+        period = self.forcing_function["period"]
+        phases = self.forcing_function["phases"]
+        amplitude = self.forcing_function["amplitude"]
+        torque = 0
+        for i in range(10):
+            wt = (2*period[i] / self.duration) * (2 * np.pi)
+            torque += amplitude[i] * np.sin(wt * t + phases[i])
         return torque
 
     def fun(self, p):
@@ -227,10 +271,10 @@ class GreyBox:
         phidot_sim = self.saved_states["steering_rate"]
         dphi = np.array(phi) - np.array(phi_sim)
         dphidot = np.array(phidot) - np.array(phidot_sim)
-        cost = 3*np.inner(dphi, dphi) + np.inner(dphidot, dphidot)
+        cost = 5*np.inner(dphi, dphi) + 2*np.inner(dphidot, dphidot)
         return cost
 
-    def show_nonlins(self, tau_f, tau_d, vt):
+    def show_nonlins(self, m, dh, dl, tau_f, tau_d, vt):
         # Styles
         csfont = {'fontname': 'Georgia'}
         hfont = {'fontname': 'Georgia'}
@@ -272,7 +316,8 @@ class GreyBox:
         plt.tight_layout(pad=1)
 
         phi = np.linspace(-np.pi, np.pi, 200)
-        tau_g = 0.3 * 9.81 * 0.05 * np.sin(phi)
+        g = 9.81
+        tau_g = - m * g * dh * np.sin(phi) - m * g * dl * np.cos(phi)
 
         plt.figure()
         fac = 360 / (2 * np.pi)
@@ -295,15 +340,16 @@ class GreyBox:
             self.saved_states.setdefault(key, []).append(save_state[key])
 
     def dynamics(self, x, u, p, b, k, linear):
+        # Parameters
         g = 9.81
         J = p[0]
         m = p[1]
         dh = p[2]
         dl = p[3]
         vt = p[4]
-        vsp = 3*vt
-        tau_d = p[5]
-        tau_fric = p[6]
+        vsp = 2 * vt
+        tau_fric = p[5]
+        tau_d = p[6]
         tau_kin = 0
 
         # Gravity
@@ -318,7 +364,7 @@ class GreyBox:
         # Dynamic equations
         phidot = x[1]
         if linear is not True:
-            phiddot = 1/J * (-(b+tau_kin) * x[1] - k * x[0] + u + tau_g + tau_f)
+            phiddot = 1/J * (-b * x[1] - k * x[0] + u + tau_g + tau_f)
         else:
             phiddot = 1 / J * (-(b + tau_kin) * x[1] - k * x[0] + u)
         xdot = np.array([phidot, phiddot])
@@ -345,12 +391,10 @@ class GreyBox:
             self.save_states(save_state)
             self.x = x_new
 
-
 if __name__ == "__main__":
 
     if platform.system() == 'Windows':
         with wres.set_resolution(10000):
-
             set_data = input("Generate data set? 0: No, 1: Yes.    Your answer = ")
 
             # Activate sensodrive
@@ -365,4 +409,3 @@ if __name__ == "__main__":
                 exit("That is no option")
             greybox = GreyBox(parent_conn, child_conn, senso_drive_process)
             greybox.do()
-

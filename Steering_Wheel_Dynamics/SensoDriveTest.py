@@ -19,6 +19,7 @@ class SensoDriveModule(mp.Process):
         self.time_step = 1 / self.frequency
         self._time_step_in_ns = self.time_step * 1e9
         self._bq_filter_velocity = LowPassFilterBiquad(fc=30, fs=self.frequency)
+        self.last_time = time.perf_counter_ns()
 
         self.count_loop = 0
         self.count_senso = 0
@@ -87,12 +88,15 @@ class SensoDriveModule(mp.Process):
         print("running process has started")
         self.initialize()
         while not self.exit:
-            t0 = time.perf_counter_ns()
+
             self.count_senso += 1
 
             # Compute control input using states, read out data and update states
             sensor_data = self.write_and_read(msgtype="201", data=self.settings)
-            self.update_states(sensor_data)
+            self.now = time.perf_counter_ns()
+            delta = (self.now - self.last_time) * 1e-9
+            self.last_time = self.now
+            self.update_states(sensor_data, delta)
             data_available = self.child_channel.poll()
 
             # When data is available, receive new reference value
@@ -107,11 +111,7 @@ class SensoDriveModule(mp.Process):
                 self.exit = msg["exit"]
                 self.child_channel.send(self.states)
 
-            execution_time = time.perf_counter_ns() - t0
-            # dt = (self._time_step_in_ns - execution_time) * 1e-9
-            # time.sleep(max(0.0, dt))
-            # if dt < 0:
-            #     print("Sensoloop is going too slow")
+
 
         print("sent ", self.count_senso, " messages to sensodrive")
         print("received ", self.count_loop, " messages from controller")
@@ -161,9 +161,9 @@ class SensoDriveModule(mp.Process):
 
         # TODO: Referencing mode to align steering wheel to 0 position!
 
-    def update_states(self, sensor_data):
+    def update_states(self, sensor_data, delta):
         steering_angle = sensor_data["steering_angle"]
-        steering_rate = (steering_angle - self.states["steering_angle"]) / self.time_step
+        steering_rate = (steering_angle - self.states["steering_angle"]) / delta
         self.states["steering_rate"] = self._bq_filter_velocity.step(steering_rate)
         self.states["steering_angle"] = steering_angle
         self.states["state"] = np.array([[self.states["steering_angle"]],
