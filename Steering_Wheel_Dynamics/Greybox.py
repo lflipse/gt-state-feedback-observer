@@ -9,6 +9,7 @@ import scipy.optimize as cp
 import csv
 import pandas as pd
 import seaborn as sns
+from matplotlib.backends.backend_pdf import PdfPages
 
 
 import sys
@@ -36,6 +37,7 @@ class GreyBox:
         self.saved_states = {}
         self.data_set_ID = {}
         self.data_set_ver = {}
+        self.VAF = {}
         self.x = np.array([0, 0])
         self.phi_sim_init = None
         self.phidot_sim_init = None
@@ -75,6 +77,9 @@ class GreyBox:
                       -0.75180265, -0.71232366, -0.2509144]
         phases_ver = [-1.82153521, -1.03968042,  0.17035112, -0.90442899, -0.27152334, -1.05591208, -1.88837196,
                       -0.8715442, -0.3636802, 1.20421911]
+        print("duration = ", self.duration)
+        print("frequencies = ",frequencies)
+
         # print(phases)
         amp = 0.3
         amplitude = amp * np.array([1, 1, 1, 1, 1, 1, 1, 0.1, 0.1, 0.1])
@@ -124,6 +129,7 @@ class GreyBox:
         self.optimize(False)
         self.compute_metrics()
         self.plot_data()
+
 
     def generate_data_set(self, validation):
         if validation is False:
@@ -230,6 +236,7 @@ class GreyBox:
             p_cs = df_ver.to_dict(orient='list')
             p_opt = np.array(p_cs["params"])
         else:
+            # Nonlinear fit
 
             options = {
                 'maxiter': 10000,
@@ -246,12 +253,16 @@ class GreyBox:
             param_dict = {"params": p_opt, "names": names}
             self.to_csv(param_dict, "params.csv")
 
+
+
         self.show_nonlins(p_opt[1], p_opt[2], p_opt[3], p_opt[5], p_opt[6], p_opt[4], False)
+        p_lin = p_opt
+        # p_lin[0] = 0.0447
 
         self.simulate_experiment(p_opt, linear=False, data_set=self.data_set_ver)
         self.phi_sim_final = self.saved_states["steering_angle"]
         self.phidot_sim_final = self.saved_states["steering_rate"]
-        self.simulate_experiment(p_opt, linear=True, data_set=self.data_set_ver)
+        self.simulate_experiment(p_lin, linear=True, data_set=self.data_set_ver)
         self.phi_sim_lin = self.saved_states["steering_angle"]
         self.phidot_sim_lin = self.saved_states["steering_rate"]
 
@@ -300,6 +311,25 @@ class GreyBox:
         cost_f = 5 * (dphi_f*dphi_f) + 2 * (dphidot_f*dphidot_f)
         cost_i = 5 * (dphi_i * dphi_i) + 2 * (dphidot_i * dphidot_i)
         cost_l = 5 * (dphi_l * dphi_l) + 2 * (dphidot_l * dphidot_l)
+
+        var_y = np.var(phi)
+        var_ydot = np.var(phidot)
+        var_dyhat_i = np.var(dphi_i)
+        var_dyhat_f = np.var(dphi_f)
+        var_dyhat_l = np.var(dphi_l)
+        var_dydothat_i = np.var(dphidot_i)
+        var_dydothat_f = np.var(dphidot_f)
+        var_dydothat_l = np.var(dphidot_l)
+        vaf_phi_i = 100 * (1 - (var_dyhat_i / var_y))
+        vaf_phi_f = 100 * (1 - (var_dyhat_f / var_y))
+        vaf_phi_l = 100 * (1 - (var_dyhat_l / var_y))
+        vaf_phidot_i = 100 * (1 - (var_dydothat_i / var_ydot))
+        vaf_phidot_f = 100 * (1 - (var_dydothat_f / var_ydot))
+        vaf_phidot_l = 100 * (1 - (var_dydothat_l / var_ydot))
+        self.VAF = {"initial": [vaf_phi_i, vaf_phidot_i],
+               "final": [vaf_phi_f, vaf_phidot_f],
+               "linear": [vaf_phi_l, vaf_phidot_l],}
+
         N = len(phi)
         # cost_f = 1 / N * (5 * np.inner(dphi_f, dphi_f) + 2 * np.inner(dphidot_f, dphidot_f))
         # cost_i = 1 / N * (5 * np.inner(dphi_i, dphi_i) + 2 * np.inner(dphidot_i, dphidot_i))
@@ -343,7 +373,7 @@ class GreyBox:
         tud_red = "#c3312f"
         tud_green = "#00A390"
         tud_yellow = "#F1BE3E"
-        colors = [tud_blue, tud_black, tud_red, tud_green, tud_yellow]
+        colors = [tud_blue, tud_yellow, tud_red, tud_green, tud_black]
 
         # Simulations
         gamma = [0.1, 0.5, 1, 5]
@@ -363,32 +393,60 @@ class GreyBox:
             gv = v/vsp * np.exp(-(v/(np.sqrt(2) * vsp))**2 + 1/2)
             fc = tau_d * np.tanh(v/vt)
             f_fric = gv * tau_f + fc
-            plt.plot(v, gv * tau_f, colors[0], linewidth=2)
-            plt.plot(v, fc, colors[1], linewidth=2)
-            plt.plot(v, f_fric, colors[2], linewidth=2)
+            # plt.plot(v, gv * tau_f, colors[0], linewidth=2)
+            # plt.plot(v, fc, colors[1], linewidth=2)
+            plt.plot(v, f_fric, colors[0], linewidth=2)
+
+        if multiple:
+            for i in range(len(gamma)):
+                string = "$\\tau_c$ = " + str(round(gamma[i]*tau_d, 2)) + ", $\\tau_s = $" + str(round(gamma[i]*tau_f,2))
+                gv = v / vsp * np.exp(-(v / (np.sqrt(2) * vsp)) ** 2 + 1 / 2)
+                fc = gamma[i] * tau_d * np.tanh(v / vt)
+                f_fric = gv * gamma[i] * tau_f + fc
+                # plt.plot(v, gv * tau_f * gamma[i], colors[i], alpha=0.5, linestyle="--", linewidth=2)
+                # plt.plot(v, fc, colors[i], alpha=0.5, linestyle="-.", linewidth=2)
+                plt.plot(v, f_fric, colors[i], label=string, linewidth=2)
 
         plt.xlabel("Steering rate $\dot{\phi}}(t)$ (rad/s)", **csfont)
         plt.ylabel("Friction torque $f_{fric}(t)$ (Nm)", **csfont)
         plt.title("Friction torque", **csfont)
         plt.xlim(v[0], v[-1])
         plt.tight_layout(pad=1)
+        if multiple:
+            plt.legend()
 
         phi = np.linspace(-np.pi, np.pi, 200)
         g = 9.81
         tau_g = - m * g * dh * np.sin(phi) - m * g * dl * np.cos(phi)
 
-        plt.figure()
+
         fac = 360 / (2 * np.pi)
+
+        offset = [0.05, 0.1, 0.05, 0.1]
+
+        plt.figure()
 
         if not multiple:
             plt.plot(fac * phi, tau_g, colors[0], linewidth=2)
+        else:
 
-        plt.xlabel("Steering angle $\phi}(t)$ (degrees)", **csfont)
+            for i in range(len(offset)):
+                dx = 0.00
+                if i > 1:
+                    dx = -0.05
+                dy = dl - offset[i]
+                tau_g = - m * g * dy * np.sin(phi) - m * g * dx * np.cos(phi)
+                string = "$\\delta x = $" + str(round(dx, 2)) + "$, \\delta y = $" + str(round(dy, 2))
+                plt.plot(fac * phi, tau_g, colors[i], label=string, linewidth=2)
+
+
+        plt.xlabel("Steering angle $\phi}(t)$ (Degrees)", **csfont)
         plt.ylabel("Gravitational torque $f_{g}(t)$ (Nm)", **csfont)
         plt.title("Gravitational torque", **csfont)
         plt.xlim(fac * phi[0], fac * phi[-1])
         plt.tight_layout(pad=1)
-        # plt.legend()
+        if multiple:
+            plt.legend()
 
     def store_variables(self, output):
         for key in output.keys():
@@ -471,11 +529,7 @@ class GreyBox:
         phi = self.data_set_ver["steering_angle"]
         phidot = self.data_set_ver["steering_rate"]
 
-        plt.figure()
-        plt.plot(t, t_ex)
-
-        plt.figure()
-        plt.plot(t, u)
+        self.show_nonlins(0.2, 0.1, 0.05, -0.05, -0.05, 0.5, True)
 
         # plot metrics
         # print(self.metrics)
@@ -483,20 +537,51 @@ class GreyBox:
         rate_difference = pd.DataFrame.from_dict(self.rate_difference)
         cost_difference = pd.DataFrame.from_dict(self.cost_difference)
 
-        color_palette = {"Initial estimate": tud_yellow, "Final estimate": tud_blue, "Linear estimate": tud_green}
+
+        color_palette = {"Initial estimate": tud_yellow, "Final estimate": tud_red, "Linear estimate": tud_green}
+        colors = [tud_yellow, tud_red, tud_green]
 
         fig1, ax1 = plt.subplots()
-        ax1.set_title('Absolute steering angle difference')
-        sns.boxplot(data=angle_difference, palette=color_palette, ax=ax1, showfliers = False)
+        ax1.set_title('Absolute steering angle difference', **csfont)
+        res = sns.boxplot(data=angle_difference, palette=color_palette, ax=ax1, showfliers=False)
+        ax1.set_ylabel("Steering angle (rad)", **hfont)
+        res.set_xticklabels(res.get_xmajorticklabels(), **hfont)
+
+        fig3, ax3 = plt.subplots()
+        ax3.set_title('Absolute steering rate difference', **csfont)
+        res3 = sns.boxplot(data=rate_difference, palette=color_palette, ax=ax3, showfliers=False)
+        ax3.set_ylabel("Absolute steering rate (rad/s)", **hfont)
+        res3.set_xticklabels(res3.get_xmajorticklabels(), **hfont)
 
         fig2, ax2 = plt.subplots()
-        ax2.set_title('Cost function values')
-        sns.boxplot(data=cost_difference, palette=color_palette, ax=ax2, showfliers=False)
-        # ax2.set_yscale("log")
+        ax2.set_title('Cost function values', **csfont)
+        res2 = sns.boxplot(data=cost_difference, palette=color_palette, ax=ax2, showfliers=False)
+        ax2.set_ylabel("Cost function value (-)", **hfont)
+        res2.set_xticklabels(res2.get_xmajorticklabels(), **hfont)
 
+
+        print("Make this into a table! VAF values:")
+        print("Initial guess: ", self.VAF["initial"])
+        print("Final estimated: ", self.VAF["final"])
+        print("Linear estimate: ", self.VAF["linear"])
+
+        print("means (init, final, linear), (angle, rate, cost):")
+        print(np.mean(self.angle_difference["Initial estimate"]), np.mean(self.angle_difference["Final estimate"]),
+              np.mean(self.angle_difference["Linear estimate"]))
+        print(np.mean(self.rate_difference["Initial estimate"]), np.mean(self.rate_difference["Final estimate"]),
+              np.mean(self.rate_difference["Linear estimate"]))
+        print(np.mean(self.cost_difference["Initial estimate"]), np.mean(self.cost_difference["Final estimate"]),
+              np.mean(self.cost_difference["Linear estimate"]))
+
+        print("variance (init, final, linear), (angle, rate, cost):")
+        print(np.var(self.angle_difference["Initial estimate"]), np.var(self.angle_difference["Final estimate"]),
+              np.var(self.angle_difference["Linear estimate"]))
+        print(np.var(self.rate_difference["Initial estimate"]), np.var(self.rate_difference["Final estimate"]),
+              np.var(self.rate_difference["Linear estimate"]))
+        print(np.var(self.cost_difference["Initial estimate"]), np.var(self.cost_difference["Final estimate"]),
+              np.var(self.cost_difference["Linear estimate"]))
 
         # plot time signals
-
         plt.figure()
         plt.plot(t, phi, tud_blue, linewidth=2.5, label="Measured $\phi(t)$")
         plt.plot(t, self.phi_sim_final, tud_red, linewidth=2.5, label="Estimated $\hat{\phi}(t)$")
@@ -525,7 +610,18 @@ class GreyBox:
         plt.ylabel("Difference in magnitude", **hfont)
         plt.legend()
 
+        self.save_all_figures()
         plt.show()
+
+    def save_all_figures(self):
+        pp = PdfPages('greybox.pdf')
+        figs = None
+        if figs is None:
+            figs = [plt.figure(n) for n in plt.get_fignums()]
+        for fig in figs:
+            fig.savefig(pp, format='pdf')
+        pp.close()
+
 
 if __name__ == "__main__":
 
@@ -547,3 +643,4 @@ if __name__ == "__main__":
                 exit("That is no option")
             greybox = GreyBox(parent_conn, child_conn, senso_drive_process, int(identification))
             greybox.do()
+
