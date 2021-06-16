@@ -6,5 +6,6 @@ PyQt5>=5.14.1
 matplotlib
 scikit-build >= 0.10.0
 CMake
-slycot
 control
+pygame
+scipy
