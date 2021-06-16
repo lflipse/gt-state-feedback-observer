@@ -12,6 +12,7 @@ def ask_input():
     # OPTION 1: Dynamics
     # Reaching movements
     I = 6  # kg
+
     D = -0.2  # N/m
 
     # Steering wheel dynamics
