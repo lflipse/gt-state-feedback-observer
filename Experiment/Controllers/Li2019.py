@@ -2,7 +2,7 @@ import numpy as np
 import scipy.linalg as cp
 import time
 
-class ControllerDG_GObs:
+class ControllerDG_Li:
     def __init__(self, A, B, Gamma, Pi, kappa, Qr, Qh):
         self.A = A
         self.B = B
@@ -39,17 +39,8 @@ class ControllerDG_GObs:
         Jr = self.compute_costs(xi, ur)
 
         # Update estimated controller gains
-        x_hat_dot = np.matmul(self.A, x) + self.B * (ur + uhhat + self.nonlinear_term(x))
-        # x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat + self.nonlinear_term(x))
-        # print("tests")
-        # print(self.A, x, np.matmul(self.A, x))
-        # print(self.B, ur, uhhat, self.nonlinear_term(x))
-
-        xi_tilde_dot = x_hat_dot - x_dot
-        uh_tilde = 1 / (np.matmul(self.B.transpose(), self.B)) * np.matmul(self.B.transpose(), xi_tilde_dot)
-        # uh_tilde = 1 / (np.matmul(self.B.transpose(), self.B)) * np.matmul(self.B.transpose(), xi_tilde_dot)
-        m_squared = 1 + self.kappa * np.matmul(xi.transpose(), xi)
-        Lhhat_dot = uh_tilde * np.matmul(xi.transpose(), self.Gamma) / m_squared
+        x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat + self.nonlinear_term(x)) - np.matmul(self.Pi, x_tilde)
+        Lhhat_dot = np.matmul(np.matmul(self.B.transpose(), 1 * self.Gamma), (x_tilde)) * xi.transpose()
 
         output = {
             "torque": ur,
@@ -58,19 +49,21 @@ class ControllerDG_GObs:
             "state_estimate_derivative": x_hat_dot,
             "estimated_human_gain_derivative": Lhhat_dot,
             "robot_gain": Lr,
+            "input_estimation_error": np.array([[0]]),
+            "xi_gamma": np.array([[0, 0]])
         }
 
         return output
 
     def nonlinear_term(self, x):
         g = 9.81
-        m = 0.206554
-        dh = 0.14113349
-        dl = 0.017985
-        vt = 0.22541135
+        m = 0.406
+        dh = 0.0628
+        dl = 0.00901
+        vt = 0.522
         vsp = 2 * vt
-        tau_d = -0.0662
-        tau_fric = -0.02547518
+        tau_d = -0.086
+        tau_fric = -0.0
 
         # Gravity
         tau_g = - m * g * dh * np.sin(x[0, 0]) - m * g * dl * np.cos(x[0, 0])

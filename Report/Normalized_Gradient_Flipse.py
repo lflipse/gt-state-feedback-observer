@@ -20,7 +20,29 @@ class ControllerNG:
 
         # Update next value of y
         y_new = y + (1.0 / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
-        return y_new
+        # print(k1)
+        return y_new, k1[0: 2]/h
+
+    def nonlinear_term(self, x):
+        # Parameters
+        g = 9.81
+        m = 0.4057759271653798
+        dh = 0.06279095432769782
+        dl = 0.009008157082978899
+        vt = 0.5217807023268454
+        vsp = 2 * vt
+        tau_fric = 0.0
+        tau_d = -0.08597506012132082
+
+        # Gravity
+        tau_g = - m * g * (dh * np.sin(x[0, 0]) + dl * np.cos(x[0, 0]))
+
+        # Friction
+        v = x[1, 0]
+        gv = v / vsp * np.exp(-(v / (np.sqrt(2) * vsp)) ** 2 + (1 / 2))
+        tau_f = gv * tau_fric + tau_d * np.tanh(v / vt)
+        f_nl = tau_g + tau_f
+        return f_nl
 
     def ydot(self, r, ur, uh, uhhat, y, Gamma, kappa):
         # Unpack y vector
@@ -31,10 +53,10 @@ class ControllerNG:
 
         # Calculate derivatives
         # Real response
-        x_dot = np.matmul(self.A, x) + self.B * (ur + uh)
+        x_dot = np.matmul(self.A, x) + self.B * (ur + uh + self.nonlinear_term(x))
 
         # Estimated responses
-        x_hat_dot = np.matmul(self.A, x) + self.B * (ur + uhhat)
+        x_hat_dot = np.matmul(self.A, x) + self.B * (ur + uhhat + self.nonlinear_term(x))
 
         # Estimation error
         x_tilde_dot = x_hat_dot - x_dot
@@ -89,10 +111,11 @@ class ControllerNG:
 
         # Unpack dictionary
         # Unpack dictionary
-        N = inputs["simulation_steps"]
-        h = inputs["step_size"] + 0.00098
+        # N = inputs["simulation_steps"]
+        # h = inputs["step_size"] + 0.00098
         Qh0 = inputs["human_weight"]
         Qr0 = inputs["robot_weight"]
+        Lh0 = np.array(inputs["virtual_human_gain"])
         x0 = inputs["initial_state"]
         u0 = inputs["u_initial"]
         e0 = inputs["e_initial"]
@@ -101,9 +124,11 @@ class ControllerNG:
         C = inputs["sharing_rule"]
         bias = inputs["gain_estimation_bias"]
         ref = np.array(inputs["reference"])
-        T = np.array(range(N)) * h
+        T = np.array(inputs["time"])
+        N = len(T)
 
         y = np.zeros((N + 1, 4))
+        ydot = np.zeros((N, 2))
         y[0, 0:2] = x0
 
         # Estimator vectors
@@ -133,9 +158,9 @@ class ControllerNG:
 
 
 
-        for i in range(N):
+        for i in range(N-1):
             # Human cost is fixed, Robot cost based on estimator
-            Qr[i, :, :] = C
+            Qr[i, :, :] = Qr0
             Qh[i, :, :] = Qh0
 
             # Calcuate derivative(s) of reference
@@ -143,13 +168,20 @@ class ControllerNG:
             # Compute inputs
             e[i, :] = (y[i, 0:2] - ref[i, :])
             ur[i], uhhat[i], Lr[i, :], Lhhat[i, :], Pr[i, :, :] = self.compute_inputs(Qr[i, :, :], Phhat[i, :], e[i, :], bias)
-            uhbar[i], urhat, Lh[i, :], Lrhat, Ph[i, :, :] = self.compute_inputs(Qh[i, :, :],  Pr[i, :], e[i, :], bias)
+            # print(Lh0[:, i].flatten())
+            # print(Lh[i,:])
+            Lh[i, :] = Lh0[:, i].flatten()
+            uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
+
+            # uhbar[i], urhat, Lh[i, :], Lrhat, Ph[i, :, :] = self.compute_inputs(Qh[i, :, :],  Pr[i, :], e[i, :], bias)
             vh[i] = np.random.normal(self.mu, self.sigma, 1)
             uh[i] = uhbar[i] + 0*vh[i]
             # uh[i] = uhbar[i]
 
+            h = T[i+1] - T[i]
+
             # Integrate a time-step
-            y[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], uhhat[i], y[i, :], h, Gamma, kappa)
+            y[i + 1, :], ydot[i, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], uhhat[i], y[i, :], h, Gamma, kappa)
             y[i + 1, 1] = y[i + 1, 1] + vh[i]
             Phhat[i + 1, :, :] = np.array([[0, y[i + 1, 2]], [y[i + 1, 2], y[i + 1, 3]]])
 
@@ -183,6 +215,7 @@ class ControllerNG:
             "human_costs": Jh,
             "human_estimated_costs": Jhhat,
             "robot_costs": Jr,
+            "ydot": ydot,
         }
 
         return outputs

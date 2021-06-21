@@ -1,18 +1,74 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Reference:
-    def __init__(self):
-        self.a = 1
+    def __init__(self, duration):
+        bw = 3.5
+        period = np.array([5, 8, 11, 17, 26, 37, 49, 57, 73, 97])
+        self.duration = (period[7] * 2 * np.pi) / bw
+        frequencies = 2 * np.pi * period / self.duration
+        phases = [4.79893804, 0.1467642, -1.462783088, 2.56145111, -1.92977185, -1.1689079, -0.61034581,
+                  -0.75180265, -0.03232366, 3.2509144]
+        print("duration = ", self.duration)
+        print("frequencies = ", frequencies)
+        self.amp = 0.3
+        amplitude = self.amp * np.array([1, 1, 1, 1, 1, 1, 1, 0.1, 0.1, 0.1])
+        self.forcing_function = {
+            'period': period,
+            'phases': phases,
+            'amplitude': amplitude,
+        }
 
-    def generate_reference(self, T, f_max, f_min, increments):
-        x_d = 30 * np.pi / 180
-        fs = f_max
-        r = x_d * np.sin(2 * np.pi * fs * T)
+        csfont = {'fontname': 'Georgia'}
+        hfont = {'fontname': 'Georgia'}
 
-        #
-        # for i in range(increments):
-        #     fs = f_min + i * (f_max - f_min) / increments
-        #     phi = np.random.randn()
-        #     r += x_d * np.sin(2 * np.pi * fs * T + phi)
+        # Colors
+        tud_blue = "#0066A2"
+        tud_black = "#000000"
+        tud_grey = "#808080"
+        tud_red = "#c3312f"
+        tud_green = "#00A390"
+        tud_yellow = "#F1BE3E"
 
-        return r
+        plt.figure()
+        for i in range(len(period)):
+            plt.plot(frequencies[i], amplitude[i], color=tud_blue, marker='o')
+            plt.plot([frequencies[i], frequencies[i]], [0, amplitude[i]], tud_blue, alpha=0.7, linewidth=2.5)
+
+        plt.title("Forcing function in frequency domain", **csfont)
+        plt.xlabel("Frequency (rad/s)", **hfont)
+        plt.ylabel("Amplitude (-)", **hfont)
+        plt.xlim(frequencies[0] - 0.1, frequencies[-1] + 10)
+        plt.ylim(0.01, amplitude[0] + 0.1)
+        plt.yscale("log")
+        plt.xscale("log")
+
+        # Show forcing function:
+        fs = 100
+        n = int(fs * self.duration)
+        t = np.array(range(n)) / fs
+        r = np.zeros(n)
+        for i in range(n):
+            ref = self.generate_reference(t[i]+5)
+            r[i] = ref[0]
+
+        plt.figure()
+        plt.plot(t, r, tud_blue, linewidth=2.5)
+        plt.title("Forcing function in time domain", **csfont)
+        plt.xlabel("Time (s)", **hfont)
+        plt.ylabel("Amplitude (-)", **hfont)
+        plt.xlim(0, 10)
+
+
+    def generate_reference(self, t):
+        period = self.forcing_function["period"]
+        phases = self.forcing_function["phases"]
+        amplitude = self.forcing_function["amplitude"]
+        reference_position = 0
+        reference_velocity = 0
+        for i in range(10):
+            wt = (period[i] / self.duration) * (2 * np.pi)
+            reference_position += amplitude[i] * np.sin(wt * t + phases[i])
+            reference_velocity += amplitude[i] * wt * np.cos(wt * t + phases[i])
+        ref = np.array([reference_position, reference_velocity])
+        return ref

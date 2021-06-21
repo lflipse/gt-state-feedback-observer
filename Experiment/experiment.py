@@ -1,26 +1,40 @@
-import pygame
-import multiprocessing as mp
 import time
 import numpy as np
-import matplotlib.pyplot as plt
-import scipy.signal as cp
+import wres
+import platform
 
-from Experiment.Controllers.Lowpassfilter_Biquad import LowPassFilterBiquad
 from Experiment.visuals import Visualize
 
+if platform.system() == 'Windows':
+    import wres
+
 class Experiment:
-    def __init__(self, Bw, Kw, data_plotter_conn, parent_conn, child_conn, screen_width, screen_height, full_screen, controller, controller_type, preview):
+    def __init__(self, input):
         # 2 OBJECTS TO DRIVE THE EXPERIMENT
         # 1. Sensodrive, can be called to drive some torque and get sensor data
         super().__init__()
-        self.parent_conn = parent_conn
-        self.child_conn = child_conn
-        self.data_plotter_conn = data_plotter_conn
+        self.parent_conn = input["parent_conn"]
+        self.child_conn = input["child_conn"]
+        self.data_plotter_conn = input["send_conn"]
+        self.senso_process = input["senso_drive"]
+        self.t_warmup = input["warm_up_time"]
+        self.t_cooldown = input["cooldown_time"]
+        self.t_exp = input["experiment_time"]
+        self.Qr_start = input["init_robot_cost"]
+        self.Qr_end = input["final_robot_cost"]
+        self.duration = self.t_warmup + self.t_exp + self.t_cooldown
+        self.t_now = 0
+        self.t_last = 0
+        self.t0 = 0
+        self.time = 0
+        self.reference = input["reference"]
+        self.store = False
+        self.start_measurements = False
+        self.virtual_human_gain = input["virtual_human_gain"]
         self.send_dict = {
-            "torque": 0,
-            "damping": Bw,
-            "stiffness": Kw,
-            "exit": False
+            "ref": None,
+            "factor": 0,
+            "exit": False,
         }
         self.visualize_dict = {
             "time_stamp": 0,
@@ -29,156 +43,138 @@ class Experiment:
             "torque": 0,
             "exit": False
         }
-        self.preview = preview
-        self.damping = Bw
-        self.stiffness = Kw
+        self.controller_type = input["controller_type"]
+        self.preview = input["preview"]
+        self.damping = input["damping"]
+        self.stiffness = input["stiffness"]
+        self.virtual_human = input["virtual_human"]
         self.damp = 0
         self.stiff = 0
         self.new_states = {"steering_angle": 0, "measured_torque": 0}
 
-
-        # 2. Controller, which manages the inputs to the sensodrive
-        self.controller = controller
-        self.controller_type = controller_type
-
         # Initialize message structures
+        self.states = {}
         self.variables = dict()
-        self.angle_array = []
-        self.xddot_array = []
-
-        # Filter values
-        self._bq_filter_velocity = LowPassFilterBiquad(fc=30, fs=100)
-        # self._bq_filter_heading = LowPassFilterBiquad(fc=30, fs=100)
 
         # Initialize pygame visualization
-        self.visualize = Visualize(screen_width, screen_height, self.preview, full_screen)
-
-        # States
-        self.states = {"steering_angle": 0.0, "steering_rate": 0.0}
-        self.x = np.array([0.0, 0.0])
-        self.estimated_human_gain = np.array([0.0, 0.0])
-        self.torque = 0
-        self.ref = 0
+        self.visualize = Visualize(input["screen_width"], input["screen_height"], self.preview, input["full_screen"])
 
         print("init complete!")
 
-    def experiment(self, r, N, t_step):
-        # Initialize the senso_drive
-        self._time_step_in_ns = t_step * 1e9
-        self.states['steering_angle'] = 0.0
-        self.states['steering_rate'] = 0.0
-        self.estimated_human_gain = np.array([0.0, 0.0])
+    def experiment(self):
+        t_step = 0.002
         preview_samples = round(0.8 / t_step)  # 0.8 seconds of preview
 
-        # 3 second start screen
-        self.warm_up(duration=3.0, t_step=t_step)
+        print("sleeping for 1.5 seconds to see if motor is active")
+        self.visualize.visualize_experiment(0, [], 0, text="Initializing")
+        time.sleep(1.5)
 
-        self.angle_array = [self.states["steering_rate"]]
-        self.xdot_array = [0]
+        self.t0 = time.perf_counter_ns()
+        self.t_last = time.perf_counter_ns()
 
-        for i in range(N):
-            t0 = time.perf_counter_ns()
-
+        # Let's make this 1 loop
+        while self.time < self.duration:
             # Check whether the process has not been quited
             self.visualize.check_quit()
 
-            # Calculate derivative(s) of reference
-            h = t_step
-            if i > 1:
-                ref = np.array([r[i], (r[i] - r[i - 1]) / h])
-            else:
-                ref = np.array([r[i], (r[i]) / (2 * h)])
+            self.t_now = time.perf_counter_ns()
+            h = (self.t_now - self.t_last) * 1e-9
+            self.t_last = self.t_now
+            self.time = (self.t_last - self.t0) * 1e-9
+            ref = self.reference.generate_reference(self.time)
 
-            # Filter steering rate
-            steering_rate_filt = self._bq_filter_velocity.step(self.states["steering_rate"])
-            x = np.array([self.states["steering_angle"], steering_rate_filt])
-            self.x = x
-            x_ddot_filt = 0 # TODO: Fixx!!!
-
-            # Compute error states
-            xi = np.array([[x[0] - ref[0]], [x[1] - ref[1]]])
-
-            if self.controller_type != "Manual":
-                if self.controller_type == "Gain_observer":
-                    # Update human gain estimate and calculate torque
-                    torque, estimated_human_torque, robot_gain, estimated_human_gain, uhtilde, cost = \
-                        self.controller.compute_control_input(xi, x, x_ddot_filt, self.estimated_human_gain, t_step)
-                    self.estimated_human_gain = estimated_human_gain
+            # WARM_UP
+            if self.time < self.t_warmup:
+                # 3 second start screen
+                self.store = False
+                self.send_dict["factor"] = 1 / (1 + np.exp(-2 * self.time)) - 1 / (1 + np.exp(2 * self.time))
+                self.send_dict["ref"] = ref * self.send_dict["factor"]
+                self.send_dict["experiment"] = False
+                self.send_dict["robot_cost"] = self.Qr_start
+                dt = self.t_warmup - self.time
+                if dt > 3:
+                    text = "Experiment starts in:"
                 else:
-                    # Calculate torque
-                    torque, cost = self.controller.compute_control_input(xi)
+                    text = str(round(dt, 1))
+
+            # EXPERIMENT
+            elif self.time >= self.t_warmup and self.time < (self.t_warmup + self.t_exp):
+                self.store = True
+                self.send_dict["factor"] = 1
+                self.send_dict["ref"] = ref
+                self.send_dict["experiment"] = True
+                self.send_dict["robot_cost"] = 0.5 * ((self.Qr_start + self.Qr_end) + np.tanh(self.time - self.t_warmup - 0.5 * self.t_exp) * (self.Qr_end - self.Qr_start))
+                if self.virtual_human:
+                    if self.time - self.t_warmup < 0.25 * self.t_exp:
+                        self.send_dict["virtual_human_gain"] = np.array(self.virtual_human_gain[0, :])
+                    elif 0.5 * self.t_exp > self.time - self.t_warmup > 0.25 * self.t_exp:
+                        self.send_dict["virtual_human_gain"] = np.array(self.virtual_human_gain[1, :])
+                    elif 0.75 * self.t_exp > self.time - self.t_warmup > 0.5 * self.t_exp:
+                        self.send_dict["virtual_human_gain"] = np.array(self.virtual_human_gain[2, :])
+                    else:
+                        self.send_dict["virtual_human_gain"] = np.array(self.virtual_human_gain[3, :])
+                text = ""
+                # Save variables
+
+            # COOLDOWN
             else:
-                # Manual control, no torque delivered
-                torque = 0
-                cost = 0
+                self.store = False
+                self.send_dict["factor"] = 0.96 * self.send_dict["factor"]
+                self.send_dict["ref"] = 0.96 * self.send_dict["ref"]
+                text = "Finished Experiment"
+                self.send_dict["experiment"] = False
 
-            self.torque = torque
-
-            # Update states
-            self.send_dict["torque"] = torque
-            self.send_dict["damping"] = self.damping
-            self.send_dict["stiffness"] = self.stiffness
-            self.parent_conn.send(self.send_dict)  # Child is for sending
-            new_states = self.parent_conn.recv()  # Receive from child
-
-            if new_states != None:
-                self.new_states = new_states
+            # Send data to the child
+            if self.senso_process.is_alive():
+                self.parent_conn.send(self.send_dict)  # Child is for sending
+                new_states = self.parent_conn.recv()  # Receive from child
             else:
-                print("missed a state here")
-            self.states["steering_rate"] = (self.new_states["steering_angle"] - self.states["steering_angle"]) / t_step
-            self.states["steering_angle"] = self.new_states["steering_angle"]
-            real_torque = self.new_states["measured_torque"]
+                print("sensodrive process was killed")
+                return None
 
-            # Visualize and rest
-            if i+preview_samples > N:
-                r_prev = r[i:]
+            if self.new_states == None:
+                print("Double check with error")
             else:
-                r_prev = r[i:(i+preview_samples)]
-            self.visualize.visualize_experiment(r[i], r_prev, x[0], text="")
-            self.ref = r[i]
+                self.states = new_states
 
-            # Visualize realtime
-            self.visualize_dict["time_stamp"] = i*t_step
-            self.visualize_dict["steering_angle"] = self.states["steering_angle"]
-            self.visualize_dict["steering_rate"] = self.states["steering_rate"]
-            self.visualize_dict["torque"] = torque
-            self.data_plotter_conn.send(self.visualize_dict)
+            # Visualize experiment
+            self.visualize.visualize_experiment(self.send_dict["ref"][0], angle=self.states["steering_angle"], r_prev=[], text=text)
 
-            execution_time = time.perf_counter_ns() - t0
-            time.sleep(max(0.0, (self._time_step_in_ns - execution_time) * 1e-9))
+            if self.store:
+                output = {
+                    "steering_angle": self.states["steering_angle"],
+                    "steering_rate": self.states["steering_rate"],
+                    "angle_error": self.states["angle_error"],
+                    "rate_error": self.states["rate_error"],
+                    "acceleration": self.states["steering_acc"],
+                    "cost": self.states["cost"],
+                    "reference": ref,
+                    "torque": self.states["torque"].flatten(),
+                    "measured_input": self.states["measured_input"],
+                    "execution_time": h,
+                    "time": self.time - self.t_warmup,
+                }
+                if self.controller_type == "Gain_observer":
+                    output["estimated_human_gain_pos"] = self.states["estimated_human_gain"][0, 0]
+                    output["estimated_human_gain_vel"] = self.states["estimated_human_gain"][0, 1]
+                    # print(self.states["robot_gain"])
+                    output["robot_gain_pos"] = self.states["robot_gain"][0, 0]
+                    output["robot_gain_vel"] = self.states["robot_gain"][0, 1]
+                    output["state_estimate"] = self.states["state_estimate"]
+                    output["estimated_human_input"] = self.states["estimated_human_torque"].flatten()
+                    output["input_estimation_error"] = self.states["input_estimation_error"].flatten()
+                    output["virtual_human_torque"] = self.states["virtual_human_torque"]
+                    output["xi_gamma"] = self.states["xi_gamma"]
+                    output["state_estimate_derivative"] = self.states["state_estimate_derivative"]
+                    if self.virtual_human:
+                        output["virtual_human_gain_pos"] = self.send_dict["virtual_human_gain"][0]
+                        output["virtual_human_gain_vel"] = self.send_dict["virtual_human_gain"][1]
 
-            output = {
-                "position": x[0],
-                "velocity": x[1],
-                "error": xi[0],
-                "error_vel": xi[1],
-                "acceleration": x_ddot_filt,
-                "cost": cost,
-                "reference": ref[0],
-                "reference_vel": ref[1],
-                "input": torque,
-                "measured_input": real_torque,
-                "execution_time": execution_time * 1e-9,
-                "time": i*t_step,
-            }
-            if self.controller_type == "Gain_observer":
-                # print(self.estimated_human_gain)
-                output["estimated_human_gain_pos"] = self.estimated_human_gain[0, 0]
-                output["estimated_human_gain_vel"] = self.estimated_human_gain[0, 1]
-                output["robot_gain_pos"] = robot_gain[0, 0]
-                output["robot_gain_vel"] = robot_gain[0, 1]
-                output["estimated_human_input"] = estimated_human_torque
-                output["input_estimation_error"] = uhtilde[0]
-            self.store_variables(output)
+                self.store_variables(output)
 
-        # Cool down for 3 seconds
-        self.visualize_dict["exit"] = True
-        self.data_plotter_conn.send(self.visualize_dict)
-        self.cool_down(duration=3.0, t_step=t_step)
+        # Time to close off
         self.send_dict["exit"] = True
         self.parent_conn.send(self.send_dict)
-
-
         self.visualize.quit()
 
         return self.variables
@@ -186,78 +182,4 @@ class Experiment:
     def store_variables(self, output):
         for key in output.keys():
             self.variables.setdefault(key, []).append(output[key])
-
-    def warm_up(self, duration, t_step):
-        # Slowly activate the damping and stiffness to desired values and show countdown screen
-        N = int(duration/t_step)
-        t_start = time.time()
-        i = 0
-        for j in range(N):
-            # First three seconds countdown
-            t0 = time.perf_counter_ns()
-            self.visualize.check_quit()
-            torque = 0
-            damp = self.damping * j * t_step / 1
-            stiff = self.stiffness * j * t_step / 1
-            self.damp = min(damp, self.damping)
-            self.stiff = min(stiff, self.stiffness)
-
-            # Update states
-            self.send_dict["torque"] = torque
-            self.send_dict["damping"] = self.damp
-            self.send_dict["stiffness"] = self.stiff
-            self.parent_conn.send(self.send_dict)  # Child is for sending
-            self.new_states = self.parent_conn.recv()  # Receive from child
-
-            if self.new_states == None:
-                print("Double check with error")
-                self.states = self.states
-            else:
-                self.states["steering_rate"] = (self.new_states["steering_angle"] - self.states["steering_angle"]) / t_step
-                self.states["steering_angle"] = self.new_states["steering_angle"]
-
-            dt = time.time() - t_start
-            if dt < 1:
-                text = "Experiment starts in:"
-            else:
-                text = str(round(duration - dt + 1, 1))
-            self.visualize.visualize_experiment(0, angle=self.new_states["steering_angle"], r_prev=[], text=text)
-            execution_time = time.perf_counter_ns() - t0
-            # print(execution_time * 1e-9)
-            time.sleep(max(0.0, (self._time_step_in_ns - execution_time) * 1e-9))
-
-
-    def cool_down(self, duration, t_step):
-        # Slowly deactivate the damping and stiffness to zero values and show countdown screen
-        N = int(duration / t_step)
-        for j in range(N):
-            # First three seconds countdown
-            t0 = time.perf_counter_ns()
-            self.visualize.check_quit()
-            torque = 0
-            damp = self.damping - self.damping * j * t_step / duration
-            stiff = self.stiffness - self.stiffness * j * t_step / duration
-            self.damp = min(damp, self.damping)
-            self.stiff = min(stiff, self.stiffness)
-
-            # Update states
-            self.send_dict["torque"] = torque
-            self.send_dict["damping"] = self.damp
-            self.send_dict["stiffness"] = self.stiff
-            self.parent_conn.send(self.send_dict)  # Child is for sending
-            self.new_states = self.parent_conn.recv()  # Receive from child
-
-            if self.new_states == None:
-                print("Double check with error")
-                self.states = self.states
-            else:
-                self.states["steering_rate"] = (self.new_states["steering_angle"] - self.states[
-                    "steering_angle"]) / t_step
-                self.states["steering_angle"] = self.new_states["steering_angle"]
-            ref = 0.98*self.ref
-            self.ref = ref
-            self.visualize.visualize_experiment(ref, angle=self.new_states["steering_angle"], r_prev=[], text="Experiment Finished")
-            execution_time = time.perf_counter_ns() - t0
-            # print(execution_time * 1e-9)
-            time.sleep(max(0.0, (self._time_step_in_ns - execution_time) * 1e-9))
 

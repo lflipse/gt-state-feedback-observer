@@ -1,5 +1,6 @@
 import time
 from Experiment.SensoDrive.PCANBasic import *
+from Experiment.SensoDrive.Lowpassfilter_Biquad import LowPassFilterBiquad
 import math
 import multiprocessing as mp
 import numpy as np
@@ -7,7 +8,7 @@ import numpy as np
 
 
 class SensoDriveModule(mp.Process):
-    def __init__(self, Bw, Kw, parent_conn, child_conn):
+    def __init__(self, Bw, Kw, controller, controller_type, parent_conn, child_conn):
 
         super().__init__(daemon=True)
         # Establish communication
@@ -16,6 +17,16 @@ class SensoDriveModule(mp.Process):
         self.message = TPCANMsg()
         self._pcan_channel = None
         self.exit = False
+        self.frequency = 500  # Hz
+        self.time_step = 1 / self.frequency
+        self._time_step_in_ns = self.time_step * 1e9
+        self._bq_filter_velocity = LowPassFilterBiquad(fc=30, fs=self.frequency)
+        self._bq_filter_acc = LowPassFilterBiquad(fc=5, fs=self.frequency)
+        self.controller_gains = controller
+        self.controller = controller
+        self.controller_type = controller_type
+        self.now = 0
+        self.last_time = 0
 
         self.count_loop = 0
         self.count_senso = 0
@@ -23,10 +34,40 @@ class SensoDriveModule(mp.Process):
 
         # Steering wheel setting
         self.settings = {}
-        self.settings['mp_torque'] = 0
+        self.settings['factor'] = 0
         self.settings['mp_friction'] = 0
         self.settings['mp_damping'] = Bw
         self.settings['mp_spring_stiffness'] = Kw
+
+        # States
+        self.states = {
+            "ref": np.array([0, 0]),
+            "steering_angle": 0,
+            "steering_rate": 0,
+            "steering_rate_unf": 0,
+            "steering_acc": 0,
+            "state": np.array([[0], [0]]),
+            "state_derivative": np.array([[0], [0]]),
+            "state_estimate": np.array([[0], [0]]),
+            "state_estimate_derivative": np.array([[0], [0]]),
+            "angle_error": 0,
+            "rate_error": 0,
+            "error_state": np.array([[0], [0]]),
+            "torque": 0,
+            "estimated_human_torque": 0,
+            "cost": 0,
+            "measured_input": 0,
+            "estimated_human_gain": np.array([0, 0]),
+            "estimated_human_gain_derivative": np.array([0, 0]),
+            "virtual_human_gain": np.array([0.0, 0.0]),
+            "virtual_human_torque": 0,
+            "robot_gain": np.array([0, 0]),
+            "input_estimation_error": 0,
+            "xi_gamma": np.array([0, 0]),
+            "experiment": False,
+            "xdot_test": np.array([[0],[0]]),
+            "robot_cost": np.array([[0, 0], [0, 0]])
+        }
 
         # Hex Codes
         self.INITIALIZATION_MESSAGE_ID = 0x200
@@ -63,23 +104,36 @@ class SensoDriveModule(mp.Process):
     def run(self):
         print("running process has started")
         self.initialize()
+        self.last_time = time.perf_counter_ns()
+
         while not self.exit:
             self.count_senso += 1
+
+            # Compute control input using states, read out data and update states
             sensor_data = self.write_and_read(msgtype="201", data=self.settings)
-            # state_data = self.write_and_read(msgtype="20011", data=self.settings)
+
+            # Update timestamp, calculate interval and update states
+            self.now = time.perf_counter_ns()
+            delta = (self.now - self.last_time) * 1e-9
+            self.last_time = self.now
+            self.update_states(sensor_data, delta)
+
+            # When data is available, receive new reference value
+            # Feedback states to main loop
             data_available = self.child_channel.poll()
             if data_available is True:
                 self.count_loop += 1
                 msg = self.child_channel.recv()
-                self.settings['mp_torque'] = msg["torque"]
-                self.settings['mp_damping'] = msg["damping"]
-                self.settings['mp_spring_stiffness'] = msg["stiffness"]
+                self.states["ref"] = msg["ref"]
+                self.states["robot_cost"] = msg["robot_cost"]
+                try:
+                    self.states["virtual_human_gain"] = msg["virtual_human_gain"]
+                except:
+                    self.states["virtual_human_gain"] = self.states["virtual_human_gain"]
+                self.settings["factor"] = msg["factor"]
+                self.states["experiment"] = msg["experiment"]
                 self.exit = msg["exit"]
-                self.child_channel.send(sensor_data)
-                # print("sent: ", sensor_data)
-                # time.sleep(0.005) # <-- has no effect
-
-            # time.sleep(0.005)
+                self.child_channel.send(self.states)
 
         print("sent ", self.count_senso, " messages to sensodrive")
         print("received ", self.count_loop, " messages from controller")
@@ -129,6 +183,37 @@ class SensoDriveModule(mp.Process):
 
         # TODO: Referencing mode to align steering wheel to 0 position!
 
+    def update_states(self, sensor_data, delta):
+        steering_angle = sensor_data["steering_angle"]
+        steering_rate = (steering_angle - self.states["steering_angle"]) / delta
+
+        # Filtering biases acc. measurements
+        steering_acc = (steering_rate - self.states["steering_rate_unf"]) / delta
+        self.states["steering_rate"] = self._bq_filter_velocity.step(steering_rate)
+        self.states["steering_rate_unf"] = steering_rate
+        self.states["steering_acc"] = self._bq_filter_acc.step(steering_acc)
+        self.states["steering_angle"] = steering_angle
+        self.states["state"] = np.array([[self.states["steering_angle"]],
+                                        [self.states["steering_rate"]]])
+        self.states["error_state"] = np.array([[self.states["steering_angle"] - self.states["ref"][0]],
+                                               [self.states["steering_rate"] - self.states["ref"][1]]])
+        self.states["angle_error"] = self.states["error_state"][0]
+        self.states["rate_error"] = self.states["error_state"][1]
+
+        # Gain observer states
+        if self.controller_type == "Gain_observer":
+            estimate_derivative = np.array(self.states["state_estimate_derivative"])
+            old_estimated_state = np.array(self.states["state_estimate"])
+            new_estimated_state = old_estimated_state + estimate_derivative * delta
+            self.states["state_estimate"] = new_estimated_state
+
+            old_estimated_gain = np.array(self.states["estimated_human_gain"])
+            gain_derivative = np.array(self.states["estimated_human_gain_derivative"])
+            new_estimated_gain = old_estimated_gain + gain_derivative * delta
+            self.states["estimated_human_gain"] = new_estimated_gain
+            self.states["state_derivative"] = np.array([[self.states["steering_rate"]],
+                                                        [self.states["steering_acc"]]])
+
     def write_and_read(self, msgtype, data):
         # Check message type
         if msgtype == "2001F":
@@ -177,31 +262,49 @@ class SensoDriveModule(mp.Process):
         while self.received_ok > 0:
             received = self.pcan_object.Read(self._pcan_channel)
             self.received_ok = received[0]
-            if time.time() - t0 > 2:
+            if time.time() - t0 > 0.5:
+                # TODO: Fix that main process also quits
                 exit("This should not take this long. Check if the motor is connected!")
-
 
         output = self.map_sensodrive_to_si(received)
 
         return output
 
-    @staticmethod
-    def map_si_to_sensodrive(settings):
+    def virtual_human(self):
+        # print(self.states["virtual_human_gain"], self.states["error_state"])
+        self.states["virtual_human_torque"] = np.matmul(-self.states["virtual_human_gain"], self.states["error_state"])
+        # print(self.states["virtual_human_torque"])
+        self.states["torque"] += self.states["virtual_human_torque"]
+
+    def map_si_to_sensodrive(self, settings):
         """
         Converts settings to sensodrive message
         """
 
+        # Compute the control input
+        if self.controller_type != "Manual":
+            output = self.controller.compute_control_input(self.states)
+            self.update_controller_states(output)
+        else:
+            # Manual control, no torque delivered
+            self.states["torque"] = 0
+            self.states["cost"] = 0
+
+        self.virtual_human()
+
+        # Limit torque
         if settings != None:
             # print(settings['mp_torque'])
             # Limit the torque manually if it goes over a barrier of 10 Nm and output warning!
-            if settings["mp_torque"] > 10:
-                settings["mp_torque"] = 10
+            if self.states["torque"] > 15:
+                self.states["torque"] = 15
                 print("Torque is too high, what happend?")
-            elif settings["mp_torque"] < -10:
-                settings["mp_torque"] = -10
+            elif self.states["torque"] < -15:
+                self.states["torque"] = -15
                 print("Torque is too high, what happend?")
 
-            torque = int(settings['mp_torque'] * 1000.0)
+            a = self.settings["factor"]
+            torque = int(a * self.states["torque"] * 1000.0)
             friction = int(settings['mp_friction'] * 1000.0)
             damping = int(settings['mp_damping'] * 1000.0 * (2.0 * math.pi) / 60.0)
             spring_stiffness = int(settings['mp_spring_stiffness'] * 1000.0 / (180.0 / math.pi))
@@ -226,6 +329,24 @@ class SensoDriveModule(mp.Process):
         data[7] = spring_stiffness_bytes[1]
 
         return data
+
+    def update_controller_states(self, output):
+        self.states["torque"] = output["torque"]
+        self.states["cost"] = output["cost"]
+
+        # Update gains
+        if self.controller_type == "Gain_observer":
+            # Update human gain estimate and calculate torque
+            if not self.states["experiment"]:
+                self.states["estimated_human_gain"] = np.array([0, 0])
+                self.states["state_estimate"] = self.states["state"]
+            self.states["state_estimate_derivative"] = output["state_estimate_derivative"]
+            self.states["estimated_human_gain_derivative"] = output["estimated_human_gain_derivative"]
+            self.states["estimated_human_torque"] = output["estimated_human_torque"]
+            self.states["input_estimation_error"] = output["input_estimation_error"]
+            self.states["robot_gain"] = output["robot_gain"]
+            self.states["xi_gamma"] = output["xi_gamma"]
+            # self.states["xdot_test"] = output["xdot_test"]
 
     def map_sensodrive_to_si(self, received):
         """
