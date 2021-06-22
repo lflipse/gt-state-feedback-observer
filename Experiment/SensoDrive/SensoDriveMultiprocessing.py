@@ -20,7 +20,7 @@ class SensoDriveModule(mp.Process):
         self.frequency = 500  # Hz
         self.time_step = 1 / self.frequency
         self._time_step_in_ns = self.time_step * 1e9
-        self._bq_filter_velocity = LowPassFilterBiquad(fc=30, fs=self.frequency)
+        self._bq_filter_velocity = LowPassFilterBiquad(fc=50, fs=self.frequency)
         self._bq_filter_acc = LowPassFilterBiquad(fc=5, fs=self.frequency)
         self.controller_gains = controller
         self.controller = controller
@@ -186,8 +186,6 @@ class SensoDriveModule(mp.Process):
     def update_states(self, sensor_data, delta):
         steering_angle = sensor_data["steering_angle"]
         steering_rate = (steering_angle - self.states["steering_angle"]) / delta
-
-        # Filtering biases acc. measurements
         steering_acc = (steering_rate - self.states["steering_rate_unf"]) / delta
         self.states["steering_rate"] = self._bq_filter_velocity.step(steering_rate)
         self.states["steering_rate_unf"] = steering_rate
@@ -211,6 +209,8 @@ class SensoDriveModule(mp.Process):
             gain_derivative = np.array(self.states["estimated_human_gain_derivative"])
             new_estimated_gain = old_estimated_gain + gain_derivative * delta
             self.states["estimated_human_gain"] = new_estimated_gain
+            self.states["estimated_human_gain"][0, 1] = max(-1, min(1, self.states["estimated_human_gain"][0, 1]))
+
             self.states["state_derivative"] = np.array([[self.states["steering_rate"]],
                                                         [self.states["steering_acc"]]])
 

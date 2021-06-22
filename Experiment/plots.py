@@ -445,15 +445,28 @@ class PlotStuff:
         edot = exp_data["rate_error"]
         t_ex = exp_data["execution_time"]
 
-        # Simulation
-        t_sim = sim_data["time"]
-        ur_sim = sim_data["robot_input"]
-        states_sim = sim_data["states"]
-        x_sim = states_sim[:, 0]
-        xdot_sim = states_sim[:, 1]
-        xi_sim = sim_data["error_states"]
-        e_sim = xi_sim[:, 0]
-        edot_sim = xi_sim[:, 1]
+        if sim_data != None:
+
+            # Simulation
+            t_sim = sim_data["time"]
+            ur_sim = sim_data["robot_input"]
+            states_sim = sim_data["states"]
+            x_sim = states_sim[:, 0]
+            xdot_sim = states_sim[:, 1]
+            xi_sim = sim_data["error_states"]
+            e_sim = xi_sim[:, 0]
+            edot_sim = xi_sim[:, 1]
+
+            Lhhat_sim = sim_data["human_estimated_gain"]
+            Lhhat_pos_sim = Lhhat_sim[:, 0]
+            Lhhat_vel_sim = Lhhat_sim[:, 1]
+            Lr_sim = sim_data["robot_gain"]
+            Lr_pos_sim = Lr_sim[:, 0]
+            Lr_vel_sim = Lr_sim[:, 1]
+            uhhat_sim = sim_data["human_estimated_input"]
+
+            ydot_sim = sim_data["ydot"]
+            acc_sim = ydot_sim[:, 1]
 
 
         x_hat = np.array(exp_data["state_estimate"])
@@ -463,19 +476,12 @@ class PlotStuff:
         Lr_vel = exp_data["robot_gain_vel"]
         uhhat = exp_data["estimated_human_input"]
         uhtilde = exp_data["input_estimation_error"]
-        Lhhat_sim = sim_data["human_estimated_gain"]
-        Lhhat_pos_sim = Lhhat_sim[:, 0]
-        Lhhat_vel_sim = Lhhat_sim[:, 1]
-        Lr_sim = sim_data["robot_gain"]
-        Lr_pos_sim = Lr_sim[:, 0]
-        Lr_vel_sim = Lr_sim[:, 1]
-        uhhat_sim = sim_data["human_estimated_input"]
+
         uhtilde = exp_data["input_estimation_error"]
         xddot = exp_data["acceleration"]
         xi_gamma = np.array(exp_data["xi_gamma"])
         xhatdot = np.array(exp_data["state_estimate_derivative"])
-        ydot_sim = sim_data["ydot"]
-        acc_sim = ydot_sim[:, 1]
+
         Lh_vir_pos = exp_data["virtual_human_gain_pos"]
         Lh_vir_vel = exp_data["virtual_human_gain_vel"]
         uh_vir = exp_data["virtual_human_torque"]
@@ -485,8 +491,10 @@ class PlotStuff:
         plt.title("Measured and estimated steering angle", **csfont)
         plt.plot(t, r, tud_black, linewidth=2.5, linestyle="-", alpha=0.7, label="Reference $\phi_r(t)$")
         plt.plot(t, x, tud_blue, linestyle="--", linewidth=2.5, label="Steering angle $\phi(t)$")
-        plt.plot(t_sim, x_sim[:-1], tud_blue, linewidth=2.5, linestyle="-", alpha=0.5,
-                  label="Simulated $\phi_{sim}(t)$")
+
+        if sim_data != None:
+            plt.plot(t_sim, x_sim[:-1], tud_blue, linewidth=2.5, linestyle="-", alpha=0.5,
+                    label="Simulated $\phi_{sim}(t)$")
         plt.plot(t, x_hat[:, 0], tud_red, linewidth=2.5, linestyle="--", label="Estimated $\hat{\phi}(t)$")
         plt.xlabel('Time (s)', **hfont)
         plt.ylabel('Steering angle (rad)', **hfont)
@@ -499,8 +507,9 @@ class PlotStuff:
         plt.title("Measured and estimated steering rate", **csfont)
         plt.plot(t, rdot, tud_black, linewidth=2.5, linestyle="-", alpha=0.7, label="Reference $\dot{\phi}_r(t)$")
         plt.plot(t, xdot, tud_blue, linestyle="--", linewidth=2.5, label="Steering rate $\dot{\phi}(t)$")
-        plt.plot(t_sim, xdot_sim[:-1], tud_blue, linewidth=2.5, linestyle="-", alpha=0.5,
-                 label="Simulated $\dot{\phi}_{sim}(t)$")
+        if sim_data != None:
+            plt.plot(t_sim, xdot_sim[:-1], tud_blue, linewidth=2.5, linestyle="-", alpha=0.5,
+                    label="Simulated $\dot{\phi}_{sim}(t)$")
         plt.plot(t, xhatdot[:, 0], tud_red, linewidth=2.5, linestyle="--", label="Estimated $\dot{\hat{\phi}}(t)$")
         plt.xlabel('Time (s)', **hfont)
         plt.ylabel('Steering rate (rad)', **hfont)
@@ -512,9 +521,10 @@ class PlotStuff:
         plt.figure()
         plt.title("Input torque", **csfont)
         plt.plot(t, ur, tud_blue, linestyle="--", linewidth=2, label="Input torque (robot) $u_r(t)$")
-        plt.plot(t_sim, ur_sim, tud_blue, linestyle="-", linewidth=2, alpha=0.5, label="Simulated (robot) $u_{r,sim}(t)$")
         plt.plot(t, uhhat, tud_red, linestyle="--", linewidth=2, alpha=1, label="Estimated (human) $\hat{u}_h(t)$")
-        plt.plot(t_sim, uhhat_sim, tud_red, linewidth=2, linestyle="-", alpha=0.5, label="Simulated (human) $\hat{u}_{h,sim}(t)$")
+        if sim_data != None:
+            plt.plot(t_sim, ur_sim, tud_blue, linestyle="-", linewidth=2, alpha=0.5, label="Simulated (robot) $u_{r,sim}(t)$")
+            plt.plot(t_sim, uhhat_sim, tud_red, linewidth=2, linestyle="-", alpha=0.5, label="Simulated (human) $\hat{u}_{h,sim}(t)$")
         plt.plot(t, uh_vir, tud_black, linestyle="--", linewidth=2, alpha=1, label="Virtual (human) $u_{h,vir}(t)$")
         plt.xlabel('Time (s)', **hfont)
         plt.ylabel('Torque (Nm)', **hfont)
@@ -526,11 +536,12 @@ class PlotStuff:
         plt.figure()
         plt.title("Input torque", **csfont)
         # plt.plot(t, ur, tud_blue, linestyle="--", linewidth=2, label="Input torque (robot) $u_r(t)$")
-        plt.plot(t_sim, ur_sim, tud_blue, linestyle="-", linewidth=2, alpha=0.5,
-                 label="Simulated (robot) $u_{r,sim}(t)$")
+        if sim_data != None:
+            plt.plot(t_sim, ur_sim, tud_blue, linestyle="-", linewidth=2, alpha=0.5,
+                    label="Simulated (robot) $u_{r,sim}(t)$")
         # plt.plot(t, uhhat, tud_red, linestyle="--", linewidth=2, alpha=1, label="Estimated (human) $\hat{u}_h(t)$")
-        plt.plot(t_sim, uhhat_sim, tud_red, linewidth=2, linestyle="-", alpha=0.5,
-                 label="Simulated (human) $\hat{u}_{h,sim}(t)$")
+            plt.plot(t_sim, uhhat_sim, tud_red, linewidth=2, linestyle="-", alpha=0.5,
+                    label="Simulated (human) $\hat{u}_{h,sim}(t)$")
         # plt.plot(t, uh_vir, tud_black, linestyle="--", linewidth=2, alpha=1, label="Virtual (human) $u_{h,vir}(t)$")
         plt.xlabel('Time (s)', **hfont)
         plt.ylabel('Torque (Nm)', **hfont)
@@ -541,15 +552,12 @@ class PlotStuff:
         # Controller gains
         plt.figure()
         plt.plot(t, Lr_pos, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
-        plt.plot(t_sim, Lr_pos_sim, tud_blue, linewidth=2.5, label="Simulated $L_{r,sim}(t)$", alpha=0.5, )
+        if sim_data != None:
+            plt.plot(t_sim, Lr_pos_sim, tud_blue, linewidth=2.5, label="Simulated $L_{r,sim}(t)$", alpha=0.5, )
+            plt.plot(t_sim, Lhhat_pos_sim, tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
+                     label="Simulated (human) $\hat{L}_{h,sim}(t)$")
         plt.plot(t, Lhhat_pos, tud_red, linewidth=2.5, linestyle="--", alpha=1, label="Estimated (human) $\hat{L}_{h}(t)$")
-
-        plt.plot(t_sim, Lhhat_pos_sim, tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
-                  label="Simulated (human) $\hat{L}_{h,sim}(t)$")
-
         plt.plot(t, Lh_vir_pos, tud_black, linewidth=2.5, linestyle="--", alpha=1, label="Virtual (human) $L_{h,vir}(t)$")
-
-
         plt.title('Steering angle gain', **csfont)
         plt.xlabel('Time (s)', **hfont)
         plt.ylabel('Gain value (N/m)', **hfont)
@@ -558,11 +566,15 @@ class PlotStuff:
 
         plt.figure()
         plt.plot(t, Lr_vel, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
-        plt.plot(t_sim, Lr_vel_sim, tud_blue, linewidth=2.5, label="Simulated (robot) $L_{r,sim}(t)$", alpha=0.5)
-        plt.plot(t, Lhhat_vel, tud_red, linewidth=2.5, linestyle="--", alpha=1, label="Estimated (human) $\hat{L}_{h}(t)$")
-
-        plt.plot(t_sim, Lhhat_vel_sim, tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
+        plt.plot(t, Lhhat_vel, tud_red, linewidth=2.5, linestyle="--", alpha=1,
+                 label="Estimated (human) $\hat{L}_{h}(t)$")
+        if sim_data != None:
+            no_sim = True
+            plt.plot(t_sim, Lr_vel_sim, tud_blue, linewidth=2.5, label="Simulated (robot) $L_{r,sim}(t)$", alpha=0.5)
+            plt.plot(t_sim, Lhhat_vel_sim, tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
                  label="Simulated (human) $\hat{L}_{h,sim}(t)$")
+        else:
+            no_sim = False
 
         plt.plot(t, Lh_vir_vel, tud_black, linewidth=2.5, linestyle="--", alpha=1, label="Virtual (human) $L_{h,vir}(t)$")
 
@@ -574,7 +586,7 @@ class PlotStuff:
         plt.tight_layout(pad=1)
 
 
-        self.save_all_figures()
+        self.save_all_figures(no_sim)
 
         plt.show()
 
@@ -596,8 +608,11 @@ class PlotStuff:
                  str(dateTimeObj.second) + "_" + str(type) + ".pdf"
         plt.savefig(string)
 
-    def save_all_figures(self):
-        pp = PdfPages('validation.pdf')
+    def save_all_figures(self, no_sim):
+        if no_sim is True:
+            pp = PdfPages('validation_virtual.pdf')
+        else:
+            pp = PdfPages('validation_human.pdf')
         figs = None
         if figs is None:
             figs = [plt.figure(n) for n in plt.get_fignums()]

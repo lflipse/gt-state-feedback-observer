@@ -33,8 +33,9 @@ class Visualize:
         pygame.font.init()
         # print("available fonts: ", pygame.font.get_fonts())
         self.font = pygame.font.SysFont('georgia', 60)
+        self.font_top = pygame.font.SysFont('georgia', 20)
 
-    def visualize_experiment(self, r, r_prev, angle, text):
+    def visualize_experiment(self, r, r_prev, angle, text, top_text):
         x = self.translate_to_position(angle)
         x_r = self.translate_to_position(r)
         self.screen.fill(self.bg_color)
@@ -47,6 +48,7 @@ class Visualize:
         self.draw_arrows(x, x_r)
         self.show_player(x)
         self.show_text(text)
+        self.show_top_text(top_text)
 
 
         pygame.display.update()
@@ -63,24 +65,30 @@ class Visualize:
 
     def show_enemy(self, x):
         # x is the center
-        self.screen.blit(self.enemy, (x - 0.5*self.img_size, self.y_enemy))
+        # self.screen.blit(self.enemy, (x - 0.5*self.img_size, self.y_enemy))
+        a = 0
 
     def show_text(self, text):
         textsurface = self.font.render(text, False, (0, 0, 0))
         text_width, text_height = self.font.size(text)
         self.screen.blit(textsurface, (0.5*(self.screen_width-text_width), 0.5*self.screen_height))
 
+    def show_top_text(self, text):
+        textsurface = self.font.render(text, False, (0, 0, 0))
+        text_width, text_height = self.font_top.size(text)
+        self.screen.blit(textsurface, (0.5*(self.screen_width-text_width), 0.9*self.screen_height))
+
     def show_preview(self, r):
             pieces = len(r) - 1
             if pieces > 2:
                 points = []
-                dy = (self.screen_height-self.y_enemy)/pieces
+                dy = 1.5*(self.screen_height - self.y_player)/pieces
                 for i in range(pieces):
                     # Draw incremental lines from parts of the reference trajectory
-                    points.append((self.translate_to_position(r[i]), self.y_enemy-i*dy+0.5*self.img_size))
+                    points.append((self.translate_to_position(r[i]), self.y_player-i*dy+0.5*self.img_size))
                 # print(points)
                 if points != []:
-                    pygame.draw.lines(self.screen, self.preview_color, False, points, width=8)
+                    pygame.draw.lines(self.screen, self.preview_color, False, points, width=15)
 
     def draw_arrows(self, x, x_r):
         if x > x_r:

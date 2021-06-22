@@ -16,7 +16,7 @@ from Experiment.Controllers.Differential_Game_Gain_Observer_Kalman import Contro
 from Experiment.Controllers.Li2019 import ControllerDG_Li
 from Experiment.plots import PlotStuff
 from Report.LQR_Nonlin import ControllerLQ as LQsim
-from Report.Differential_Game import ControllerDG as DGsim
+# from Report.Differential_Game import ControllerDG as DGsim
 from Report.Normalized_Gradient_Flipse import ControllerNG as NGsim
 from Report.Normalized_Gradient_Flipse_w_Observer import ControllerNG as NG_Obssim
 from Experiment.human_gains import HumanEstimator
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     # Simulation parameters
     t_warmup = 5
     t_cooldown = 5
-    t_exp = 60
+    t_exp = 90
     duration = t_warmup + t_cooldown + t_exp
     t_step = 0.015
     N = round(t_exp / t_step)
@@ -120,37 +120,38 @@ if __name__ == "__main__":
 
     # Dynamics
     Jw = 0.05480475491037145
-    Bw = 0.4  # Max = 0.5
+    Bw = 0.5  # Max = 0.5
     Kw = 0.0  # Max = 2.5
     A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
     B = np.array([[0], [1 / Jw]])
 
     # TODO: verify values
-    alpha = 25
+    alpha = 15
     Gamma = alpha * np.array([[2, 0], [0, 0.2]])
     # Pi = -0.1*np.array([[-1, 0.5], [-1.5, 2]])
     Pi = 4 * np.array([[1, 0], [0, 1]])
     kappa = 0.7
-    Qr_end = np.array([[10.0, 0.0], [0.0, 0.5]])
-    Qr_start = np.array([[10.0, 0.0], [0.0, 0.5]])
+    Qr_end = np.array([[10.0, 0.0], [0.0, 0.1]])
+    Qr_start = np.array([[10.0, 0.0], [0.0, 0.1]])
 
     C = Qr_start
+
+    Qh = np.array([[10.0, 0.0], [0.0, 0.0]])
+    virtual_gain = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, Qh, 1))
+    vhg = np.zeros((6, 2))
+    vhg[0, :] = np.array([virtual_gain[0, 0], virtual_gain[0, 1]])
+    vhg[1, :] = np.array([0, 0])
+    vhg[4, :] = np.array([0.5 * -virtual_gain[0, 0], 0.5 * -virtual_gain[0, 1]])
+    vhg[3, :] = np.array([0, 0])
+    vhg[2, :] = np.array([1.5 * virtual_gain[0, 0], 1.5 * virtual_gain[0, 1]])
+    vhg[5, :] = np.array([0, 0])
+    virtual_human_gain = vhg
 
     virt = input("Do you want to use a virtual human being? 0. No, 1. Yes. Your answer = ")
     if int(virt) == 0:
         virtual_human = False
-        Qh = np.array([[0.0, 0.0], [0.0, 0.0]])
-        virtual_human_gain = np.zeros((4, 2))
     else:
         virtual_human = True
-        Qh = np.array([[12.0, 0.0], [0.0, 0.0]])
-        virtual_gain = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, Qh, 1))
-        virtual_human_gain = np.zeros((4, 2))
-        virtual_human_gain[0, :] = np.array([virtual_gain[0, 0], virtual_gain[0, 1]])
-        virtual_human_gain[1, :] = np.array([-virtual_gain[0, 0], -virtual_gain[0, 1]])
-        virtual_human_gain[2, :] = np.array([-virtual_gain[0, 0], virtual_gain[0, 1]])
-        virtual_human_gain[3, :] = np.array([virtual_gain[0, 0], -virtual_gain[0, 1]])
-
 
 
     print("Observer dynamics", A - Pi)
@@ -177,7 +178,7 @@ if __name__ == "__main__":
 
     # Time to do an experiment!
     full_screen = True
-    preview = False
+    preview = True
     do_exp = True
 
     if controller_type == "Manual" and int(sim) == 1:
@@ -235,5 +236,7 @@ if __name__ == "__main__":
         # plot_stuff.plot_stuff_with_sim_data(experiment_data, simulation_data, controller_type, virtual_human)
         plot_stuff.plot_report(experiment_data, simulation_data)
     else:
-        plot_stuff.plot_stuff(experiment_data, controller_type, virtual_human)
+        simulation_data = None
+        plot_stuff.plot_report(experiment_data, simulation_data)
+        # plot_stuff.plot_stuff(experiment_data, controller_type, virtual_human)
 
