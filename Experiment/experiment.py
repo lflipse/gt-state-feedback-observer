@@ -70,7 +70,9 @@ class Experiment:
         self.t_last = time.perf_counter_ns()
 
         # Let's make this 1 loop
+        # while self.time < self.duration:
         while self.time < self.duration:
+
             # Check whether the process has not been quited
             self.visualize.check_quit()
 
@@ -106,9 +108,9 @@ class Experiment:
                 r_prev = self.reference_preview(self.time, t_prev=1)
 
                 if self.time - self.t_warmup < 1/6 * self.t_exp:
-                    vhg = np.array(self.virtual_human_gain[0, :])
+                    vhg = np.tanh(5 * (self.time - self.t_warmup)) * np.array(self.virtual_human_gain[0, :]) * -np.tanh(5 * (self.time - self.t_warmup - 1/6 * self.t_exp))
                 elif 2 / 6 * self.t_exp > self.time - self.t_warmup > 1 / 6 * self.t_exp:
-                    vhg = np.array(self.virtual_human_gain[1, :])
+                    vhg =  np.array(self.virtual_human_gain[1, :])
                 elif 3 / 6 * self.t_exp > self.time - self.t_warmup > 2 / 6 * self.t_exp:
                     vhg = np.array(self.virtual_human_gain[2, :])
                 elif 4 / 6 * self.t_exp > self.time - self.t_warmup > 3 / 6 * self.t_exp:

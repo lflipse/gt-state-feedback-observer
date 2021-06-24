@@ -512,7 +512,7 @@ class PlotStuff:
                     label="Simulated $\dot{\phi}_{sim}(t)$")
         plt.plot(t, xhatdot[:, 0], tud_red, linewidth=2.5, linestyle="--", label="Estimated $\dot{\hat{\phi}}(t)$")
         plt.xlabel('Time (s)', **hfont)
-        plt.ylabel('Steering rate (rad)', **hfont)
+        plt.ylabel('Steering rate (rad/s)', **hfont)
         plt.legend(prop={"size": 8}, loc='upper right')
         plt.xlim(0, 10)
         plt.tight_layout(pad=1)
@@ -549,6 +549,10 @@ class PlotStuff:
         plt.xlim(0, 10)
         plt.tight_layout(pad=1)
 
+        options = {"arrowstyle": '->'}
+
+        n = len(Lh_vir_vel)
+
         # Controller gains
         plt.figure()
         plt.plot(t, Lr_pos, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
@@ -558,11 +562,46 @@ class PlotStuff:
                      label="Simulated (human) $\hat{L}_{h,sim}(t)$")
         plt.plot(t, Lhhat_pos, tud_red, linewidth=2.5, linestyle="--", alpha=1, label="Estimated (human) $\hat{L}_{h}(t)$")
         plt.plot(t, Lh_vir_pos, tud_black, linewidth=2.5, linestyle="--", alpha=1, label="Virtual (human) $L_{h,vir}(t)$")
+
+        try:
+            self.stepinfo(t, Lhhat_pos, Lh_vir_pos)
+        except:
+            print("does not work")
+
         plt.title('Steering angle gain', **csfont)
         plt.xlabel('Time (s)', **hfont)
-        plt.ylabel('Gain value (N/m)', **hfont)
+        plt.ylabel('Gain value (Nm/rad)', **hfont)
+        plt.legend(prop={"size": 8}, loc='upper right')
+        plt.xlim(0, 15)
+        plt.ylim(-0.2, 6)
+
+
+
+        plt.figure()
+        plt.plot(t, Lr_pos, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
+        if sim_data != None:
+            plt.plot(t_sim, Lr_pos_sim, tud_blue, linewidth=2.5, label="Simulated $L_{r,sim}(t)$", alpha=0.5, )
+            plt.plot(t_sim, Lhhat_pos_sim, tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
+                     label="Simulated (human) $\hat{L}_{h,sim}(t)$")
+        plt.plot(t, Lhhat_pos, tud_red, linewidth=2.5, linestyle="--", alpha=1,
+                 label="Estimated (human) $\hat{L}_{h}(t)$")
+        plt.plot(t, Lh_vir_pos, tud_black, linewidth=2.5, linestyle="--", alpha=1,
+                 label="Virtual (human) $L_{h,vir}(t)$")
+        plt.annotate("Weak action", (7.5, Lh_vir_pos[int(n/12)]), xytext=(7.5, Lh_vir_pos[int(n/12)] + 2), arrowprops=options)
+        plt.annotate("No interaction", (22.5, Lh_vir_pos[int(3*n/12)]), xytext=(18, Lh_vir_pos[int(3*n/12)] - 2), arrowprops=options)
+        plt.annotate("Strong action", (37.5, Lh_vir_pos[int(5*n/12)]), xytext=(34, Lh_vir_pos[int(5*n/12)] + 1.5), arrowprops=options)
+        plt.annotate("No interaction", (52.5, Lh_vir_pos[int(7*n/12)]), xytext=(48, Lh_vir_pos[int(7*n/12)] + 2), arrowprops=options)
+        plt.annotate("Counteracting steering", (67.5, Lh_vir_pos[int(9*n/12)]), xytext=(48, Lh_vir_pos[int(9*n/12)] - 1.5), arrowprops=options)
+        plt.annotate("No interaction", (82.5, Lh_vir_pos[int(11*n/12)]), xytext=(70, Lh_vir_pos[int(11*n/12)] + 2), arrowprops=options)
+
+        plt.title('Steering angle gain', **csfont)
+        plt.xlabel('Time (s)', **hfont)
+        plt.ylabel('Gain value (Nm/rad)', **hfont)
         plt.legend(prop={"size": 8}, loc='upper right')
         plt.xlim(0, t[-1])
+        plt.ylim(-3.5, 9)
+
+
 
         plt.figure()
         plt.plot(t, Lr_vel, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
@@ -578,17 +617,97 @@ class PlotStuff:
 
         plt.plot(t, Lh_vir_vel, tud_black, linewidth=2.5, linestyle="--", alpha=1, label="Virtual (human) $L_{h,vir}(t)$")
 
+        plt.annotate("Weak action", (7.5, Lh_vir_vel[int(n/12)]), xytext=(7.5, Lh_vir_vel[int(n/12)] + 0.5), arrowprops=options)
+        plt.annotate("No interaction", (22.5, Lh_vir_vel[int(3*n/12)]), xytext=(15, Lh_vir_vel[int(3*n/12)] - 0.5), arrowprops=options)
+        plt.annotate("Strong action", (37.5, Lh_vir_vel[int(5*n/12)]), xytext=(20, Lh_vir_vel[int(5*n/12)] + 0.2), arrowprops=options)
+        plt.annotate("No interaction", (52.5, Lh_vir_vel[int(7*n/12)]), xytext=(48, Lh_vir_vel[int(7*n/12)] + 0.65), arrowprops=options)
+        plt.annotate("Counteracting steering", (67.5, Lh_vir_vel[int(9*n/12)]), xytext=(55, Lh_vir_vel[int(9*n/12)] - 0.2),
+                     arrowprops=options)
+        plt.annotate("No interaction", (82.5, Lh_vir_vel[int(11*n/12)]), xytext=(70, Lh_vir_vel[int(11*n/12)] + 0.65), arrowprops=options)
+
         plt.title('Steering rate gain', **csfont)
         plt.xlabel('Time (s)', **hfont)
-        plt.ylabel('Gain value (Ns/m)', **hfont)
+        plt.ylabel('Gain value (Nms/rad)', **hfont)
         plt.legend(prop={"size": 8}, loc='upper right')
         plt.xlim(0, t[-1])
+        plt.ylim(-0.9, 1.5)
         plt.tight_layout(pad=1)
 
+        plt.figure()
+        plt.plot(t, Lr_vel, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
+        plt.plot(t, Lhhat_vel, tud_red, linewidth=2.5, linestyle="--", alpha=1,
+                 label="Estimated (human) $\hat{L}_{h}(t)$")
+        if sim_data != None:
+            no_sim = True
+            plt.plot(t_sim, Lr_vel_sim, tud_blue, linewidth=2.5, label="Simulated (robot) $L_{r,sim}(t)$", alpha=0.5)
+            plt.plot(t_sim, Lhhat_vel_sim, tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
+                     label="Simulated (human) $\hat{L}_{h,sim}(t)$")
+        else:
+            no_sim = False
+
+        plt.plot(t, Lh_vir_vel, tud_black, linewidth=2.5, linestyle="--", alpha=1,
+                 label="Virtual (human) $L_{h,vir}(t)$")
+
+        try:
+            self.stepinfo(t, Lhhat_vel, Lh_vir_vel)
+        except:
+            print("does not work")
+
+        plt.title('Steering rate gain', **csfont)
+        plt.xlabel('Time (s)', **hfont)
+        plt.ylabel('Gain value (Nms/rad)', **hfont)
+        plt.legend(prop={"size": 8}, loc='upper right')
+        plt.xlim(0, 15)
+        plt.ylim(-0.2, 0.6)
+        plt.tight_layout(pad=1)
 
         self.save_all_figures(no_sim)
 
         plt.show()
+
+    def stepinfo(self, t, L, Lref):
+        n = len(L)
+        dL = np.array(L) / Lref[int(n/12)]
+        print(t[-1])
+        end_index = int(min(np.argwhere(np.array(t) > 15)))
+        rise_start = int(min(np.argwhere(dL[0:end_index] > 0.1)))
+        rise_end = int(min(np.argwhere(dL[0:end_index] > 0.9)))
+        if len(np.argwhere(dL[0:end_index] > 1.05)) > 0:
+            settling_time = int(max(max(np.argwhere(0.95 > dL[0:end_index])), max(np.argwhere(1.05 < dL[0:end_index]))))
+        else:
+            settling_time = int(max(np.argwhere(0.95 > dL[0:end_index])))
+        print("settling time: ", t[settling_time])
+
+        rise_time = t[rise_end] - t[rise_start]
+
+        print("gain reference: ", Lref[int(n/12)])
+
+        # Take timeseries from the risetime to compute bias and variance
+        L_ss = L[rise_end:end_index]
+        mean = np.mean(L_ss)
+        median = np.median(L_ss)
+        variance = np.var(L_ss)
+        print("mean, median, bias, variance = ", mean, median, mean-Lref[int(n/12)], variance)
+
+        print("rise time: ", rise_time)
+        plt.plot([t[rise_start], t[rise_start]], [-20, L[rise_start]], 'k--', alpha=0.4)
+        plt.plot([t[rise_end], t[rise_end]], [-20, L[rise_end]], 'k--', alpha=0.4)
+        plt.plot([t[rise_start]], [L[rise_start]], 'k.', alpha=0.7)
+        plt.plot([t[rise_end]], [L[rise_end]], 'k.', alpha=0.7)
+        options = {"arrowstyle": '<->'}
+        plt.annotate("Rise time", (t[rise_start], L[rise_start]), xytext=(t[rise_end]*1.05, L[rise_start]*0.85),
+                     arrowprops=options)
+        plt.plot([t[settling_time], t[settling_time]], [-20, L[settling_time]], 'k--', alpha=0.7)
+        plt.plot([t[0], t[-1]], [1.05 * Lref[int(n/12)], 1.05 * Lref[int(n/12)]], 'k--', alpha=0.4)
+        plt.plot([t[0], t[-1]], [0.95 * Lref[int(n/12)], 0.95 * Lref[int(n/12)]], 'k--', alpha=0.4)
+        if t[settling_time] < 14:
+            plt.plot([t[settling_time]], [L[settling_time]], 'ko', alpha=0.7)
+            options = {"arrowstyle": '->'}
+            plt.annotate("Settling time", (t[settling_time], L[settling_time]), xytext=(5, Lref[int(n/12)]*1.4), arrowprops=options)
+
+
+        print("start, end and risetime", rise_start, rise_end, rise_time)
+
 
     def save_figure_dump(self, type):
         working_dir = os.getcwd()

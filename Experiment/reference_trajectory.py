@@ -7,7 +7,7 @@ class Reference:
         period = np.array([5, 8, 11, 17, 26, 37, 49, 57, 73, 97])
         self.duration = (period[7] * 2 * np.pi) / bw
         frequencies = 2 * np.pi * period / self.duration
-        phases = [4.79893804, 0.1467642, -1.462783088, 2.56145111, -1.92977185, -1.1689079, -0.61034581,
+        phases = [5.79893804, 0.2467642, -1.362783088, 2.56145111, -1.92977185, -1.1689079, -0.61034581,
                   -0.75180265, -0.03232366, 3.2509144]
         print("duration = ", self.duration)
         print("frequencies = ", frequencies)
@@ -35,7 +35,7 @@ class Reference:
             plt.plot(frequencies[i], amplitude[i], color=tud_blue, marker='o')
             plt.plot([frequencies[i], frequencies[i]], [0, amplitude[i]], tud_blue, alpha=0.7, linewidth=2.5)
 
-        plt.title("Forcing function in frequency domain", **csfont)
+        plt.title("Reference trajectory in frequency domain", **csfont)
         plt.xlabel("Frequency (rad/s)", **hfont)
         plt.ylabel("Amplitude (-)", **hfont)
         plt.xlim(frequencies[0] - 0.1, frequencies[-1] + 10)
@@ -54,7 +54,7 @@ class Reference:
 
         plt.figure()
         plt.plot(t, r, tud_blue, linewidth=2.5)
-        plt.title("Forcing function in time domain", **csfont)
+        plt.title("Reference trajectory in time domain", **csfont)
         plt.xlabel("Time (s)", **hfont)
         plt.ylabel("Amplitude (-)", **hfont)
         plt.xlim(0, 10)

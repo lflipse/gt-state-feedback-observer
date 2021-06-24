@@ -81,8 +81,9 @@ class Visualize:
     def show_preview(self, r):
             pieces = len(r) - 1
             if pieces > 2:
+                pygame.draw.circle(self.screen, self.preview_color, (self.translate_to_position(r[0]), self.y_player + 0.5*self.img_size), 10)
                 points = []
-                dy = 1.5*(self.screen_height - self.y_player)/pieces
+                dy = 3.2*(self.screen_height - self.y_player)/pieces
                 for i in range(pieces):
                     # Draw incremental lines from parts of the reference trajectory
                     points.append((self.translate_to_position(r[i]), self.y_player-i*dy+0.5*self.img_size))

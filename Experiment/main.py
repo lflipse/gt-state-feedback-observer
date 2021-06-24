@@ -126,10 +126,10 @@ if __name__ == "__main__":
     B = np.array([[0], [1 / Jw]])
 
     # TODO: verify values
-    alpha = 15
-    Gamma = alpha * np.array([[2, 0], [0, 0.2]])
+    alpha = 30
+    Gamma = alpha * np.array([[2.5, 0], [0, 0.125]])
     # Pi = -0.1*np.array([[-1, 0.5], [-1.5, 2]])
-    Pi = 4 * np.array([[1, 0], [0, 1]])
+    Pi = 4 * np.array([[2, 0], [0, 2]])
     kappa = 0.7
     Qr_end = np.array([[10.0, 0.0], [0.0, 0.1]])
     Qr_start = np.array([[10.0, 0.0], [0.0, 0.1]])
