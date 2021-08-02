@@ -1,6 +1,6 @@
 import time
-from Experiment.SensoDrive.PCANBasic import *
-from Experiment.SensoDrive.Lowpassfilter_Biquad import LowPassFilterBiquad
+from Controller_Design.SensoDrive.PCANBasic import *
+from Controller_Design.SensoDrive.Lowpassfilter_Biquad import LowPassFilterBiquad
 import math
 import multiprocessing as mp
 import numpy as np

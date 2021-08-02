@@ -66,7 +66,7 @@ class ControllerNG:
         pseudo_B = 1/(np.matmul(self.B.transpose(), self.B)) * self.B.transpose()
         u_h_tilde = np.matmul(pseudo_B, x_tilde_dot - np.matmul(self.A - 4 * np.array([[1, 0], [0, 1]]), x_tilde))
         m_squared = 1 + kappa * np.matmul(e.transpose(), e)
-        P_hhat_vec_dot = (1/m_squared) * np.matmul(np.matmul(Gamma, e), u_h_tilde)
+        P_hhat_vec_dot = 1/self.beta * (1/m_squared) * np.matmul(np.matmul(Gamma, e), u_h_tilde)
 
         ydot = np.array([x_dot.transpose(), P_hhat_vec_dot.transpose(), x_hat_dot.transpose()]).flatten()
 

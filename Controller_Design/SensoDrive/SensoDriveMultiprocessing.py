@@ -8,12 +8,12 @@ import numpy as np
 
 
 class SensoDriveModule(mp.Process):
-    def __init__(self, Bw, Kw, controller, controller_type, parent_conn, child_conn):
+    def __init__(self, senso_dict):
 
         super().__init__(daemon=True)
         # Establish communication
-        self.parent_channel = parent_conn
-        self.child_channel = child_conn
+        self.parent_channel = senso_dict["parent_conn"]
+        self.child_channel = senso_dict["child_conn"]
         self.message = TPCANMsg()
         self._pcan_channel = None
         self.exit = False
@@ -22,9 +22,9 @@ class SensoDriveModule(mp.Process):
         self._time_step_in_ns = self.time_step * 1e9
         self._bq_filter_velocity = LowPassFilterBiquad(fc=50, fs=self.frequency)
         self._bq_filter_acc = LowPassFilterBiquad(fc=5, fs=self.frequency)
-        self.controller_gains = controller
-        self.controller = controller
-        self.controller_type = controller_type
+        self.controller_gains = senso_dict["controller"]
+        self.controller = senso_dict["controller"]
+        self.controller_type = senso_dict["controller_type"]
         self.now = 0
         self.last_time = 0
 
@@ -36,8 +36,13 @@ class SensoDriveModule(mp.Process):
         self.settings = {}
         self.settings['factor'] = 0
         self.settings['mp_friction'] = 0
-        self.settings['mp_damping'] = Bw
-        self.settings['mp_spring_stiffness'] = Kw
+        self.settings['mp_damping'] = senso_dict["damping"]
+        self.settings['mp_spring_stiffness'] = senso_dict["stiffness"]
+
+        # Cost parameters
+        self.beta = senso_dict["beta"]
+        self.alpha_1 = senso_dict["alpha_1"]
+        self.alpha_2 = senso_dict["alpha_2"]
 
         # States
         self.states = {
@@ -65,8 +70,10 @@ class SensoDriveModule(mp.Process):
             "input_estimation_error": 0,
             "xi_gamma": np.array([0, 0]),
             "experiment": False,
-            "xdot_test": np.array([[0],[0]]),
-            "robot_cost": np.array([[0, 0], [0, 0]])
+            "xdot_test": np.array([[0], [0]]),
+            "robot_cost": np.array([[0, 0], [0, 0]]),
+            "estimated_human_cost": np.array([[0, 0], [0, 0]]),
+            "robot_P": np.array([[0, 0], [0, 0]])
         }
 
         # Hex Codes
@@ -199,7 +206,7 @@ class SensoDriveModule(mp.Process):
         self.states["rate_error"] = self.states["error_state"][1]
 
         # Gain observer states
-        if self.controller_type == "Gain_observer":
+        if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
             estimate_derivative = np.array(self.states["state_estimate_derivative"])
             old_estimated_state = np.array(self.states["state_estimate"])
             new_estimated_state = old_estimated_state + estimate_derivative * delta
@@ -209,10 +216,20 @@ class SensoDriveModule(mp.Process):
             gain_derivative = np.array(self.states["estimated_human_gain_derivative"])
             new_estimated_gain = old_estimated_gain + gain_derivative * delta
             self.states["estimated_human_gain"] = new_estimated_gain
-            self.states["estimated_human_gain"][0, 1] = max(-1, min(1, self.states["estimated_human_gain"][0, 1]))
-
             self.states["state_derivative"] = np.array([[self.states["steering_rate"]],
                                                         [self.states["steering_acc"]]])
+            if self.controller_type == "Cost_observer":
+                p = new_estimated_gain / self.beta
+                self.states["estimated_human_cost"] = self.compute_cost(p)
+
+    def compute_cost(self, p):
+        P = self.states["robot_P"]
+        gamma_1 = self.alpha_1 - self.beta ** 2 * (P[0, 1])
+        gamma_2 = self.alpha_2 - self.beta ** 2 * (P[1, 1])
+        q_hhat1 = - 2 * gamma_1 * p[0, 0] + self.beta**2*p[0, 0]**2
+        q_hhat2 = - 2 * p[0, 0] - 2 * gamma_2 * p[0, 1] + self.beta**2*p[0, 1]**2
+        Q_hhat = np.array([[q_hhat1, 0],[0, q_hhat2]])
+        return Q_hhat
 
     def write_and_read(self, msgtype, data):
         # Check message type
@@ -335,7 +352,7 @@ class SensoDriveModule(mp.Process):
         self.states["cost"] = output["cost"]
 
         # Update gains
-        if self.controller_type == "Gain_observer":
+        if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
             # Update human gain estimate and calculate torque
             if not self.states["experiment"]:
                 self.states["estimated_human_gain"] = np.array([0, 0])
@@ -346,6 +363,7 @@ class SensoDriveModule(mp.Process):
             self.states["input_estimation_error"] = output["input_estimation_error"]
             self.states["robot_gain"] = output["robot_gain"]
             self.states["xi_gamma"] = output["xi_gamma"]
+            self.states["robot_P"] = output["robot_P"]
             # self.states["xdot_test"] = output["xdot_test"]
 
     def map_sensodrive_to_si(self, received):
