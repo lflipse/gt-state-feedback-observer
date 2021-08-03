@@ -13,13 +13,13 @@ class Visualize:
             DISPLAYSURF = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
         # Title and Icon
-        pygame.display.set_caption("Experiment")
-        icon = pygame.image.load("images/ufo.png")
+        pygame.display.set_caption("Controller_Design")
+        icon = pygame.image.load("../Controller_Design/images/ufo.png")
         pygame.display.set_icon(icon)
 
         # Images
-        playerImg = pygame.image.load("images/x-wing.png")
-        enemyImg = pygame.image.load("images/player.png")
+        playerImg = pygame.image.load("../Controller_Design/images/x-wing.png")
+        enemyImg = pygame.image.load("../Controller_Design/images/player.png")
         self.img_size = 100
         self.y_player = int(3*screen_height/4)
         margin = 1.4

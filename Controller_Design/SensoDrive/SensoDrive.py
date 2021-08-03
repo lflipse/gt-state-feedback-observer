@@ -1,5 +1,5 @@
 import time
-from Experiment.SensoDrive.PCANBasic import *
+from Controller_Design.SensoDrive.PCANBasic import *
 import math
 
 

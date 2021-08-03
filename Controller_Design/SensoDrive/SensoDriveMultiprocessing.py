@@ -1,6 +1,6 @@
 import time
-from Experiment.SensoDrive.PCANBasic import *
-from Experiment.SensoDrive.Lowpassfilter_Biquad import LowPassFilterBiquad
+from Controller_Design.SensoDrive.PCANBasic import *
+from Controller_Design.SensoDrive.Lowpassfilter_Biquad import LowPassFilterBiquad
 import math
 import multiprocessing as mp
 import numpy as np
@@ -73,7 +73,9 @@ class SensoDriveModule(mp.Process):
             "xdot_test": np.array([[0], [0]]),
             "robot_cost": np.array([[0, 0], [0, 0]]),
             "estimated_human_cost": np.array([[0, 0], [0, 0]]),
-            "robot_P": np.array([[0, 0], [0, 0]])
+            "robot_P": np.array([[0, 0], [0, 0]]),
+            "sharing_rule": np.array([[0, 0], [0, 0]]),
+            "robot_cost_calc": np.array([[0, 0], [0, 0]])
         }
 
         # Hex Codes
@@ -137,6 +139,14 @@ class SensoDriveModule(mp.Process):
                     self.states["virtual_human_gain"] = msg["virtual_human_gain"]
                 except:
                     self.states["virtual_human_gain"] = self.states["virtual_human_gain"]
+
+                try:
+                    self.states["sharing_rule"] = msg["sharing_rule"]
+                    # print("received: ", msg["sharing_rule"])
+                except:
+                    self.states["sharing_rule"] = self.states["sharing_rule"]
+                    print("sharing rule not succesfully recieved")
+
                 self.settings["factor"] = msg["factor"]
                 self.states["experiment"] = msg["experiment"]
                 self.exit = msg["exit"]
@@ -207,6 +217,8 @@ class SensoDriveModule(mp.Process):
 
         # Gain observer states
         if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
+
+
             estimate_derivative = np.array(self.states["state_estimate_derivative"])
             old_estimated_state = np.array(self.states["state_estimate"])
             new_estimated_state = old_estimated_state + estimate_derivative * delta
@@ -221,6 +233,10 @@ class SensoDriveModule(mp.Process):
             if self.controller_type == "Cost_observer":
                 p = new_estimated_gain / self.beta
                 self.states["estimated_human_cost"] = self.compute_cost(p)
+
+            if not self.states["experiment"]:
+                self.states["estimated_human_gain"] = np.array([0.0, 0.0])
+                self.states["estimated_human_cost"] = np.array([[0.0, 0.0], [0.0, 0.0]])
 
     def compute_cost(self, p):
         P = self.states["robot_P"]
@@ -279,7 +295,7 @@ class SensoDriveModule(mp.Process):
         while self.received_ok > 0:
             received = self.pcan_object.Read(self._pcan_channel)
             self.received_ok = received[0]
-            if time.time() - t0 > 0.5:
+            if time.time() - t0 > 1.0:
                 # TODO: Fix that main process also quits
                 exit("This should not take this long. Check if the motor is connected!")
 
@@ -355,7 +371,10 @@ class SensoDriveModule(mp.Process):
         if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
             # Update human gain estimate and calculate torque
             if not self.states["experiment"]:
+                # TODO: warmstarten
+                # test = 1
                 self.states["estimated_human_gain"] = np.array([0, 0])
+                self.states["estimated_human_cost"] = np.array([[0, 0], [0, 0]])
                 self.states["state_estimate"] = self.states["state"]
             self.states["state_estimate_derivative"] = output["state_estimate_derivative"]
             self.states["estimated_human_gain_derivative"] = output["estimated_human_gain_derivative"]
@@ -364,6 +383,7 @@ class SensoDriveModule(mp.Process):
             self.states["robot_gain"] = output["robot_gain"]
             self.states["xi_gamma"] = output["xi_gamma"]
             self.states["robot_P"] = output["robot_P"]
+            self.states["robot_cost_calc"] = output["robot_cost"]
             # self.states["xdot_test"] = output["xdot_test"]
 
     def map_sensodrive_to_si(self, received):

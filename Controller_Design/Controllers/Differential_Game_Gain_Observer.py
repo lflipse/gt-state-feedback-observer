@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.linalg as cp
+import control.matlab as con
 import time
 
 class ControllerDG_GObsKal:
@@ -23,15 +24,29 @@ class ControllerDG_GObsKal:
         x_tilde = x_hat - x
         x_dot = states["state_derivative"]
         Lh_hat = states["estimated_human_gain"]
-        Qr = states["robot_cost"]
+        Qh = states["estimated_human_cost"]
+        C = states["sharing_rule"]
+        Qr = C - Qh
+
+        # TODO: fix does not work
+        if np.linalg.det(Qr) < 0:
+            Qr = np.array([[0, 0], [0, 0]])
+
+        # print("estimated human: ", Qh)
+        # print("sharing rule: ", C)
         uhhat = np.matmul(-Lh_hat, xi)
 
         # Compute Controller gain
         Acl = self.A - self.B * Lh_hat
+        # Pr = con.care(Acl, self.B, Qr, 1)
+        # print(Pr)
         try:
             Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
+            # Pr = con.care(Acl, self.B, Qr, 1)
+            # print(Pr)
         except:
             print("Debugs:")
+            print("Qh = ", Qh)
             print("Qr = ", Qr)
             print("Lhhat = ", Lh_hat)
             print("failed to find finite solution")
@@ -59,6 +74,7 @@ class ControllerDG_GObsKal:
             "robot_P": Pr,
             "input_estimation_error": uh_tilde / m_squared,
             "xi_gamma": xi_gamma,
+            "robot_cost": Qr,
         }
 
         return output

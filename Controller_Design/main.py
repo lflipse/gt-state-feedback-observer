@@ -5,21 +5,21 @@ import wres
 import platform
 import scipy.linalg as cp
 
-from Experiment.reference_trajectory import Reference
-from Experiment.live_plotter import LivePlotter
-from Experiment.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
-from Experiment.experiment import Experiment
-from Experiment.Controllers.Linear_Quadratic import ControllerLQ
-from Experiment.Controllers.Differential_Game import ControllerDG
-from Experiment.Controllers.Differential_Game_Gain_Descent import ControllerDG_GObs
-from Experiment.Controllers.Differential_Game_Gain_Observer import ControllerDG_GObsKal
-from Experiment.Controllers.Li2019 import ControllerDG_Li
-from Experiment.plots import PlotStuff
-from Report.Linear_Quadratic_Nonlin import ControllerLQ as LQsim
-# from Report.Differential_Game import ControllerDG as DGsim
-from Report.Differential_Game_Gain_Descent import ControllerNG as NGsim
-from Report.Differential_Game_Gain_Observer import ControllerNG as NG_Obssim
-from Experiment.human_gains import HumanEstimator
+from Controller_Design.reference_trajectory import Reference
+from Controller_Design.live_plotter import LivePlotter
+from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
+from Controller_Design.experiment import Experiment
+from Controller_Design.Controllers.Linear_Quadratic import ControllerLQ
+from Controller_Design.Controllers.Differential_Game import ControllerDG
+from Controller_Design.Controllers.Differential_Game_Gain_Descent import ControllerDG_GObs
+from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDG_GObsKal
+from Controller_Design.Controllers.Li2019 import ControllerDG_Li
+from Controller_Design.plots import PlotStuff
+from Simulations.Linear_Quadratic_Nonlin import ControllerLQ as LQsim
+# from Simulations.Differential_Game import ControllerDG as DGsim
+from Simulations.Differential_Game_Gain_Descent import ControllerNG as NGsim
+from Simulations.Differential_Game_Gain_Observer import ControllerNG as NG_Obssim
+from Controller_Design.human_gains import HumanEstimator
 
 def compute_virtual_gain(Qh1, Qr_end, A, B):
     # Iterative procedure for calculating gains

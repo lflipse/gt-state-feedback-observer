@@ -1,6 +1,6 @@
 import os
 import multiprocessing as mp
-from Experiment.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
+from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
 import time
 
 # Simple test to see if we can get a good stiffness and damping from the steering wheel

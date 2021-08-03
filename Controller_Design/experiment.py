@@ -3,7 +3,7 @@ import numpy as np
 import wres
 import platform
 
-from Experiment.visuals import Visualize
+from Controller_Design.visuals import Visualize
 
 if platform.system() == 'Windows':
     import wres
@@ -23,6 +23,7 @@ class Experiment:
         self.Qr_start = input["init_robot_cost"]
         self.Qr_end = input["final_robot_cost"]
         self.virtual_human_cost = input["virtual_human_cost"]
+        self.sharing_rule = input["sharing_rule"]
         self.duration = self.t_warmup + self.t_exp + self.t_cooldown
         self.t_now = 0
         self.t_last = 0
@@ -91,11 +92,12 @@ class Experiment:
                 self.send_dict["ref"] = ref * self.send_dict["factor"]
                 self.send_dict["experiment"] = False
                 self.send_dict["robot_cost"] = self.Qr_start
+                self.send_dict["sharing_rule"] = self.sharing_rule
                 r_prev = self.reference_preview(self.time, t_prev=1)
                 dt = self.t_warmup - self.time
                 top_text = ""
                 if dt > 3:
-                    text = "Experiment starts in:"
+                    text = "Controller_Design starts in:"
                 else:
                     text = str(round(dt, 1))
 
@@ -106,6 +108,7 @@ class Experiment:
                 self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = True
                 self.send_dict["robot_cost"] = 0.5 * ((self.Qr_start + self.Qr_end) + np.tanh(self.time - self.t_warmup - 0.5 * self.t_exp) * (self.Qr_end - self.Qr_start))
+                self.send_dict["sharing_rule"] = self.sharing_rule
                 r_prev = self.reference_preview(self.time, t_prev=1)
 
                 Qh, vhg = self.smooth_virtual_human()
@@ -122,8 +125,9 @@ class Experiment:
                 self.store = False
                 self.send_dict["factor"] = 0.96 * self.send_dict["factor"]
                 self.send_dict["ref"] = 0.96 * self.send_dict["ref"]
-                text = "Finished Experiment"
+                text = "Finished Controller_Design"
                 self.send_dict["experiment"] = False
+                self.send_dict["sharing_rule"] = self.sharing_rule
                 r_prev = []
                 top_text = ""
 
@@ -159,8 +163,10 @@ class Experiment:
                     "time": self.time - self.t_warmup,
                 }
                 if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
-                    output["estimated_human_gain_pos"] = self.states["estimated_human_gain"][0, 0]
-                    output["estimated_human_gain_vel"] = self.states["estimated_human_gain"][0, 1]
+                    print(self.states["estimated_human_gain"])
+                    output["estimated_human_gain_pos"] = self.states["estimated_human_gain"].flatten()[0]
+                    output["estimated_human_gain_vel"] = self.states["estimated_human_gain"].flatten()[1]
+
                     # print(self.states["robot_gain"])
                     output["robot_gain_pos"] = self.states["robot_gain"][0, 0]
                     output["robot_gain_vel"] = self.states["robot_gain"][0, 1]
