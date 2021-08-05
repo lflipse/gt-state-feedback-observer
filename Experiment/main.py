@@ -44,18 +44,12 @@ def compute_virtual_gain(Qh1, Qr_end, A, B):
 
 def input_controller():
     # Select controller type
-    print("Choose a controller type. 0: Manual control, 1: Linear Quadratic, 2: Differential Game Cost Observer, 3: Use a dataset")
+    print("Choose a controller type. 0: Differential Game Cost Observer, 1: Use a dataset")
     exp_type = input("Please choose: ")
     if int(exp_type) == 0:
-        controller = None
-        controller_type = "Manual"
-    elif int(exp_type) == 1:
-        controller = ControllerLQ(A, B, C)
-        controller_type = "LQ"
-    elif int(exp_type) == 2:
         controller = ControllerDG_GObsKal(A, B, Gamma, Pi, kappa, C, None)
         controller_type = "Cost_observer"
-    elif int(exp_type) == 3:
+    elif int(exp_type) == 1:
         controller = None
         controller_type = "Data_set"
     else:
@@ -72,7 +66,7 @@ if __name__ == "__main__":
     # Simulation parameters
     t_warmup = 5
     t_cooldown = 5
-    t_exp = 120
+    t_exp = 60
     duration = t_warmup + t_cooldown + t_exp
     t_step = 0.015
     N = round(t_exp / t_step)
@@ -88,22 +82,22 @@ if __name__ == "__main__":
 
     # Dynamics
     Jw = 0.05480475491037145
-    Bw = 0.5  # Max = 0.5
+    Bw = 0.3  # Max = 0.5
     Kw = 0.0  # Max = 2.5
     A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
     B = np.array([[0], [1 / Jw]])
 
     # TODO: verify values
-    alpha = 10
+    alpha = 5
     Gamma = alpha * np.array([[2.5, 0], [0, 0.0]])
     # Pi = -0.1*np.array([[-1, 0.5], [-1.5, 2]])
     Pi = 4 * np.array([[2, 0], [0, 2]])
     kappa = 0.7
-    C = np.array([[20.0, 0.0], [0.0, 0.1]])
-    conditions_experiment = [1, 2, 3, 4]
+    C = np.array([[20.0, 0.0], [0.0, 0.2]])
+    conditions_experiment = [3]
     sigma_h = 0.1 * np.array([0.0, 0.0, 0.0, 1, 1, 0.0])
-    sigma_r = 0.2 * np.array([0.0, 0.0, 1, 0.0, 1, 0.0])
-    random.shuffle(conditions_experiment)
+    roles = ["", "", "Leader", "Follower", "Follower", "Leader"]
+    # random.shuffle(conditions_experiment)
 
     print("Observer dynamics", A - Pi)
 
@@ -170,7 +164,7 @@ if __name__ == "__main__":
                 "sharing_rule": C,
                 "conditions": conditions_experiment,
                 "human_noise": sigma_h,
-                "robot_noise": sigma_r,
+                "roles": roles,
             }
             experiment_handler = Experiment(experiment_input)
             if platform.system() == 'Windows':
@@ -178,7 +172,9 @@ if __name__ == "__main__":
                     experiment_data = experiment_handler.experiment()
 
                     # Also save data
-                    to_csv(experiment_data, "data_set.csv")
+                    save = input("save data?")
+                    if save == "yes":
+                        to_csv(experiment_data, "data_set.csv")
 
             senso_drive_process.join(timeout=0)
             # live_plotter_process.join(timeout=0)

@@ -26,36 +26,43 @@ class Visualize:
         self.y_enemy = self.y_player - int(self.img_size * margin)
         self.player = pygame.transform.scale(playerImg, (self.img_size, self.img_size))
         self.enemy = pygame.transform.scale(enemyImg, (self.img_size, self.img_size))
-        self.bg_color_white = (255, 255, 255)
-        self.bg_color_black = (0, 0, 0)
+        self.bg_color_light = (255, 255, 255)
+        self.bg_color_dark = (0, 0, 0)
         # self.bg_color = (0, 0, 0) # Black background
         self.line_color = (100, 100, 100)
         self.preview_color = (100, 100, 100)
+        self.bg_color = (255, 255, 255)
         pygame.font.init()
         # print("available fonts: ", pygame.font.get_fonts())
         self.font = pygame.font.SysFont('georgia', 60)
         self.font_top = pygame.font.SysFont('georgia', 20)
 
-    def visualize_experiment(self, r, r_prev, angle, text, top_text, sigma):
+    def visualize_experiment(self, r, r_prev, angle, text, top_text, sigma, role=""):
         x = self.translate_to_position(angle)
         x_r = self.translate_to_position(r)
 
         pygame.draw.line(self.screen, self.line_color, [x, self.y_player + self.img_size], [x, self.y_player + self.img_size + 40], width=4)
 
         if sigma > 0.0:
-            self.screen.fill(self.bg_color_black)
+            if self.bg_color[0] > self.bg_color_dark[0] + 1:
+                self.bg_color = (self.bg_color[0] - 2, self.bg_color[0] - 2, self.bg_color[0] - 2)
+            self.screen.fill(self.bg_color)
+            dark = True
         else:
             pygame.draw.line(self.screen, self.line_color, [x_r, self.y_player + self.img_size],
                              [x_r, self.y_player + self.img_size + 40], width=4)
             self.draw_arrows(x, x_r)
-            self.screen.fill(self.bg_color_white)
-
+            if self.bg_color[0] < self.bg_color_light[0] - 1:
+                self.bg_color = (self.bg_color[0] + 2, self.bg_color[0] + 2, self.bg_color[0] + 2)
+            self.screen.fill(self.bg_color)
+            dark = False
 
         if self.preview == True:
             self.show_preview(r_prev, sigma)
         self.show_player(x)
         self.show_text(text)
-        self.show_top_text(top_text)
+        self.show_lower_text(top_text, dark=dark)
+        self.show_top_text(role, dark=dark)
 
 
         pygame.display.update()
@@ -75,10 +82,21 @@ class Visualize:
         text_width, text_height = self.font.size(text)
         self.screen.blit(textsurface, (0.5*(self.screen_width-text_width), 0.5*self.screen_height))
 
-    def show_top_text(self, text):
-        textsurface = self.font.render(text, False, (0, 0, 0))
+    def show_lower_text(self, text, dark):
+        if dark:
+            textsurface = self.font.render(text, False, (255, 255, 255))
+        else:
+            textsurface = self.font.render(text, False, (0, 0, 0))
         text_width, text_height = self.font_top.size(text)
         self.screen.blit(textsurface, (0.5*(self.screen_width-text_width), 0.9*self.screen_height))
+
+    def show_top_text(self, text, dark):
+        if dark:
+            textsurface = self.font.render(text, False, (255, 255, 255))
+        else:
+            textsurface = self.font.render(text, False, (0, 0, 0))
+        text_width, text_height = self.font_top.size(text)
+        self.screen.blit(textsurface, (0.5*(self.screen_width-text_width), 0.1*self.screen_height))
 
     def show_preview(self, r, sigma):
             pieces = len(r) - 1
@@ -115,12 +133,12 @@ class Visualize:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 print("Quited this game")
-                return
+                return -1
             elif event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     pygame.quit()
                     print("Quited this game")
-                    return
+                    return -1
 
     def quit(self):
         pygame.display.quit()

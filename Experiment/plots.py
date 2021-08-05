@@ -3,6 +3,8 @@ import os
 from datetime import datetime
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
+import nfft
+import scipy as cp
 
 
 class PlotStuff:
@@ -43,14 +45,11 @@ class PlotStuff:
         # Conditions
         conditions = exp_data["condition"]
         human_noise = exp_data["human_noise"]
-        robot_noise = exp_data["robot_noise"]
-
-
-
+        role = exp_data["role"]
         xddot = exp_data["acceleration"]
         xhatdot = exp_data["state_estimate_vel"]
 
-        self.check_corelation(ur, uhhat)
+        self.check_corelation(t, conditions, ur, uhhat)
 
         q_h_1 = exp_data["estimated_human_cost_1"]
         q_h_2 = exp_data["estimated_human_cost_2"]
@@ -94,6 +93,7 @@ class PlotStuff:
         plt.figure()
         plt.title("Dominance", **csfont)
         plt.plot(t, dominance, tud_blue, linewidth=2.5, linestyle="--", alpha=1, label="Robot input")
+        self.draw_regions(t, conditions, dominance, dominance)
         plt.ylabel('Root mean squared input (torque)', **hfont)
         plt.legend(prop={"size": 8}, loc='upper right')
         plt.xlim(0, t[-1])
@@ -113,11 +113,8 @@ class PlotStuff:
 
         # Steering angle
         fig, axs = plt.subplots(2)
-        fig.suptitle('Vertically stacked subplots')
+        fig.suptitle('Noise variance')
         axs[0].plot(t, human_noise)
-        axs[1].plot(t, robot_noise)
-
-
 
         # Steering rate
         plt.figure()
@@ -184,27 +181,42 @@ class PlotStuff:
         plt.xlim(0, t[-1])
         plt.tight_layout(pad=1)
 
+        self.conflicts(t, ur, uhhat, conditions)
+
         self.save_all_figures()
 
         plt.show()
 
     def draw_regions(self, t, conditions, var1, var2):
-        c = 0
+        c = None
         count = 0
         dy = max(max(var1), max(var2)) - min(min(var1), min(var2))
         mid = (max(max(var1), max(var2)) + min(min(var1), min(var2))) / 2
-        for i in range(len(t)):
-            if c == 1:
-                text = "Both noiseless"
-            elif c == 2:
-                text = "Noisy robot"
-            elif c == 3:
-                text = "Noisy human"
-            else:
-                text = "Both noisy"
+        j = [0]
 
+        tud_blue = "#0066A2"
+        tud_black = "#000000"
+        tud_red = "#c3312f"
+
+        C = []
+
+        # Compute ranges
+        for i in range(len(t)):
             if conditions[i] != c:
                 plt.plot([t[i], t[i]], [-100, 100], 'k--', linewidth=3)
+                if conditions[i] == 1:
+                    text = "Both noiseless"
+                elif conditions[i] == 2:
+                    text = "Noisy robot"
+                elif conditions[i] == 3:
+                    text = "Noisy human"
+                elif conditions[i] == 0:
+                    text = "Warming up"
+                else:
+                    text = "Both noisy"
+
+                if count >= 1:
+                    j.append(i)
 
                 count += 1
                 if count > 2:
@@ -213,20 +225,101 @@ class PlotStuff:
                 else:
                     plt.text(t[i + 200], mid + 0.6 * dy, text, color='black', bbox=dict(facecolor='white', edgecolor='black',
                                                                                   boxstyle='round,pad=1'))
+                c = conditions[i]
+                C.append(c)
 
-            c = conditions[i]
+        j.append(i)
+        self.j = j
+        self.c = C
+
+        # Compute averages and show in figure
+        # print(j)
+        for i in range(len(j)-1):
+            var1_mean = np.mean(var1[j[i]:j[i + 1]])
+            var2_mean = np.mean(var2[j[i]:j[i + 1]])
+            plt.plot([t[j[i]], t[j[i + 1]]], [var1_mean, var1_mean], tud_blue, linestyle="-", alpha=0.7, linewidth=2)
+            plt.plot([t[j[i]], t[j[i + 1]]], [var2_mean, var2_mean], tud_red, linestyle="-", alpha=0.7, linewidth=2)
+
 
         plt.ylim(mid - 0.7 * dy, mid + 0.7 * dy)
 
     def limit_y(self, var1, var2):
         test = 1
 
-    def check_corelation(self, ur, uh):
+    def conflicts(self, t, ur, uh, conditions):
+        t_con = np.zeros(len(self.j)-1)
+        t_cont = 0
+        for i in range(len(self.j)-1):
+            indc = range(self.j[i], self.j[i+1])
+            for k in indc:
+                if ur[k] * uh[k] < 0:
+                    t_con[i] += t[k+1] - t[k]
+                    t_cont += t[k+1] - t[k]
+
+            t_con[i] = t_con[i]/(t[self.j[i+1]] - t[self.j[i]])
+
+
+        print("total conflict time: ", t_cont/t[-1])
+        print("conditions: ", self.c)
+        print("conflict times ", t_con)
+
+    def check_corelation(self, t, conditions, ur, uh):
         # TODO: need to fix the differences in sample times
-        Rxx = np.correlate(ur, uh, "same")
+        tud_blue = "#0066A2"
+        tud_black = "#000000"
+        tud_red = "#c3312f"
+
+        c = 0
+        j = 0
+        fig1 = plt.figure()
+        fig2 = plt.figure()
+
+        # Compute ranges
+        for i in range(len(t)):
+            if conditions[i] != c:
+                if conditions[i] == 1:
+                    text = "Both noiseless"
+                elif conditions[i] == 2:
+                    text = "Noisy robot"
+                elif conditions[i] == 3:
+                    text = "Noisy human"
+                elif conditions[i] == 0:
+                    text = "Warming up"
+                else:
+                    text = "Both noisy"
+
+                xf, Fxx, Rxx = self.calculate_spectrum(t[j:i], ur[j:i], uh[j:i])
+                plt.figure(fig1.number)
+                plt.loglog(xf, np.abs(Fxx), label=text)
+                plt.figure(fig2.number)
+                plt.plot(t[j:i], Rxx, label=text)
+
+                j = i
+                c = conditions[i]
+
+        fig1.legend()
+        fig2.legend()
+
+        Rxx = cp.signal.correlate(ur, uh, "same", method="direct")
         # print(Rxx)
-        # plt.figure()
-        # plt.plot(Rxx)
+        plt.figure()
+        plt.plot(Rxx)
+
+    def calculate_spectrum(self, t, ur, uh):
+        if len(ur) % 2 > 0:
+            ur_f = nfft.nfft(t, ur[0:-1])
+            uh_f = nfft.nfft(t, uh[0:-1])
+            N = len(ur[0:-1])
+        else:
+            ur_f = nfft.nfft(t, ur)
+            uh_f = nfft.nfft(t, uh)
+            N = len(ur)
+        T = t[-1] - t[0]
+        dT = T / N
+        xf = np.array(range(int(N/2))) * dT
+        Fxx = ur_f * uh_f
+        Rxx = np.fft.ifft(Fxx)
+        return xf, Fxx[0:int(N/2)], Rxx
 
     def root_mean_squared(self, var):
         l = len(var)

@@ -74,10 +74,10 @@ class Reference:
             wt = (period[i] / self.duration) * (2 * np.pi)
             reference_position += amplitude[i] * math.sin(wt * t + phases[i])
             reference_velocity += amplitude[i] * wt * math.cos(wt * t + phases[i])
-            reference_velocity_noise += sigma * 2 * amplitude[i] * wt * math.sin(5 * wt * t + phases[i] + 0.1)
+            reference_velocity_noise += sigma * 1 * amplitude[i] * wt * math.sin(6 * wt * t + phases[i] + 0.1)
 
         if player == "robot":
-            ref = np.array([reference_position, reference_velocity + reference_velocity_noise])
+            ref = np.array([reference_position, reference_velocity])
         else:
             ref = np.array([reference_position + v, reference_velocity])
 
