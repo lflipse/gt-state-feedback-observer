@@ -3,10 +3,10 @@ import numpy as np
 from pygame.locals import *
 
 class Visualize:
-    def __init__(self, screen_width, screen_height, preview, full_screen):
+    def __init__(self, screen_width, screen_height, full_screen):
         self.screen_width = screen_width
         self.screen_height = screen_height
-        self.preview = preview
+        self.preview = True
         pygame.init()  # Initialize the game
         self.screen = pygame.display.set_mode((screen_width, screen_height))
         if full_screen == True:
@@ -30,8 +30,8 @@ class Visualize:
         self.bg_color_dark = (0, 0, 0)
         # self.bg_color = (0, 0, 0) # Black background
         self.line_color = (100, 100, 100)
-        self.preview_color = (100, 100, 100)
-        self.bg_color = (255, 255, 255)
+        self.preview_color = (155, 135, 12)
+        self.bg_color = (0, 0, 0)
         pygame.font.init()
         # print("available fonts: ", pygame.font.get_fonts())
         self.font = pygame.font.SysFont('georgia', 60)
@@ -41,44 +41,33 @@ class Visualize:
         x = self.translate_to_position(angle)
         x_r = self.translate_to_position(r)
 
-        pygame.draw.line(self.screen, self.line_color, [x, self.y_player + self.img_size], [x, self.y_player + self.img_size + 40], width=4)
+        self.screen.fill(self.bg_color)
+        dark = True
 
-        if sigma > 0.0:
-            if self.bg_color[0] > self.bg_color_dark[0] + 1:
-                self.bg_color = (self.bg_color[0] - 2, self.bg_color[0] - 2, self.bg_color[0] - 2)
-            self.screen.fill(self.bg_color)
-            dark = True
-        else:
-            pygame.draw.line(self.screen, self.line_color, [x_r, self.y_player + self.img_size],
-                             [x_r, self.y_player + self.img_size + 40], width=4)
-            self.draw_arrows(x, x_r)
-            if self.bg_color[0] < self.bg_color_light[0] - 1:
-                self.bg_color = (self.bg_color[0] + 2, self.bg_color[0] + 2, self.bg_color[0] + 2)
-            self.screen.fill(self.bg_color)
-            dark = False
-
-        if self.preview == True:
+        if self.preview:
             self.show_preview(r_prev, sigma)
         self.show_player(x)
-        self.show_text(text)
+        self.show_text(text, dark=dark)
         self.show_lower_text(top_text, dark=dark)
         self.show_top_text(role, dark=dark)
-
 
         pygame.display.update()
 
     def translate_to_position(self, r):
         # Translate from angle between -30 to 30 degrees to
         angle_deg = r * 180 * np.pi / 45
-        x_r = angle_deg/60 * self.screen_width + 0.5 * self.screen_width
+        x_r = angle_deg / 60 * self.screen_width + 0.5 * self.screen_width
         return x_r
 
     def show_player(self, x):
         # x is the center, need to move
         self.screen.blit(self.player, (x - 0.5*self.img_size, self.y_player))
 
-    def show_text(self, text):
-        textsurface = self.font.render(text, False, (0, 0, 0))
+    def show_text(self, text, dark):
+        if dark:
+            textsurface = self.font.render(text, False, (255, 255, 255))
+        else:
+            textsurface = self.font.render(text, False, (0, 0, 0))
         text_width, text_height = self.font.size(text)
         self.screen.blit(textsurface, (0.5*(self.screen_width-text_width), 0.5*self.screen_height))
 
@@ -112,11 +101,12 @@ class Visualize:
                     # If sigma > 0 draw point cloud in stead of lines
                     if sigma > 0:
                         for point in points:
-                            pygame.draw.circle(self.screen, self.preview_color, point, 2)
+                            pygame.draw.circle(self.screen, self.preview_color, point, 5)
                     else:
                         pygame.draw.circle(self.screen, self.preview_color,
                                            (self.translate_to_position(r[0]), self.y_player + 0.5 * self.img_size), 10)
-                        pygame.draw.lines(self.screen, self.preview_color, False, points, width=15)
+                        for point in points:
+                            pygame.draw.circle(self.screen, self.preview_color, point, 5)
 
     def draw_arrows(self, x, x_r):
         if x > x_r:
@@ -133,12 +123,14 @@ class Visualize:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 print("Quited this game")
-                return -1
+                return True
             elif event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     pygame.quit()
                     print("Quited this game")
-                    return -1
+                    return True
+            else:
+                return False
 
     def quit(self):
         pygame.display.quit()

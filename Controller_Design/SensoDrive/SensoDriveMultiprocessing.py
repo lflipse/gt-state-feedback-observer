@@ -43,6 +43,7 @@ class SensoDriveModule(mp.Process):
         self.beta = senso_dict["beta"]
         self.alpha_1 = senso_dict["alpha_1"]
         self.alpha_2 = senso_dict["alpha_2"]
+        self.reset_states = False
 
         # States
         self.states = {
@@ -116,6 +117,8 @@ class SensoDriveModule(mp.Process):
         self.last_time = time.perf_counter_ns()
 
         while not self.exit:
+            if self.reset_states:
+                self.reset()
             self.count_senso += 1
 
             # Compute control input using states, read out data and update states
@@ -145,11 +148,12 @@ class SensoDriveModule(mp.Process):
                     # print("received: ", msg["sharing_rule"])
                 except:
                     self.states["sharing_rule"] = self.states["sharing_rule"]
-                    print("sharing rule not succesfully recieved")
+                    # print("sharing rule not succesfully recieved")
 
                 self.settings["factor"] = msg["factor"]
                 self.states["experiment"] = msg["experiment"]
                 self.exit = msg["exit"]
+                self.reset_states = msg["reset"]
                 self.child_channel.send(self.states)
 
         print("sent ", self.count_senso, " messages to sensodrive")
@@ -200,43 +204,80 @@ class SensoDriveModule(mp.Process):
 
         # TODO: Referencing mode to align steering wheel to 0 position!
 
+    def reset(self):
+        self.states = {
+            "ref": np.array([0, 0]),
+            "steering_angle": 0,
+            "steering_rate": 0,
+            "steering_rate_unf": 0,
+            "steering_acc": 0,
+            "state": np.array([[0], [0]]),
+            "state_derivative": np.array([[0], [0]]),
+            "state_estimate": np.array([[0], [0]]),
+            "state_estimate_derivative": np.array([[0], [0]]),
+            "angle_error": 0,
+            "rate_error": 0,
+            "error_state": np.array([[0], [0]]),
+            "torque": 0,
+            "estimated_human_torque": 0,
+            "cost": 0,
+            "measured_input": 0,
+            "estimated_human_gain": np.array([0, 0]),
+            "estimated_human_gain_derivative": np.array([0, 0]),
+            "virtual_human_gain": np.array([0.0, 0.0]),
+            "virtual_human_torque": 0,
+            "robot_gain": np.array([0, 0]),
+            "input_estimation_error": 0,
+            "xi_gamma": np.array([0, 0]),
+            "experiment": False,
+            "xdot_test": np.array([[0], [0]]),
+            "robot_cost": np.array([[0, 0], [0, 0]]),
+            "estimated_human_cost": np.array([[0, 0], [0, 0]]),
+            "robot_P": np.array([[0, 0], [0, 0]]),
+            "sharing_rule": np.array([[0, 0], [0, 0]]),
+            "robot_cost_calc": np.array([[0, 0], [0, 0]])
+        }
+
     def update_states(self, sensor_data, delta):
-        steering_angle = sensor_data["steering_angle"]
-        steering_rate = (steering_angle - self.states["steering_angle"]) / delta
-        steering_acc = (steering_rate - self.states["steering_rate_unf"]) / delta
-        self.states["steering_rate"] = self._bq_filter_velocity.step(steering_rate)
-        self.states["steering_rate_unf"] = steering_rate
-        self.states["steering_acc"] = self._bq_filter_acc.step(steering_acc)
-        self.states["steering_angle"] = steering_angle
-        self.states["state"] = np.array([[self.states["steering_angle"]],
-                                        [self.states["steering_rate"]]])
-        self.states["error_state"] = np.array([[self.states["steering_angle"] - self.states["ref"][0]],
-                                               [self.states["steering_rate"] - self.states["ref"][1]]])
-        self.states["angle_error"] = self.states["error_state"][0]
-        self.states["rate_error"] = self.states["error_state"][1]
+        try:
+            steering_angle = sensor_data["steering_angle"]
+            steering_rate = (steering_angle - self.states["steering_angle"]) / delta
+            steering_acc = (steering_rate - self.states["steering_rate_unf"]) / delta
+            self.states["steering_rate"] = self._bq_filter_velocity.step(steering_rate)
+            self.states["steering_rate_unf"] = steering_rate
+            self.states["steering_acc"] = self._bq_filter_acc.step(steering_acc)
+            self.states["steering_angle"] = steering_angle
+            self.states["state"] = np.array([[self.states["steering_angle"]],
+                                            [self.states["steering_rate"]]])
+            self.states["error_state"] = np.array([[self.states["steering_angle"] - self.states["ref"][0]],
+                                                   [self.states["steering_rate"] - self.states["ref"][1]]])
+            self.states["angle_error"] = self.states["error_state"][0]
+            self.states["rate_error"] = self.states["error_state"][1]
 
-        # Gain observer states
-        if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
+            # Gain observer states
+            if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
 
 
-            estimate_derivative = np.array(self.states["state_estimate_derivative"])
-            old_estimated_state = np.array(self.states["state_estimate"])
-            new_estimated_state = old_estimated_state + estimate_derivative * delta
-            self.states["state_estimate"] = new_estimated_state
+                estimate_derivative = np.array(self.states["state_estimate_derivative"])
+                old_estimated_state = np.array(self.states["state_estimate"])
+                new_estimated_state = old_estimated_state + estimate_derivative * delta
+                self.states["state_estimate"] = new_estimated_state
 
-            old_estimated_gain = np.array(self.states["estimated_human_gain"])
-            gain_derivative = np.array(self.states["estimated_human_gain_derivative"])
-            new_estimated_gain = old_estimated_gain + gain_derivative * delta
-            self.states["estimated_human_gain"] = new_estimated_gain
-            self.states["state_derivative"] = np.array([[self.states["steering_rate"]],
-                                                        [self.states["steering_acc"]]])
-            if self.controller_type == "Cost_observer":
-                p = new_estimated_gain / self.beta
-                self.states["estimated_human_cost"] = self.compute_cost(p)
+                old_estimated_gain = np.array(self.states["estimated_human_gain"])
+                gain_derivative = np.array(self.states["estimated_human_gain_derivative"])
+                new_estimated_gain = old_estimated_gain + gain_derivative * delta
+                self.states["estimated_human_gain"] = new_estimated_gain
+                self.states["state_derivative"] = np.array([[self.states["steering_rate"]],
+                                                            [self.states["steering_acc"]]])
+                if self.controller_type == "Cost_observer":
+                    p = new_estimated_gain / self.beta
+                    self.states["estimated_human_cost"] = self.compute_cost(p)
 
-            if not self.states["experiment"]:
-                self.states["estimated_human_gain"] = np.array([0.0, 0.0])
-                self.states["estimated_human_cost"] = np.array([[0.0, 0.0], [0.0, 0.0]])
+                if not self.states["experiment"]:
+                    self.states["estimated_human_gain"] = np.array([0.0, 0.0])
+                    self.states["estimated_human_cost"] = np.array([[0.0, 0.0], [0.0, 0.0]])
+        except:
+            return -1
 
     def compute_cost(self, p):
         P = self.states["robot_P"]
@@ -298,6 +339,7 @@ class SensoDriveModule(mp.Process):
             if time.time() - t0 > 1.0:
                 # TODO: Fix that main process also quits
                 exit("This should not take this long. Check if the motor is connected!")
+                return -1
 
         output = self.map_sensodrive_to_si(received)
 

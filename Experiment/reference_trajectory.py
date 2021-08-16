@@ -69,6 +69,7 @@ class Reference:
         reference_velocity = 0
         reference_velocity_noise = 0
         v = np.random.normal(0, sigma)
+        w = np.random.normal(0, 1.5*sigma)
 
         for i in range(10):
             wt = (period[i] / self.duration) * (2 * np.pi)
@@ -79,6 +80,6 @@ class Reference:
         if player == "robot":
             ref = np.array([reference_position, reference_velocity])
         else:
-            ref = np.array([reference_position + v, reference_velocity])
+            ref = np.array([reference_position + v, w])
 
         return ref

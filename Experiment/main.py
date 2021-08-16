@@ -6,15 +6,16 @@ import platform
 import scipy.linalg as cp
 import pandas as pd
 import random
+import os
 
 from Experiment.reference_trajectory import Reference
 from Controller_Design.live_plotter import LivePlotter
 from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
 from Experiment.experiment import Experiment
-from Controller_Design.Controllers.Linear_Quadratic import ControllerLQ
 from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDG_GObsKal
 from Experiment.plots import PlotStuff
-
+from Experiment.analysis import Analysis
+from Experiment.visuals import Visualize
 
 def to_csv(to_be_saved, file):
     columns = []
@@ -33,30 +34,6 @@ def load_data_set(file):
 
     return data_set
 
-def compute_virtual_gain(Qh1, Qr_end, A, B):
-    # Iterative procedure for calculating gains
-    Lh = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, Qh1, 1))
-    Lr = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, Qr_end, 1))
-    for i in range(10):
-        Lh = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lr, B, Qh1, 1))
-        Lr = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh, B, Qr_end, 1))
-    return Lh
-
-def input_controller():
-    # Select controller type
-    print("Choose a controller type. 0: Differential Game Cost Observer, 1: Use a dataset")
-    exp_type = input("Please choose: ")
-    if int(exp_type) == 0:
-        controller = ControllerDG_GObsKal(A, B, Gamma, Pi, kappa, C, None)
-        controller_type = "Cost_observer"
-    elif int(exp_type) == 1:
-        controller = None
-        controller_type = "Data_set"
-    else:
-        print("You chose: ", int(exp_type))
-        exit("That's no option, try again.")
-
-    return controller, controller_type, exp_type
 
 # This statement is necessary to allow for multiprocessing
 if __name__ == "__main__":
@@ -66,7 +43,8 @@ if __name__ == "__main__":
     # Simulation parameters
     t_warmup = 5
     t_cooldown = 5
-    t_exp = 60
+    t_exp = 30
+    t_prev = 1.2
     duration = t_warmup + t_cooldown + t_exp
     t_step = 0.015
     N = round(t_exp / t_step)
@@ -94,96 +72,116 @@ if __name__ == "__main__":
     Pi = 4 * np.array([[2, 0], [0, 2]])
     kappa = 0.7
     C = np.array([[20.0, 0.0], [0.0, 0.2]])
-    conditions_experiment = [3]
-    sigma_h = 0.1 * np.array([0.0, 0.0, 0.0, 1, 1, 0.0])
-    roles = ["", "", "Leader", "Follower", "Follower", "Leader"]
-    # random.shuffle(conditions_experiment)
+    conditions_experiment = [1, 2, 3, 4, 5, 6]
+    sigma_h = 0.1 * np.array([0.1, 0.2, 0.2, 0.2, 1.0, 1.0, 1.0])
+    roles = ["", "", "Follower", "Leader", "", "Follower", "Leader"]
+    random.shuffle(conditions_experiment)
 
     print("Observer dynamics", A - Pi)
 
+    # Visual stuff
     screen_width = 1920
     screen_height = 1080
-    # screen_width = 720
-    # screen_height = 480
 
-    # ask input
-    controller, controller_type, exp_type = input_controller()
+    # Insert controller
+    controller = ControllerDG_GObsKal(A, B, Gamma, Pi, kappa, C, None)
+    controller_type = "Cost_observer"
 
-    if controller_type != "Data_set":
 
-        # Start the senso drive parallel process
-        parent_conn, child_conn = mp.Pipe(True)
-        senso_dict = {
-            "stiffness": Kw,
-            "damping": Bw,
-            "alpha_1": A[1, 0],
-            "alpha_2": A[1, 1],
-            "beta": B[1, 0],
-            "controller": controller,
-            "controller_type": controller_type,
-            "parent_conn": parent_conn,
-            "child_conn": child_conn
-        }
-        senso_drive_process = SensoDriveModule(senso_dict)
-        senso_drive_process.start()
-        print("process started!")
+    # Start the senso drive parallel process
+    parent_conn, child_conn = mp.Pipe(True)
+    senso_dict = {
+        "stiffness": Kw,
+        "damping": Bw,
+        "alpha_1": A[1, 0],
+        "alpha_2": A[1, 1],
+        "beta": B[1, 0],
+        "controller": controller,
+        "controller_type": controller_type,
+        "parent_conn": parent_conn,
+        "child_conn": child_conn
+    }
+    senso_drive_process = SensoDriveModule(senso_dict)
 
-        # Start the data plotting parallel process
-        # send_conn, receive_conn = mp.Pipe(True)
-        # live_plotter_process = LivePlotter(receive_conn)
-        # live_plotter_process.start()
-        # print("Second process started!")
 
-        # Time to do an experiment!
-        full_screen = True
-        preview = True
-        do_exp = True
+    # Start the data plotting parallel process
+    # send_conn, receive_conn = mp.Pipe(True)
+    # live_plotter_process = LivePlotter(receive_conn)
+    # live_plotter_process.start()
+    # print("Second process started!")
 
-        if do_exp == True:
-            experiment_input = {
-                "damping": Bw,
-                "stiffness": Kw,
-                "reference": reference,
-                "controller_type": controller_type,
-                # "send_conn": send_conn,
-                "parent_conn": parent_conn,
-                "child_conn": child_conn,
-                "senso_drive": senso_drive_process,
-                "screen_width": screen_width,
-                "screen_height": screen_height,
-                "full_screen": full_screen,
-                "preview": preview,
-                "warm_up_time": t_warmup,
-                "experiment_time": t_exp,
-                "cooldown_time": t_cooldown,
-                "virtual_human": False,
-                "virtual_human_gain": None,
-                "virtual_human_cost": None,
-                "init_robot_cost": None,
-                "final_robot_cost": None,
-                "sharing_rule": C,
-                "conditions": conditions_experiment,
-                "human_noise": sigma_h,
-                "roles": roles,
-            }
-            experiment_handler = Experiment(experiment_input)
-            if platform.system() == 'Windows':
-                with wres.set_resolution(10000):
-                    experiment_data = experiment_handler.experiment()
+    # Time to do an experiment!
+    full_screen = True
+    preview = True
+    do_exp = True
 
-                    # Also save data
-                    save = input("save data?")
-                    if save == "yes":
-                        to_csv(experiment_data, "data_set.csv")
+    experiment_input = {
+        "damping": Bw,
+        "stiffness": Kw,
+        "reference": reference,
+        "controller_type": controller_type,
+        "parent_conn": parent_conn,
+        "child_conn": child_conn,
+        "senso_drive": senso_drive_process,
+        "screen_width": screen_width,
+        "screen_height": screen_height,
+        "full_screen": full_screen,
+        "preview": preview,
+        "preview_time": t_prev,
+        "warm_up_time": t_warmup,
+        "experiment_time": t_exp,
+        "cooldown_time": t_cooldown,
+        "virtual_human": False,
+        "virtual_human_gain": None,
+        "virtual_human_cost": None,
+        "init_robot_cost": None,
+        "final_robot_cost": None,
+        "sharing_rule": C,
+        "conditions": conditions_experiment,
+        "human_noise": sigma_h,
+        "roles": roles,
 
-            senso_drive_process.join(timeout=0)
-            # live_plotter_process.join(timeout=0)
+    }
 
-    else:
-        # Load data set
-        experiment_data = load_data_set("data_set.csv")
+    # Make folder for the participant
+    try:
+        dirlist = os.listdir("data")
+        new_list = [int(i) for i in dirlist]
+        print("last folder: ", max(new_list))
+        print("folders: ", new_list)
+        participant = max(new_list) + 1
+    except:
+        participant = 0
+
+    print("now making folder for participant: ", participant)
+    folder_name = "data\\" + str(participant)
+    os.mkdir(folder_name)
+    senso_drive_process.start()
+    print("process started!")
+
+    # Initialize pygame visualization
+    visualize = Visualize(screen_width, screen_height, full_screen)
+    experiment_handler = Experiment(experiment_input, visualize)
+
+    # Loop over the conditions
+    for i in range(len(conditions_experiment)):
+
+        if platform.system() == 'Windows':
+            with wres.set_resolution(10000):
+                # Do trial
+                experiment_data = experiment_handler.experiment(condition=conditions_experiment[i])
+
+                # Save data
+                string = "data\\" + str(participant) + "\\trial_" + str(i) + "_condition_" + str(conditions_experiment[i]) + ".csv"
+                to_csv(experiment_data, string)
+
+    visualize.quit()
+    senso_drive_process.join(timeout=0)
+    # live_plotter_process.join(timeout=0)
 
     # Plot stuff
-    plot_stuff = PlotStuff()
-    plot_stuff.plot(experiment_data)
+    data_analysis = Analysis()
+    data_analysis.analyse()
+    data_analysis.show(participant=1)
+
 
