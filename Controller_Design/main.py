@@ -5,6 +5,10 @@ import wres
 import platform
 import scipy.linalg as cp
 
+import sys
+
+sys.path.insert(1, '..')
+
 from Controller_Design.reference_trajectory import Reference
 from Controller_Design.live_plotter import LivePlotter
 from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
@@ -143,7 +147,7 @@ if __name__ == "__main__":
     alpha = 30
     Gamma = alpha * np.array([[2.5, 0], [0, 0.125]])
     # Pi = -0.1*np.array([[-1, 0.5], [-1.5, 2]])
-    Pi = 4 * np.array([[2, 0], [0, 2]])
+    Pi = -4 * np.array([[2, 0], [0, 2]])
     kappa = 0.7
     Qr_end = np.array([[10.0, 0.0], [0.0, 0.1]])
     Qr_start = np.array([[10.0, 0.0], [0.0, 0.1]])
@@ -239,6 +243,7 @@ if __name__ == "__main__":
             "virtual_human_cost": Qh,
             "init_robot_cost": Qr_start,
             "final_robot_cost": Qr_end,
+            "sharing_rule": C,
         }
         experiment_handler = Experiment(experiment_input)
         if platform.system() == 'Windows':
