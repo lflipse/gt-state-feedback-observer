@@ -26,10 +26,14 @@ class ControllerDG_GObsKal:
         Lh_hat = states["estimated_human_gain"]
         Qh = states["estimated_human_cost"]
         C = states["sharing_rule"]
+
         Qr = C - Qh
 
         # TODO: fix does not work
         if np.linalg.det(Qr) < 0:
+            Qr = np.array([[0, 0], [0, 0]])
+
+        if np.linalg.det(C) < 0.1:
             Qr = np.array([[0, 0], [0, 0]])
 
         # print("estimated human: ", Qh)

@@ -33,11 +33,13 @@ class SensoDriveModule(mp.Process):
         self.received_ok = 1
 
         # Steering wheel setting
-        self.settings = {}
-        self.settings['factor'] = 0
-        self.settings['mp_friction'] = 0
-        self.settings['mp_damping'] = senso_dict["damping"]
-        self.settings['mp_spring_stiffness'] = senso_dict["stiffness"]
+        self.settings = {
+            'factor': 0,
+            'mp_friction': 0,
+            'mp_damping': senso_dict["damping"],
+            'mp_spring_stiffness': senso_dict["stiffness"],
+            'manual': True,
+        }
 
         # Cost parameters
         self.beta = senso_dict["beta"]
@@ -148,9 +150,10 @@ class SensoDriveModule(mp.Process):
                     # print("received: ", msg["sharing_rule"])
                 except:
                     self.states["sharing_rule"] = self.states["sharing_rule"]
-                    # print("sharing rule not succesfully recieved")
+                    print("sharing rule not succesfully recieved")
 
                 self.settings["factor"] = msg["factor"]
+                self.settings["manual"] = msg["manual"]
                 self.states["experiment"] = msg["experiment"]
                 self.exit = msg["exit"]
                 self.reset_states = msg["reset"]
@@ -235,7 +238,7 @@ class SensoDriveModule(mp.Process):
             "estimated_human_cost": np.array([[0, 0], [0, 0]]),
             "robot_P": np.array([[0, 0], [0, 0]]),
             "sharing_rule": np.array([[0, 0], [0, 0]]),
-            "robot_cost_calc": np.array([[0, 0], [0, 0]])
+            "robot_cost_calc": np.array([[0, 0], [0, 0]]),
         }
 
     def update_states(self, sensor_data, delta):
@@ -254,29 +257,26 @@ class SensoDriveModule(mp.Process):
             self.states["angle_error"] = self.states["error_state"][0]
             self.states["rate_error"] = self.states["error_state"][1]
 
-            # Gain observer states
-            if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
+            estimate_derivative = np.array(self.states["state_estimate_derivative"])
+            old_estimated_state = np.array(self.states["state_estimate"])
+            new_estimated_state = old_estimated_state + estimate_derivative * delta
+            self.states["state_estimate"] = new_estimated_state
 
+            old_estimated_gain = np.array(self.states["estimated_human_gain"])
+            gain_derivative = np.array(self.states["estimated_human_gain_derivative"])
+            new_estimated_gain = old_estimated_gain + gain_derivative * delta
+            self.states["estimated_human_gain"] = new_estimated_gain
+            self.states["state_derivative"] = np.array([[self.states["steering_rate"]],
+                                                        [self.states["steering_acc"]]])
+            if self.controller_type == "Cost_observer":
+                p = new_estimated_gain / self.beta
+                self.states["estimated_human_cost"] = self.compute_cost(p)
 
-                estimate_derivative = np.array(self.states["state_estimate_derivative"])
-                old_estimated_state = np.array(self.states["state_estimate"])
-                new_estimated_state = old_estimated_state + estimate_derivative * delta
-                self.states["state_estimate"] = new_estimated_state
-
-                old_estimated_gain = np.array(self.states["estimated_human_gain"])
-                gain_derivative = np.array(self.states["estimated_human_gain_derivative"])
-                new_estimated_gain = old_estimated_gain + gain_derivative * delta
-                self.states["estimated_human_gain"] = new_estimated_gain
-                self.states["state_derivative"] = np.array([[self.states["steering_rate"]],
-                                                            [self.states["steering_acc"]]])
-                if self.controller_type == "Cost_observer":
-                    p = new_estimated_gain / self.beta
-                    self.states["estimated_human_cost"] = self.compute_cost(p)
-
-                if not self.states["experiment"]:
-                    self.states["estimated_human_gain"] = np.array([0.0, 0.0])
-                    self.states["estimated_human_cost"] = np.array([[0.0, 0.0], [0.0, 0.0]])
+            if not self.states["experiment"]:
+                self.states["estimated_human_gain"] = np.array([0.0, 0.0])
+                self.states["estimated_human_cost"] = np.array([[0.0, 0.0], [0.0, 0.0]])
         except:
+            print("something crashed here")
             return -1
 
     def compute_cost(self, p):
@@ -285,7 +285,7 @@ class SensoDriveModule(mp.Process):
         gamma_2 = self.alpha_2 - self.beta ** 2 * (P[1, 1])
         q_hhat1 = - 2 * gamma_1 * p[0, 0] + self.beta**2*p[0, 0]**2
         q_hhat2 = - 2 * p[0, 0] - 2 * gamma_2 * p[0, 1] + self.beta**2*p[0, 1]**2
-        Q_hhat = np.array([[q_hhat1, 0],[0, q_hhat2]])
+        Q_hhat = np.array([[q_hhat1, 0], [0, q_hhat2]])
         return Q_hhat
 
     def write_and_read(self, msgtype, data):
@@ -357,13 +357,10 @@ class SensoDriveModule(mp.Process):
         """
 
         # Compute the control input
-        if self.controller_type != "Manual":
-            output = self.controller.compute_control_input(self.states)
-            self.update_controller_states(output)
-        else:
-            # Manual control, no torque delivered
+        output = self.controller.compute_control_input(self.states)
+        self.update_controller_states(output)
+        if self.settings["manual"]:
             self.states["torque"] = 0
-            self.states["cost"] = 0
 
         self.virtual_human()
 

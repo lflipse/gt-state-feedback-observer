@@ -36,6 +36,7 @@ class Visualize:
         # print("available fonts: ", pygame.font.get_fonts())
         self.font = pygame.font.SysFont('georgia', 60)
         self.font_top = pygame.font.SysFont('georgia', 20)
+        self.flicker = 0
 
     def visualize_experiment(self, r, r_prev, angle, text, top_text, sigma, role=""):
         x = self.translate_to_position(angle)
@@ -88,25 +89,41 @@ class Visualize:
         self.screen.blit(textsurface, (0.5*(self.screen_width-text_width), 0.1*self.screen_height))
 
     def show_preview(self, r, sigma):
-            pieces = len(r) - 1
-            if pieces > 2:
+        pieces = len(r) - 1
+        if pieces > 2:
 
-                points = []
-                dy = 3.2*(self.screen_height - self.y_player)/pieces
-                for i in range(pieces):
-                    # Draw incremental lines from parts of the reference trajectory
-                    points.append((self.translate_to_position(r[i]), self.y_player-i*dy+0.5*self.img_size))
-                # print(points)
-                if points != []:
-                    # If sigma > 0 draw point cloud in stead of lines
-                    if sigma > 0:
-                        for point in points:
-                            pygame.draw.circle(self.screen, self.preview_color, point, 5)
-                    else:
-                        pygame.draw.circle(self.screen, self.preview_color,
-                                           (self.translate_to_position(r[0]), self.y_player + 0.5 * self.img_size), 10)
-                        for point in points:
-                            pygame.draw.circle(self.screen, self.preview_color, point, 5)
+            points = []
+            dy = 3.2*(self.screen_height - self.y_player)/pieces
+            for i in range(pieces):
+                # Draw incremental lines from parts of the reference trajectory
+                points.append((self.translate_to_position(r[i]), self.y_player-i*dy+0.5*self.img_size))
+            # print(points)
+            if points != []:
+                # If sigma > 0 draw point cloud in stead of lines
+                if sigma > 0:
+                    for point in points:
+                        pygame.draw.circle(self.screen, self.preview_color, point, 5)
+                else:
+                    pygame.draw.circle(self.screen, self.preview_color,
+                                       (self.translate_to_position(r[0]), self.y_player + 0.5 * self.img_size), 10)
+                    for point in points:
+                        pygame.draw.circle(self.screen, self.preview_color, point, 5)
+
+            if sigma > 0.1:
+                # flicker the reference
+                if self.flicker == 0 and self.preview_color[0] > 154:
+                    self.flicker = 1
+                elif self.flicker == 1 and self.preview_color[0] < 1:
+                    self.flicker = 0
+                if self.flicker == 1:
+                    self.preview_color = (max(self.preview_color[0]-1, 0), max(self.preview_color[1]-1, 0),
+                                          max(self.preview_color[2]-1, 0))
+                else:
+                    self.preview_color = (min(self.preview_color[0]+1, 155), min(self.preview_color[1]+1, 135),
+                                          min(self.preview_color[2]+1, 12))
+            else:
+                self.preview_color = (155, 135, 12)
+
 
     def draw_arrows(self, x, x_r):
         if x > x_r:

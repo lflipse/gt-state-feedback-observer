@@ -66,16 +66,18 @@ if __name__ == "__main__":
     B = np.array([[0], [1 / Jw]])
 
     # TODO: verify values
-    alpha = 5
+    alpha = 8
     Gamma = alpha * np.array([[2.5, 0], [0, 0.0]])
     # Pi = -0.1*np.array([[-1, 0.5], [-1.5, 2]])
     Pi = 4 * np.array([[2, 0], [0, 2]])
     kappa = 0.7
-    C = np.array([[20.0, 0.0], [0.0, 0.2]])
-    conditions_experiment = [1, 2, 3, 4, 5, 6]
-    sigma_h = 0.1 * np.array([0.1, 0.2, 0.2, 0.2, 1.0, 1.0, 1.0])
-    roles = ["", "", "Follower", "Leader", "", "Follower", "Leader"]
+    C = np.array([[30.0, 0.0], [0.0, 1.0]])
+    conditions_experiment = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    sigma_h = 0.1 * np.array([0.1, 0.2, 0.2, 0.2, 1.5, 1.5, 1.5, 0.1, 0.2, 1.5])
+    roles = ["", "Undetermined", "Follower", "Leader", "Undertmined", "Follower", "Leader",
+             "Robot Only", "Human Only", "Human Only"]
     random.shuffle(conditions_experiment)
+    conditions_experiment = [9, 8, 7, 6, 5, 4, 3, 2, 1]
 
     print("Observer dynamics", A - Pi)
 
@@ -180,8 +182,8 @@ if __name__ == "__main__":
     # live_plotter_process.join(timeout=0)
 
     # Plot stuff
-    data_analysis = Analysis()
-    data_analysis.analyse()
-    data_analysis.show(participant=1)
+    analysis = Analysis()
+    analysis.initialize()
+    analysis.analyse()
 
 
