@@ -3,11 +3,12 @@ import scipy.linalg as cp
 import time
 
 class ControllerLQ:
-    def __init__(self, A, B, mu, sigma):
+    def __init__(self, A, B, mu, sigma, nonlin):
         self.A = A
         self.B = B
         self.mu = mu
         self.sigma = sigma
+        self.nonlin = nonlin
 
     def numerical_integration(self, r, ur, uh, y, h):
         k1 = h * self.ydot(r, ur, uh, y)
@@ -16,20 +17,37 @@ class ControllerLQ:
         k4 = h * self.ydot(r, ur, uh, y + k3)
 
         # Update next value of y
-        # y_new = y + (1.0 / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
-
-        y_new = y + h * self.ydot(r, ur, uh, y)
+        y_new = y + (1.0 / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
+        #
+        # y_new = y + h * self.ydot(r, ur, uh, y)
 
         return y_new.flatten()
 
+
     def ydot(self, r, u, uh, y):
         x = y
-        # Compensate friction
-        mag = - 0.2
-        # tau_f = - mag / (1 + np.exp(-4*x[1])) + mag / (1 + np.exp(4*x[1]))
-        tau_f = 0
+        g = 9.81
+        m = 0.206554
+        dh = 0.14113349
+        dl = 0.017985
+        vt = 0.22541135
+        vsp = 2 * vt
+        tau_d = -0.0662
+        tau_fric = -0.02547518
 
-        xdot = np.matmul(self.A, x) + self.B * (u + uh + tau_f)
+        # Gravity
+        tau_g = - m * g * dh * np.sin(x[0]) - m * g * dl * np.cos(x[0])
+
+        # Friction
+        v = x[1]
+        gv = v / vsp * np.exp(-(v / (np.sqrt(2) * vsp)) ** 2 + 1 / 2)
+        fc = tau_d * np.tanh(v / vt)
+        tau_f = gv * tau_fric + fc
+
+        if self.nonlin:
+            xdot = np.matmul(self.A, x) + self.B * (u + uh + tau_f + tau_g)
+        else:
+            xdot = np.matmul(self.A, x) + self.B * (u + uh)
         return xdot
 
     def compute_costs(self, x, u, Q):
@@ -55,9 +73,13 @@ class ControllerLQ:
         Pr = cp.solve_continuous_are(self.A, self.B, Qr0, 1)
         Ph = cp.solve_continuous_are(self.A, self.B, Qh0, 1)
 
-        # print("P matrices are computed as: P_r = ", Pr, " and P_h = ", Ph)
+        print("human and robot cost matrix: ", Qh0, Qr0)
 
-        Lh0 = inputs["virtual_human_gain"]
+        # print("P matrices are computed as: P_r = ", Pr, " and P_h = ", Ph)
+        try:
+            Lh0 = inputs["virtual_human_gain"]
+        except:
+            Lh0 = np.matmul(self.B.transpose(), Ph)
         Lr0 = np.matmul(self.B.transpose(), Pr)
 
         print("Controller gains then are computed as: L_r = ", Lr0, " and L_h = ", Lh0)

@@ -9,16 +9,16 @@ from Experiment.reference_trajectory import Reference
 from Experiment.live_plotter import LivePlotter
 from Experiment.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
 from Experiment.experiment import Experiment
-from Experiment.Controllers.LQR import ControllerLQ
+from Experiment.Controllers.Linear_Quadratic import ControllerLQ
 from Experiment.Controllers.Differential_Game import ControllerDG
-from Experiment.Controllers.Differential_Game_Gain_Observer import ControllerDG_GObs
-from Experiment.Controllers.Differential_Game_Gain_Observer_Kalman import ControllerDG_GObsKal
+from Experiment.Controllers.Differential_Game_Gain_Descent import ControllerDG_GObs
+from Experiment.Controllers.Differential_Game_Gain_Observer import ControllerDG_GObsKal
 from Experiment.Controllers.Li2019 import ControllerDG_Li
 from Experiment.plots import PlotStuff
-from Report.LQR_Nonlin import ControllerLQ as LQsim
-# from Report.Differential_Game import ControllerDG as DGsim
-from Report.Normalized_Gradient_Flipse import ControllerNG as NGsim
-from Report.Normalized_Gradient_Flipse_w_Observer import ControllerNG as NG_Obssim
+from Simulation.Linear_Quadratic import ControllerLQ as LQsim
+# from Simulation.Differential_Game import ControllerDG as DGsim
+from Simulation.Differential_Game_Gain_Descent import ControllerNG as NGsim
+from Simulation.Differential_Game_Gain_Observer import ControllerNG as NG_Obssim
 from Experiment.human_gains import HumanEstimator
 
 def input_controller():
@@ -82,16 +82,16 @@ def run_simulation(experiment_data, exp_type, human_gain):
     }
 
     if int(exp_type) == 0:
-        controller_sim = LQsim(A, B, mu=0.0, sigma=0.0)
+        controller_sim = LQsim(A, B, mu=0.0, sigma=0.0, nonlin=True)
         inputs["robot_weight"] = np.array([[0, 0], [0, 0]])
     elif int(exp_type) == 1:
-        controller_sim = LQsim(A, B, mu=0.0, sigma=0.0)
+        controller_sim = LQsim(A, B, mu=0.0, sigma=0.0, nonlin=True)
     elif int(exp_type) == 2:
-        controller_sim = DGsim(A, B, mu=0.0, sigma=0.0)
+        controller_sim = DGsim(A, B, mu=0.0, sigma=0.0, nonlin=True)
     elif int(exp_type) == 3:
-        controller_sim = NGsim(A, B, mu=0.0, sigma=0.0)
+        controller_sim = NGsim(A, B, mu=0.0, sigma=0.0, nonlin=True)
     elif int(exp_type) == 4 or 5:
-        controller_sim = NG_Obssim(A, B, mu=0.0, sigma=0.0)
+        controller_sim = NG_Obssim(A, B, mu=0.0, sigma=0.0, nonlin=True)
 
     simulation_data = controller_sim.simulate(inputs)
     return simulation_data

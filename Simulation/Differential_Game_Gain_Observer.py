@@ -3,7 +3,7 @@ import scipy.linalg as cp
 import time
 
 class ControllerNG:
-    def __init__(self, A, B, mu, sigma):
+    def __init__(self, A, B, mu, sigma, nonlin):
         self.A = A
         self.B = B
         self.mu = mu
@@ -11,12 +11,13 @@ class ControllerNG:
         self.beta = B[1, 0]
         self.alpha_1 = A[1, 0]
         self.alpha_2 = A[1, 1]
+        self.nonlin = nonlin
 
-    def numerical_integration(self, r, ur, uh, uhhat, y, h, Gamma, kappa):
-        k1 = h * self.ydot(r, ur, uh, uhhat, y, Gamma, kappa)
-        k2 = h * self.ydot(r, ur, uh, uhhat, y + 0.5 * k1, Gamma, kappa)
-        k3 = h * self.ydot(r, ur, uh, uhhat, y + 0.5 * k2, Gamma, kappa)
-        k4 = h * self.ydot(r, ur, uh, uhhat, y + k3, Gamma, kappa)
+    def numerical_integration(self, r, ur, uh, uhhat, y, h, Gamma, K, kappa):
+        k1 = h * self.ydot(r, ur, uh, uhhat, y, Gamma, K, kappa)
+        k2 = h * self.ydot(r, ur, uh, uhhat, y + 0.5 * k1, Gamma, K, kappa)
+        k3 = h * self.ydot(r, ur, uh, uhhat, y + 0.5 * k2, Gamma, K, kappa)
+        k4 = h * self.ydot(r, ur, uh, uhhat, y + k3, Gamma, K, kappa)
 
         # Update next value of y
         y_new = y + (1.0 / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
@@ -41,39 +42,49 @@ class ControllerNG:
         v = x[1, 0]
         gv = v / vsp * np.exp(-(v / (np.sqrt(2) * vsp)) ** 2 + (1 / 2))
         tau_f = gv * tau_fric + tau_d * np.tanh(v / vt)
-        f_nl = tau_g + tau_f
+        if self.nonlin:
+            f_nl = tau_g + tau_f
+        else:
+            f_nl = 0
         return f_nl
 
-    def ydot(self, r, ur, uh, uhhat, y, Gamma, kappa):
+    def ydot(self, r, ur, uh, uhhat, y, Gamma, K, kappa):
         # Unpack y vector
         x = np.array([[y[0]], [y[1]]])
+        x_hat = np.array([[y[4]], [y[5]]])
+        x_tilde = x_hat - x
 
         # Calculate error vector
         e = x - np.array([[r[0]], [r[1]]])
 
         # Calculate derivatives
         # Real response
-        x_dot = np.matmul(self.A, x) + self.B * (ur + uh + self.nonlinear_term(x))
-
-        # Estimated responses
-        x_hat_dot = np.matmul(self.A, x) + self.B * (ur + uhhat + self.nonlinear_term(x))
+        if self.nonlin:
+            x_dot = np.matmul(self.A, x) + self.B * (ur + uh + self.nonlinear_term(x))
+            x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat + self.nonlinear_term(x)) - np.matmul(Gamma, x_tilde)
+        else:
+            x_dot = np.matmul(self.A, x) + self.B * (ur + uh)
+            x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat) - np.matmul(Gamma, x_tilde)
 
         # Estimation error
         x_tilde_dot = x_hat_dot - x_dot
 
         pseudo_B = 1/(np.matmul(self.B.transpose(), self.B)) * self.B.transpose()
-        u_h_tilde = np.matmul(pseudo_B, x_tilde_dot)
+        u_h_tilde = np.matmul(pseudo_B, x_tilde_dot - np.matmul(self.A - Gamma, x_tilde))
         m_squared = 1 + kappa * np.matmul(e.transpose(), e)
-        P_hhat_vec_dot = (1/m_squared) * np.matmul(np.matmul(Gamma, e), u_h_tilde)
+        P_hhat_vec_dot = (1/m_squared) * np.matmul(np.matmul(K, e), u_h_tilde)
 
-        ydot = np.array([x_dot.transpose(), P_hhat_vec_dot.transpose()]).flatten()
+        ydot = np.array([x_dot.transpose(), P_hhat_vec_dot.transpose(), x_hat_dot.transpose()]).flatten()
 
         return ydot
 
     def compute_gains(self, Q, Phat, bias):
         Lhat = np.matmul(self.B.transpose(), Phat) + bias
         A_c = self.A - self.B * Lhat
-        P = cp.solve_continuous_are(A_c, self.B, Q, 1)
+        try:
+            P = cp.solve_continuous_are(A_c, self.B, Q, 1)
+        except:
+            print(Lhat, bias, A_c, Q)
         L = np.matmul(self.B.transpose(), P)
         return Lhat, L, P
 
@@ -110,9 +121,6 @@ class ControllerNG:
         start = time.time()
 
         # Unpack dictionary
-        # Unpack dictionary
-        # N = inputs["simulation_steps"]
-        # h = inputs["step_size"] + 0.00098
         Qh0 = inputs["human_weight"]
         Qr0 = inputs["robot_weight"]
         Lh0 = np.array(inputs["virtual_human_gain"])
@@ -121,13 +129,14 @@ class ControllerNG:
         e0 = inputs["e_initial"]
         kappa = inputs["kappa"]
         Gamma = inputs["Gamma"]
+        K = inputs["K"]
         C = inputs["sharing_rule"]
         bias = inputs["gain_estimation_bias"]
         ref = np.array(inputs["reference"])
         T = np.array(inputs["time"])
         N = len(T)
 
-        y = np.zeros((N + 1, 4))
+        y = np.zeros((N + 1, 6))
         ydot = np.zeros((N, 2))
         y[0, 0:2] = x0
 
@@ -156,11 +165,9 @@ class ControllerNG:
         e[0, :] = e0
         ur[0] = u0
 
-
-
-        for i in range(N-1):
+        for i in range(N):
             # Human cost is fixed, Robot cost based on estimator
-            Qr[i, :, :] = Qr0
+            Qr[i, :, :] = C - Qhhat[i, :]
             Qh[i, :, :] = Qh0
 
             # Calcuate derivative(s) of reference
@@ -170,18 +177,25 @@ class ControllerNG:
             ur[i], uhhat[i], Lr[i, :], Lhhat[i, :], Pr[i, :, :] = self.compute_inputs(Qr[i, :, :], Phhat[i, :], e[i, :], bias)
             # print(Lh0[:, i].flatten())
             # print(Lh[i,:])
-            Lh[i, :] = Lh0[:, i].flatten()
-            uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
+            try:
+                Lh[i, :] = Lh0[:, i]
+                uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
+            except:
+                Lh[i, :] = Lh0[:, i].flatten()
+                uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
 
             # uhbar[i], urhat, Lh[i, :], Lrhat, Ph[i, :, :] = self.compute_inputs(Qh[i, :, :],  Pr[i, :], e[i, :], bias)
             vh[i] = np.random.normal(self.mu, self.sigma, 1)
             uh[i] = uhbar[i] + 0*vh[i]
             # uh[i] = uhbar[i]
 
-            h = T[i+1] - T[i]
+            try:
+                h = T[i+1] - T[i]
+            except:
+                h = T[i] - T[i-1]
 
             # Integrate a time-step
-            y[i + 1, :], ydot[i, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], uhhat[i], y[i, :], h, Gamma, kappa)
+            y[i + 1, :], ydot[i, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], uhhat[i], y[i, :], h, Gamma, K, kappa)
             y[i + 1, 1] = y[i + 1, 1] + vh[i]
             Phhat[i + 1, :, :] = np.array([[0, y[i + 1, 2]], [y[i + 1, 2], y[i + 1, 3]]])
 

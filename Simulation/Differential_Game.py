@@ -3,11 +3,12 @@ import scipy.linalg as cp
 import time
 
 class ControllerDG:
-    def __init__(self, A, B, mu, sigma):
+    def __init__(self, A, B, mu, sigma, nonlin):
         self.A = A
         self.B = B
         self.mu = mu
         self.sigma = sigma
+        self.nonlin = nonlin
 
     def numerical_integration(self, r, ur, uh, y, h):
         k1 = h * self.ydot(r, ur, uh, y)
@@ -53,7 +54,9 @@ class ControllerDG:
         h = inputs["step_size"]
         r = inputs["reference_signal"]
         Qh0 = inputs["human_weight"]
+        C = inputs["sharing_rule"]
         Qr0 = inputs["robot_weight"]
+        Qr0 = C - Qh0
         T = np.array(range(N)) * h
 
 
@@ -67,6 +70,8 @@ class ControllerDG:
 
         Lh0 = np.matmul(self.B.transpose(), Ph0)
         Lr0 = np.matmul(self.B.transpose(), Pr0)
+
+        print("human and robot cost matrix: ", Qh0, Qr0)
 
         print("Controller gains then are computed as: L_r = ", Lr0, " and L_h = ", Lh0)
 
