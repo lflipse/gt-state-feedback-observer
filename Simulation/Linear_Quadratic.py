@@ -103,12 +103,19 @@ class ControllerLQ:
             # Derive inputs
             Qr[l, :, :] = Qr0
             Qh[l, :, :] = Qh0
-            Lh[l, :] = Lh0
-            Lr[l, :] = Lr0
 
+            Lr[l, :] = Lr0
             e[l, :] = x[l, :] - ref[l, :]
+
+            try:
+                Lh[l, :] = Lh0[:, l]
+                uh[l] = np.matmul(-Lh[l, :], e[l, :])
+            except:
+                Lh[l, :] = Lh0[:, l].flatten()
+                uh[l] = np.matmul(-Lh[l, :], e[l, :])
+
+
             ur[l] = np.matmul(-Lr0, e[l, :])
-            uh[l] = np.matmul(-Lh0, e[l, :])
             Jh[l] = self.compute_costs(e[l, :], uh[l], Qh0)
             Jr[l] = self.compute_costs(e[l, :], ur[l], Qr0)
 

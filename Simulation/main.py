@@ -36,7 +36,6 @@ def ask_input():
         experiment = "Analysis"
 
     # Dynamics to use
-    d = 0
     dynamics = "Example System"
     dynamics_name = "A_Simple_System"
 
@@ -46,38 +45,21 @@ def ask_input():
     if int(e) < 2:
         # OPTION 2: Controller
         # Option for which controller to use
-        print("Choose which controller to use, 0: Full-information Optimal Control, 1: Full-information Differential Game",
-              " 2: Differential Game Lyapunov cost estimator (Li2019)",
-              " 3: Differential Game Normalized gradient cost estimator")
-        c = input()
-        controller = ""
-        if int(c) == 0:
-            controller = "Optimal Control"
-            controller_name = "Full-information_Optimal_Control"
-
-        elif int(c) == 1:
-            controller = "Differential Game"
-            controller_name = "Full-information_Differential_Game"
-
-        elif int(c) == 2:
-            controller = "Differential Game Lyapunov cost estimator (Li2019)"
-            controller_name = "Differential_Game_Lyapunov_cost_estimator_(Li2019)"
-
-        elif int(c) == 3:
+        if int(e) == 1:
+            print("Compare 0: Cost observer, 1: Differential Game")
+            c = input()
+            if int(c) == 1:
+                controller = "Differential Game"
+                controller_name = "Full-information_Differential_Game"
+        else:
+            c = 3
             controller = "Differential Game Normalized gradient cost estimator"
             controller_name = "Differential_Game_Normalized_gradient_cost_estimator"
-
-        else:
-            exit("That's no option, choose something else!")
-
-        print("You chose wisely, your choice was: ", controller)
 
         # For the case we are comparing
         if int(e) == 1:
             print(
-                "Choose which controller to compare the ", controller, " with, 0: Full-information Optimal Control, 1: Full-information Differential Game",
-                " 2: Differential Game Lyapunov cost estimator (Li2019)",
-                " 3: Differential Game Normalized gradient cost estimator")
+                "Compare with, 0: Optimal Control, 1: Differential Game, 2: Li2019")
             c_compare = input()
             controller_compare = ""
             if int(c_compare) == 0:
@@ -89,12 +71,8 @@ def ask_input():
                 controller_compare_name = "Full-information_Differential_Game"
 
             elif int(c_compare) == 2:
-                controller_compare = "Differential Game Lyapunov cost estimator (Li2019)"
+                controller_compare = "Li et al. (2019) Algorithm"
                 controller_compare_name = "Differential_Game_Lyapunov_cost_estimator_(Li2019)"
-
-            elif int(c_compare) == 3:
-                controller_compare = "Differential Game Normalized gradient cost estimator"
-                controller_compare_name = "Differential_Game_Normalized_gradient_cost_estimator"
 
             else:
                 exit("That's no option, choose something else!")
@@ -112,48 +90,30 @@ def ask_input():
         controller_compare = ""
         controller_compare_name = ""
 
-    # OPTION 3: Reference signal
-    # Option for which reference to use
-    print("Choose which reference signal to use, 0: Sine, 1: Multisine")
-    s = input()
-    r, reference = generate_reference(int(d), T, int(s))
+    r, reference = generate_reference(T)
 
     # OPTION 4: Save figure
     # Option to save the figure
-    print("Do you want to save the figure? 0: No, show figure, 1: Yes, show no figure, 2: Yes, show figure")
-    save = input()
+    print("Do you want to save the figure? 0: No, 1: Yes")
+    q_save = input()
+    if int(q_save) == 0:
+        save = False
+    else:
+        save = True
 
-    return A, B, int(c), int(d), int(s), int(e), int(c_compare), int(save), controller, controller_name, \
+    return A, B, int(e), int(c), int(c_compare), save, controller, controller_name, \
            controller_compare, controller_compare_name, dynamics, dynamics_name,  r, reference
 
-def generate_reference(d, T, s):
-    x_d = 0
-    if d == 0:
-        x_d = 0.1
-    elif d == 1:
-        x_d = 0.1
-    elif d == 2:
-        x_d = 40*np.pi/180
-    else:
-        exit("That's no option, choose something else!")
+def generate_reference(T):
+    x_d = 0.2
 
     # Reference signal
     fs1 = 1 / 8
-    fs2 = 1 / 20
-    fs3 = 1 / 37
-    fs4 = 1 / 27
 
-    if s == 0:
-        r = x_d * (np.sin(2 * np.pi * fs1 * T))
-        rdot = 2 * np.pi * fs1 * x_d * (np.cos(2 * np.pi * fs1 * T))
-        print("Excellent choice, a sine it is")
-    elif s == 1:
-        r = x_d * (np.sin(2 * np.pi * fs1 * T) + np.sin(2 * np.pi * fs2 * T) + np.sin(2 * np.pi * fs3 * T) + np.sin(2 * np.pi * fs4 * T))
-        rdot = x_d * (2 * np.pi * fs1 * np.cos(2 * np.pi * fs1 * T) + 2 * np.pi * fs2 * np.cos(2 * np.pi * fs2 * T) +
-                   2 * np.pi * fs3 * np.cos(2 * np.pi * fs3 * T) + 2 * np.pi * fs4 * np.cos(2 * np.pi * fs4 * T))
-        print("Excellent choice, a multisine it is")
-    else:
-        exit("That's no option, choose something else!")
+    # Make signals
+    r = x_d * (np.sin(2 * np.pi * fs1 * T))
+    rdot = 2 * np.pi * fs1 * x_d * (np.cos(2 * np.pi * fs1 * T))
+
     reference = np.array([r, rdot])
     return r, reference.transpose()
 
@@ -176,20 +136,26 @@ def solve_coupled_riccati(it, Qr, Qh, A, B):
     Lh = np.matmul(B.transpose(), Ph)
     return Lr, Lh
 
-def generate_controls(c, input_dict, v=None, v_val=1.0):
+def solve_single_riccati(Qr, A, B):
+    Pr = cp.solve_continuous_are(A, B, Qr, 1)
+    Lr = np.matmul(B.transpose(), Pr)
+    return Lr
+
+def generate_controls(controller, input_dict, v=None, v_val=1.0):
+    print("controller = ", controller)
     inputs = input_dict.copy()
-    inputs["c"] = c
-    if c == 0:
-        # Full-information w/ Newton-Rhapson method
+    inputs["controller_type"] = controller
+    if controller == "Optimal Control":
+        # Optimal Control
         controls = ControllerLQ(A, B, mu, sigma, False)
         inputs["robot_weight"] = C
 
-    elif c == 1:
+    elif controller == "Differential Game":
         # Full-information w/ Newton-Rhapson method
         controls = ControllerDG(A, B, mu, sigma, False)
         inputs["robot_weight"] = C
 
-    elif c == 2:
+    elif controller == "Li et al. (2019) Algorithm":
         # Lyapunov (Li2019)
         # Different convergence rates for different dynamics
         alpha = 1000
@@ -199,11 +165,11 @@ def generate_controls(c, input_dict, v=None, v_val=1.0):
         inputs["Gamma"] = Gamma
         inputs["sharing_rule"] = C
 
-    elif c == 3:
+    else:
         # Normalized Gradient Cost Observer
-        alpha = 200
-        Gamma = 4 * np.array([[-2, 0], [0, -2]])
-        K = alpha * np.array([[5, 0], [0, 5]])
+        alpha = 1000
+        Gamma = 4 * np.array([[2, 0], [0, 2]])
+        K = alpha * np.array([[4, 0], [0, 2]])
         kappa = 1
         controls = ControllerNGObs(A, B, mu, sigma, False)
 
@@ -211,17 +177,17 @@ def generate_controls(c, input_dict, v=None, v_val=1.0):
         inputs["Gamma"] = Gamma
         inputs["K"] = K
         inputs["sharing_rule"] = C
+        inputs["v"] = v
 
         if v == 0:
-            inputs["kappa"] = kappa * v_val
+            inputs["kappa"] = kappa * v_val**12
         elif v == 1:
             inputs["K"] = K * v_val
         elif v == 2:
-            inputs["gain_bias"] = np.array([0.0, v_val])
-
-
-    else:
-        exit('Something seems to have gone wrong, try again')
+            if v_val < 1:
+                inputs["gain_estimation_bias"] = np.array([[0.0, -0.1*inputs["virtual_human_gain"][0,1]]])
+            else:
+                inputs["gain_estimation_bias"] = np.array([[0.0, 0.1 * inputs["virtual_human_gain"][0, 1]]])
 
     return controls, inputs
 
@@ -248,8 +214,10 @@ initial_input = 0
 Qh = np.array([[20, 0], [0, 0.5]])
 C = np.array([[50, 0], [0, 1]])
 
-A, B, c, d, s, e, c_compare, save, controller, controller_name, controller_compare, \
+A, B, e, c, c_compare, save, controller, controller_name, controller_compare, \
 controller_compare_name, dynamics, dynamics_name, r, ref = ask_input()
+
+print("c = ", c, "c_comp = ", c_compare)
 
 Lr, Lh = solve_coupled_riccati(40, C-Qh, Qh, A, B)
 vhg = np.tile(Lh.transpose(), (1, N))
@@ -264,8 +232,6 @@ input_dict = {
     "robot_weight": C,
     "sharing_rule": C,
     "virtual_human_gain": vhg,
-    "c": c,
-    "d": d,
     "controller_type_name": controller_name,
     "dynamics_type_name": dynamics_name,
     "controller_type": controller,
@@ -279,11 +245,11 @@ input_dict = {
     "time": T,
 }
 
-controls, inputs = generate_controls(c, input_dict)
+controls, inputs = generate_controls(controller, input_dict)
 inputs2 = None
 inputs3 = None
 if e == 1:
-    controls2, inputs2 = generate_controls(c_compare, input_dict)
+    controls2, inputs2 = generate_controls(controller_compare, input_dict)
 # Sensitivity Analysis
 elif e == 2:
     print("Choose which variable to test: 0: kappa, 1: alpha, 2: velocity gain bias")
@@ -296,11 +262,21 @@ elif e == 2:
         variable = "gain_estimation_bias"
     else:
         exit("Something went wrong, that was no option.")
-    controls2, inputs2 = generate_controls(c, input_dict, v=int(v), v_val=0.5)
-    controls3, inputs3 = generate_controls(c, input_dict, v=int(v), v_val=2)
+    controls2, inputs2 = generate_controls(controller, input_dict, v=int(v), v_val=0.5)
+    controls3, inputs3 = generate_controls(controller, input_dict, v=int(v), v_val=2)
 
 
 # Simulate
+large = input("large font/lines? Enter 1 --->  ")
+try:
+    if int(large) == 1:
+        size = "large"
+    else:
+        size = "small"
+except:
+    size = "small"
+
+
 outputs = controls.simulate(inputs)
 outputs2 = None
 outputs3 = None
@@ -313,4 +289,5 @@ if e == 2:
 
 # Plot
 plot_object = PlotStuff()
-plot_object.plot_stuff(inputs, outputs, inputs2=inputs2, inputs3=inputs3, outputs2=outputs2, outputs3=outputs3)
+plot_object.plot_stuff(inputs, outputs, inputs2=inputs2, inputs3=inputs3,
+                       outputs2=outputs2, outputs3=outputs3, save=save, size=size)

@@ -11,6 +11,7 @@ class ControllerNG:
         self.beta = B[1, 0]
         self.alpha_1 = A[1, 0]
         self.alpha_2 = A[1, 1]
+        self.D = -self.alpha_2/self.beta
         self.nonlin = nonlin
 
     def numerical_integration(self, r, ur, uh, uhhat, y, h, Gamma, K, kappa):
@@ -21,8 +22,7 @@ class ControllerNG:
 
         # Update next value of y
         y_new = y + (1.0 / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
-        # print(k1)
-        return y_new, k1[0: 2]/h
+        return y_new
 
     def nonlinear_term(self, x):
         # Parameters
@@ -72,44 +72,33 @@ class ControllerNG:
         pseudo_B = 1/(np.matmul(self.B.transpose(), self.B)) * self.B.transpose()
         u_h_tilde = np.matmul(pseudo_B, x_tilde_dot - np.matmul(self.A - Gamma, x_tilde))
         m_squared = 1 + kappa * np.matmul(e.transpose(), e)
-        P_hhat_vec_dot = (1/m_squared) * np.matmul(np.matmul(K, e), u_h_tilde)
-
-        ydot = np.array([x_dot.transpose(), P_hhat_vec_dot.transpose(), x_hat_dot.transpose()]).flatten()
+        Lhhat_dot = u_h_tilde / m_squared * np.matmul(e.transpose(), K)
+        ydot = np.array([x_dot.transpose(), Lhhat_dot, x_hat_dot.transpose()]).flatten()
 
         return ydot
 
-    def compute_gains(self, Q, Phat, bias):
-        Lhat = np.matmul(self.B.transpose(), Phat) + bias
+    def compute_gains(self, Q, Lhat):
         A_c = self.A - self.B * Lhat
         try:
             P = cp.solve_continuous_are(A_c, self.B, Q, 1)
         except:
-            print(Lhat, bias, A_c, Q)
+            print(Lhat, A_c, Q)
         L = np.matmul(self.B.transpose(), P)
-        return Lhat, L, P
+        return L
 
-    def compute_inputs(self, Q, Phat, e, bias):
-        Lhat, L, P = self.compute_gains(Q, Phat, bias)
+    def compute_inputs(self, Q, Lhat, e):
+        L = self.compute_gains(Q, Lhat)
         u = np.inner(-L, e)
         uhat = np.inner(-Lhat, e)
-        return u, uhat, L, Lhat, P
+        return u, uhat, L
 
-    def update_costs(self, Q, Phat, bias):
-        Lhat, L, P = self.compute_gains(Q, Phat, bias)
-        A_c = self.A - self.B * L
-        Qhat = - np.matmul(A_c.transpose(), Phat.transpose()) - np.matmul(Phat, A_c) +  np.matmul(Phat, self.B) \
-               * np.matmul(self.B.transpose(), Phat.transpose())
-        return Qhat
+    def update_cost(self, Lr, Lhat):
+        Qhhat = np.array([
+            [2*Lhat[0]*Lr[0] + Lhat[0]**2, 0],
+            [0, -2 * Lhat[0] * self.beta + 2 * (self.D + Lr[1]) + Lhat[1]**2]
+        ])
 
-    def update_parameters(self, Q, Phat, bias):
-        Lhat, L, P = self.compute_gains(Q, Phat, bias)
-        gamma_1 = self.alpha_1 - self.beta ** 2 * (P[0, 1] )
-        gamma_2 = self.alpha_2 - self.beta ** 2 * (P[1, 1] )
-        a_hhat = - gamma_1 * Phat[1, 1] - gamma_2 * Phat[0, 1] + self.beta**2*Phat[0,1]*Phat[1,1]
-        q_hhat1 = - 2 * gamma_1 * Phat[0,1] + self.beta**2*Phat[0,1]**2
-        q_hhat2 = - 2 * Phat[0,1] - 2 * gamma_2 * Phat[1,1] + self.beta**2*Phat[1,1]**2
-        phi = np.array([q_hhat1, q_hhat2, a_hhat])
-        return phi
+        return Qhhat
 
     def compute_costs(self, x, u, Q):
         return np.matmul(np.matmul(x, Q), x.transpose()) + u**2
@@ -122,7 +111,6 @@ class ControllerNG:
 
         # Unpack dictionary
         Qh0 = inputs["human_weight"]
-        Qr0 = inputs["robot_weight"]
         Lh0 = np.array(inputs["virtual_human_gain"])
         x0 = inputs["initial_state"]
         u0 = inputs["u_initial"]
@@ -135,6 +123,7 @@ class ControllerNG:
         ref = np.array(inputs["reference"])
         T = np.array(inputs["time"])
         N = len(T)
+        print("bias = ", bias)
 
         y = np.zeros((N + 1, 6))
         ydot = np.zeros((N, 2))
@@ -142,12 +131,11 @@ class ControllerNG:
 
         # Estimator vectors
         Qhhat = np.zeros((N + 1, 2, 2))
-        Phhat = np.zeros((N + 1, 2, 2))
+        Lhhat = np.zeros((N + 1, 2))
         Ph = np.zeros((N, 2, 2))
         Pr = np.zeros((N, 2, 2))
         Qh = np.zeros((N, 2, 2))
         Qr = np.zeros((N, 2, 2))
-        Lhhat = np.zeros((N, 2))
         uhhat = np.zeros(N)
 
         # Real vectors
@@ -167,16 +155,15 @@ class ControllerNG:
 
         for i in range(N):
             # Human cost is fixed, Robot cost based on estimator
-            Qr[i, :, :] = C - Qhhat[i, :]
+            Qr[i, :, :] = C
             Qh[i, :, :] = Qh0
 
-            # Calcuate derivative(s) of reference
-
+            # Calculate derivative(s) of reference
             # Compute inputs
             e[i, :] = (y[i, 0:2] - ref[i, :])
-            ur[i], uhhat[i], Lr[i, :], Lhhat[i, :], Pr[i, :, :] = self.compute_inputs(Qr[i, :, :], Phhat[i, :], e[i, :], bias)
-            # print(Lh0[:, i].flatten())
-            # print(Lh[i,:])
+            ur[i], uhhat[i], Lr[i, :] = self.compute_inputs(Qr[i, :, :], Lhhat[i, :], e[i, :])
+
+            # Actual human response
             try:
                 Lh[i, :] = Lh0[:, i]
                 uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
@@ -187,7 +174,6 @@ class ControllerNG:
             # uhbar[i], urhat, Lh[i, :], Lrhat, Ph[i, :, :] = self.compute_inputs(Qh[i, :, :],  Pr[i, :], e[i, :], bias)
             vh[i] = np.random.normal(self.mu, self.sigma, 1)
             uh[i] = uhbar[i] + 0*vh[i]
-            # uh[i] = uhbar[i]
 
             try:
                 h = T[i+1] - T[i]
@@ -195,22 +181,20 @@ class ControllerNG:
                 h = T[i] - T[i-1]
 
             # Integrate a time-step
-            y[i + 1, :], ydot[i, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], uhhat[i], y[i, :], h, Gamma, K, kappa)
+            y[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], uhhat[i], y[i, :], h, Gamma, K, kappa)
             y[i + 1, 1] = y[i + 1, 1] + vh[i]
-            Phhat[i + 1, :, :] = np.array([[0, y[i + 1, 2]], [y[i + 1, 2], y[i + 1, 3]]])
+            Lhhat[i + 1, :] = y[i + 1, 2:4] + bias
+            Qhhat[i + 1, :, :] = self.update_cost(Lr[i, :].flatten(), Lhhat[i, :].flatten())
 
             # Update P and Q
-            phi = self.update_parameters(Qr[i, :, :], Phhat[i + 1, :, :], bias)
-            Qhhat[i + 1, 0, 0] = phi[0]
-            Qhhat[i + 1, 1, 1] = phi[1]
-            Phhat[i + 1, 0, 0] = phi[2]
-
             Jh[i] = self.compute_costs(e[i, :], uh[i], Qh[i, :, :])
             Jhhat[i] = self.compute_costs(e[i, :], uhhat[i], Qhhat[i, :, :])
             Jr[i] = self.compute_costs(e[i, :], ur[i], Qr[i, :, :])
 
+
         outputs = {
             "states": y[:, 0:2],
+            "estimated_states": y[:, 4:6],
             "time": T,
             "reference_signal": ref,
             "error_states": e,
@@ -219,7 +203,6 @@ class ControllerNG:
             "human_estimated_Q": Qhhat,
             "human_Q": Qh,
             "robot_Q": Qr,
-            "human_estimated_P": Phhat,
             "human_P": Ph,
             "robot_P": Pr,
             "human_estimated_gain": Lhhat,
