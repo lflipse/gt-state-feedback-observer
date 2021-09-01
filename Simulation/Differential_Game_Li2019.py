@@ -3,11 +3,12 @@ import scipy.linalg as cp
 import time
 
 class ControllerLi:
-    def __init__(self, A, B, mu, sigma):
+    def __init__(self, A, B, mu, sigma, nonlin):
         self.A = A
         self.B = B
         self.mu = mu
         self.sigma = sigma
+        self.nonlin = nonlin
 
     def numerical_integration(self, r, ur, uh, uhhat, y, h, alpha, Gamma):
         k1 = h * self.ydot(r, ur, uh, uhhat, y, alpha, Gamma)
@@ -80,6 +81,7 @@ class ControllerLi:
         Qh0 = inputs["human_weight"]
         alpha = inputs["alpha"]
         Gamma = inputs["Gamma"]
+        Lh0 = np.array(inputs["virtual_human_gain"])
         C = inputs["sharing_rule"]
         T = np.array(range(N)) * h
 
@@ -111,7 +113,7 @@ class ControllerLi:
 
         for i in range(N):
             # Human cost is fixed, Robot cost based on estimator
-            Qr[i, :, :] = C
+            Qr[i, :, :] = C - Qhhat[i, :, :]
             Qh[i, :, :] = Qh0
 
             # Calcuate derivative(s) of reference
@@ -123,9 +125,12 @@ class ControllerLi:
             # Compute inputs
             e[i, :] = y[i, 0:2] - ref[i, :]
             ur[i], uhhat[i], Lr[i, :], Lhhat[i, :], Pr[i, :, :] = self.compute_inputs(Qr[i, :, :], Phhat[i, :, :], e[i, :])
-            uhbar[i], urhat, Lh[i, :], Lrhat, Ph[i, :, :] = self.compute_inputs(Qh[i, :, :], Pr[i, :, :], e[i, :])
-            # vh[i] = np.random.normal(self.mu, self.sigma, 1)
-            # uh[i] = uhbar[i] + vh[i]
+            try:
+                Lh[i, :] = Lh0[:, i]
+                uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
+            except:
+                Lh[i, :] = Lh0[:, i].flatten()
+                uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
             uh[i] = uhbar[i]
 
             # Integrate a time-step

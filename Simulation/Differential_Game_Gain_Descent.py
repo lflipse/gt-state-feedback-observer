@@ -3,7 +3,7 @@ import scipy.linalg as cp
 import time
 
 class ControllerNG:
-    def __init__(self, A, B, mu, sigma):
+    def __init__(self, A, B, mu, sigma, nonlin):
         self.A = A
         self.B = B
         self.mu = mu
@@ -11,6 +11,7 @@ class ControllerNG:
         self.beta = B[1, 0]
         self.alpha_1 = A[1, 0]
         self.alpha_2 = A[1, 1]
+        self.nonlin = nonlin
 
     def numerical_integration(self, r, ur, uh, uhhat, y, h, Gamma, kappa):
         k1 = h * self.ydot(r, ur, uh, uhhat, y, Gamma, kappa)
@@ -41,7 +42,10 @@ class ControllerNG:
         v = x[1, 0]
         gv = v / vsp * np.exp(-(v / (np.sqrt(2) * vsp)) ** 2 + (1 / 2))
         tau_f = gv * tau_fric + tau_d * np.tanh(v / vt)
-        f_nl = tau_g + tau_f
+        if self.nonlin:
+            f_nl = tau_g + tau_f
+        else:
+            f_nl = 0
         return f_nl
 
     def ydot(self, r, ur, uh, uhhat, y, Gamma, kappa):
@@ -64,7 +68,7 @@ class ControllerNG:
         pseudo_B = 1/(np.matmul(self.B.transpose(), self.B)) * self.B.transpose()
         u_h_tilde = np.matmul(pseudo_B, x_tilde_dot)
         m_squared = 1 + kappa * np.matmul(e.transpose(), e)
-        P_hhat_vec_dot = 1/self.beta * (1/m_squared) * np.matmul(np.matmul(Gamma, e), u_h_tilde)
+        P_hhat_vec_dot = (1/m_squared) * np.matmul(np.matmul(Gamma, e), u_h_tilde)
 
         ydot = np.array([x_dot.transpose(), P_hhat_vec_dot.transpose()]).flatten()
 
@@ -115,7 +119,8 @@ class ControllerNG:
         # h = inputs["step_size"] + 0.00098
         Qh0 = inputs["human_weight"]
         Qr0 = inputs["robot_weight"]
-        Lh0 = np.array(inputs["virtual_human_gain"])
+
+
         x0 = inputs["initial_state"]
         u0 = inputs["u_initial"]
         e0 = inputs["e_initial"]
@@ -126,6 +131,12 @@ class ControllerNG:
         ref = np.array(inputs["reference"])
         T = np.array(inputs["time"])
         N = len(T)
+        try:
+            Lh0 = np.array(inputs["virtual_human_gain"])
+        except:
+            Ph = cp.solve_continuous_are(self.A, self.B, Qh0, 1)
+            Lh = np.matmul(self.B.transpose(), Ph)
+            Lh0 = np.tile(Lh, (1, N))
 
         y = np.zeros((N + 1, 4))
         ydot = np.zeros((N, 2))
