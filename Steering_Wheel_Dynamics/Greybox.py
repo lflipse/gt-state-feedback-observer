@@ -55,18 +55,35 @@ class GreyBox:
         self.file_csv_ID = "identification_set.csv"
         self.file_csv_ver = "verification_set.csv"
 
-        # Styles
-        csfont = {'fontname': 'Georgia'}
-        hfont = {'fontname': 'Georgia'}
-
-        # Colors
+        # self.colors
         tud_blue = "#0066A2"
+        tud_blue2 = "#61A4B4"
+        tud_blue3 = "#007188"
         tud_black = "#000000"
         tud_grey = "#808080"
         tud_red = "#c3312f"
-        tud_green = "#00A390"
+        tud_orange = "#EB7245"
         tud_yellow = "#F1BE3E"
-        colors = [tud_blue, tud_black, tud_red, tud_green, tud_yellow]
+        tud_green = "#00A390"
+        self.colors = [tud_blue, tud_red, tud_green, tud_orange, tud_blue2]
+
+        size = None
+        if size == "small":
+            self.lw = 2.5
+            title_size = 14
+            label_size = 12
+            self.legend_size = 8
+        else:
+            self.lw = 4
+            title_size = 24
+            label_size = 22
+            self.legend_size = 15
+
+        self.lw_box = 2.5
+        self.boxw = 0.5
+
+        self.csfont = {'fontname': 'Georgia', 'size': title_size}
+        self.hfont = {'fontname': 'Georgia', 'size': label_size}
 
         # Forcing function
         bw = 15
@@ -92,16 +109,17 @@ class GreyBox:
 
         fig = plt.figure()
         for i in range(len(period)):
-            plt.plot(frequencies[i], amplitude[i], color=tud_blue, marker='o')
-            plt.plot([frequencies[i], frequencies[i]], [0, amplitude[i]], tud_blue, alpha=0.7, linewidth=2.5)
+            plt.plot(frequencies[i], amplitude[i], linewidth=self.lw, color=tud_blue, marker='o')
+            plt.plot([frequencies[i], frequencies[i]],  [0, amplitude[i]], tud_blue, linewidth=self.lw, alpha=0.7)
 
-        plt.title("Forcing function in frequency domain", **csfont)
-        plt.xlabel("Frequency (rad/s)", **hfont)
-        plt.ylabel("Amplitude (-)", **hfont)
-        plt.xlim(0.5, frequencies[-1] + 10, )
+        plt.title("Forcing function in frequency domain", **self.csfont)
+        plt.xlabel("Frequency (rad/s)", **self.hfont)
+        plt.ylabel("Amplitude (-)", **self.hfont)
+        plt.xlim(0.5, frequencies[-1] + 10)
         plt.ylim(0.01, amplitude[0]+0.1)
         plt.yscale("log")
         plt.xscale("log")
+        plt.tight_layout(pad=1)
 
         # Show forcing function:
         fs = 100
@@ -112,11 +130,12 @@ class GreyBox:
             u[i] = self.compute_torque(t[i], True)
 
         plt.figure()
-        plt.plot(t, u, tud_blue, linewidth=2.5)
-        plt.title("Forcing function in time domain", **csfont)
-        plt.xlabel("Time (s)", **hfont)
-        plt.ylabel("Amplitude (-)", **hfont)
+        plt.plot(t, u, tud_blue, linewidth=self.lw,)
+        plt.title("Forcing function in time domain", **self.csfont)
+        plt.xlabel("Time (s)", **self.hfont)
+        plt.ylabel("Amplitude (-)", **self.hfont)
         plt.xlim(t[0], self.duration*0.2)
+        plt.tight_layout(pad=1)
 
     def do(self):
         # Check whether to create or load dataset
@@ -344,36 +363,24 @@ class GreyBox:
         var_l = np.var(dphi_l)
 
         self.angle_difference = {
-            "Initial estimate": dphi_i,
-            "Final estimate": dphi_f,
-            "Linear estimate": dphi_l,
+            "Initial": dphi_i,
+            "Final": dphi_f,
+            "Linear": dphi_l,
         }
 
         self.rate_difference = {
-            "Initial estimate": dphidot_i,
-            "Final estimate": dphidot_f,
-            "Linear estimate": dphidot_l,
+            "Initial": dphidot_i,
+            "Final": dphidot_f,
+            "Linear": dphidot_l,
         }
 
         self.cost_difference = {
-            "Initial estimate": cost_i,
-            "Final estimate": cost_f,
-            "Linear estimate": cost_l,
+            "Initial": cost_i,
+            "Final": cost_f,
+            "Linear": cost_l,
         }
 
     def show_nonlins(self, m, dh, dl, tau_f, tau_d, vt, multiple):
-        # Styles
-        csfont = {'fontname': 'Georgia'}
-        hfont = {'fontname': 'Georgia'}
-
-        # Colors
-        tud_blue = "#0066A2"
-        tud_black = "#000000"
-        tud_grey = "#808080"
-        tud_red = "#c3312f"
-        tud_green = "#00A390"
-        tud_yellow = "#F1BE3E"
-        colors = [tud_blue, tud_yellow, tud_red, tud_green, tud_black]
 
         # Simulations
         gamma = [0.1, 0.5, 1, 5]
@@ -393,9 +400,9 @@ class GreyBox:
             gv = v/vsp * np.exp(-(v/(np.sqrt(2) * vsp))**2 + 1/2)
             fc = tau_d * np.tanh(v/vt)
             f_fric = gv * tau_f + fc
-            # plt.plot(v, gv * tau_f, colors[0], linewidth=2)
-            # plt.plot(v, fc, colors[1], linewidth=2)
-            plt.plot(v, f_fric, colors[0], linewidth=2)
+            # plt.plot(v, gv * tau_f, self.colors[0], linewidth=2)
+            # plt.plot(v, fc, self.colors[1], linewidth=2)
+            plt.plot(v, f_fric, self.colors[0], linewidth=self.lw)
 
         if multiple:
             for i in range(len(gamma)):
@@ -403,17 +410,18 @@ class GreyBox:
                 gv = v / vsp * np.exp(-(v / (np.sqrt(2) * vsp)) ** 2 + 1 / 2)
                 fc = gamma[i] * tau_d * np.tanh(v / vt)
                 f_fric = gv * gamma[i] * tau_f + fc
-                # plt.plot(v, gv * tau_f * gamma[i], colors[i], alpha=0.5, linestyle="--", linewidth=2)
-                # plt.plot(v, fc, colors[i], alpha=0.5, linestyle="-.", linewidth=2)
-                plt.plot(v, f_fric, colors[i], label=string, linewidth=2)
+                # plt.plot(v, gv * tau_f * gamma[i], self.colors[i], alpha=0.5, linestyle="--", linewidth=2)
+                # plt.plot(v, fc, self.colors[i], alpha=0.5, linestyle="-.", linewidth=2)
+                plt.plot(v, f_fric, self.colors[i], label=string, linewidth=self.lw,)
 
-        plt.xlabel("Steering rate $\dot{\phi}}(t)$ (rad/s)", **csfont)
-        plt.ylabel("Friction torque $f_{fric}(t)$ (Nm)", **csfont)
-        plt.title("Friction torque", **csfont)
         plt.xlim(v[0], v[-1])
+        plt.xlabel("Steering rate $\dot{\phi}}(t)$ (rad/s)", **self.hfont)
+        plt.ylabel("Torque $f_{fric}(t)$ (Nm)", **self.hfont)
+        plt.title("Friction torque", **self.csfont)
+
         plt.tight_layout(pad=1)
         if multiple:
-            plt.legend()
+            plt.legend(prop={"size": self.legend_size}, loc='upper right')
 
         phi = np.linspace(-np.pi, np.pi, 200)
         g = 9.81
@@ -427,7 +435,7 @@ class GreyBox:
         plt.figure()
 
         if not multiple:
-            plt.plot(fac * phi, tau_g, colors[0], linewidth=2)
+            plt.plot(fac * phi, tau_g, self.colors[0], linewidth=self.lw)
         else:
 
             for i in range(len(offset)):
@@ -437,16 +445,16 @@ class GreyBox:
                 dy = dl - offset[i]
                 tau_g = - m * g * dy * np.sin(phi) - m * g * dx * np.cos(phi)
                 string = "$\\delta x = $" + str(round(dx, 2)) + "$, \\delta y = $" + str(round(dy, 2))
-                plt.plot(fac * phi, tau_g, colors[i], label=string, linewidth=2)
+                plt.plot(fac * phi, tau_g, self.colors[i], label=string, linewidth=self.lw)
 
 
-        plt.xlabel("Steering angle $\phi}(t)$ (Degrees)", **csfont)
-        plt.ylabel("Gravitational torque $f_{g}(t)$ (Nm)", **csfont)
-        plt.title("Gravitational torque", **csfont)
+        plt.xlabel("Steering angle $\phi}(t)$ (Degrees)", **self.csfont)
+        plt.ylabel("Torque $f_{g}(t)$ (Nm)", **self.csfont)
+        plt.title("Gravitational torque", **self.csfont)
         plt.xlim(fac * phi[0], fac * phi[-1])
         plt.tight_layout(pad=1)
         if multiple:
-            plt.legend()
+            plt.legend(prop={"size": self.legend_size}, loc='upper left')
 
     def store_variables(self, output):
         for key in output.keys():
@@ -511,16 +519,6 @@ class GreyBox:
             self.x = x_new
 
     def plot_data(self):
-        csfont = {'fontname': 'Georgia'}
-        hfont = {'fontname': 'Georgia'}
-
-        # Colors
-        tud_blue = "#0066A2"
-        tud_black = "#000000"
-        tud_grey = "#808080"
-        tud_red = "#c3312f"
-        tud_green = "#00A390"
-        tud_yellow = "#F1BE3E"
 
         print("plotting stuff")
         t = self.data_set_ver["time"]
@@ -538,83 +536,94 @@ class GreyBox:
         cost_difference = pd.DataFrame.from_dict(self.cost_difference)
 
 
-        color_palette = {"Initial estimate": tud_yellow, "Final estimate": tud_red, "Linear estimate": tud_green}
-        colors = [tud_yellow, tud_red, tud_green]
+        color_palette = {"Initial": self.colors[0], "Final": self.colors[1], "Linear": self.colors[2]}
+
 
         fig1, ax1 = plt.subplots()
-        ax1.set_title('Absolute steering angle difference', **csfont)
-        res = sns.boxplot(data=angle_difference, palette=color_palette, ax=ax1, showfliers=False)
-        ax1.set_ylabel("Steering angle (rad)", **hfont)
-        res.set_xticklabels(res.get_xmajorticklabels(), **hfont)
+        ax1.set_title('Absolute steering angle difference', **self.csfont)
+        res = sns.boxplot(linewidth=self.lw_box, width=self.boxw, data=angle_difference, palette=color_palette, ax=ax1, showfliers=False)
+        ax1.set_ylabel("Steering angle (rad)", **self.hfont)
+        res.set_xticklabels(res.get_xmajorticklabels(), **self.hfont)
+        plt.tight_layout(pad=1)
 
         fig3, ax3 = plt.subplots()
-        ax3.set_title('Absolute steering rate difference', **csfont)
-        res3 = sns.boxplot(data=rate_difference, palette=color_palette, ax=ax3, showfliers=False)
-        ax3.set_ylabel("Absolute steering rate (rad/s)", **hfont)
-        res3.set_xticklabels(res3.get_xmajorticklabels(), **hfont)
+        ax3.set_title('Absolute steering rate difference', **self.csfont)
+        res3 = sns.boxplot(linewidth=self.lw_box, width=self.boxw, data=rate_difference, palette=color_palette, ax=ax3, showfliers=False)
+        ax3.set_ylabel("Absolute steering rate (rad/s)", **self.hfont)
+        res3.set_xticklabels(res3.get_xmajorticklabels(), **self.hfont)
+        plt.tight_layout(pad=1)
 
         fig2, ax2 = plt.subplots()
-        ax2.set_title('Cost function values', **csfont)
-        res2 = sns.boxplot(data=cost_difference, palette=color_palette, ax=ax2, showfliers=False)
-        ax2.set_ylabel("Cost function value (-)", **hfont)
-        res2.set_xticklabels(res2.get_xmajorticklabels(), **hfont)
-
+        ax2.set_title('Cost function values', **self.csfont)
+        res2 = sns.boxplot(linewidth=self.lw_box, width=self.boxw, data=cost_difference, palette=color_palette, ax=ax2, showfliers=False)
+        ax2.set_ylabel("Cost function value (-)", **self.hfont)
+        res2.set_xticklabels(res2.get_xmajorticklabels(), **self.hfont)
+        plt.tight_layout(pad=1)
 
         print("Make this into a table! VAF values:")
         print("Initial guess: ", self.VAF["initial"])
-        print("Final estimated: ", self.VAF["final"])
-        print("Linear estimate: ", self.VAF["linear"])
+        print("Finald: ", self.VAF["final"])
+        print("Linear: ", self.VAF["linear"])
 
         print("means (init, final, linear), (angle, rate, cost):")
-        print(np.mean(self.angle_difference["Initial estimate"]), np.mean(self.angle_difference["Final estimate"]),
-              np.mean(self.angle_difference["Linear estimate"]))
-        print(np.mean(self.rate_difference["Initial estimate"]), np.mean(self.rate_difference["Final estimate"]),
-              np.mean(self.rate_difference["Linear estimate"]))
-        print(np.mean(self.cost_difference["Initial estimate"]), np.mean(self.cost_difference["Final estimate"]),
-              np.mean(self.cost_difference["Linear estimate"]))
+        print(np.mean(self.angle_difference["Initial"]), np.mean(self.angle_difference["Final"]),
+              np.mean(self.angle_difference["Linear"]))
+        print(np.mean(self.rate_difference["Initial"]), np.mean(self.rate_difference["Final"]),
+              np.mean(self.rate_difference["Linear"]))
+        print(np.mean(self.cost_difference["Initial"]), np.mean(self.cost_difference["Final"]),
+              np.mean(self.cost_difference["Linear"]))
 
         print("variance (init, final, linear), (angle, rate, cost):")
-        print(np.var(self.angle_difference["Initial estimate"]), np.var(self.angle_difference["Final estimate"]),
-              np.var(self.angle_difference["Linear estimate"]))
-        print(np.var(self.rate_difference["Initial estimate"]), np.var(self.rate_difference["Final estimate"]),
-              np.var(self.rate_difference["Linear estimate"]))
-        print(np.var(self.cost_difference["Initial estimate"]), np.var(self.cost_difference["Final estimate"]),
-              np.var(self.cost_difference["Linear estimate"]))
+        print(np.var(self.angle_difference["Initial"]), np.var(self.angle_difference["Final"]),
+              np.var(self.angle_difference["Linear"]))
+        print(np.var(self.rate_difference["Initial"]), np.var(self.rate_difference["Final"]),
+              np.var(self.rate_difference["Linear"]))
+        print(np.var(self.cost_difference["Initial"]), np.var(self.cost_difference["Final"]),
+              np.var(self.cost_difference["Linear"]))
 
         # plot time signals
         plt.figure()
-        plt.plot(t, phi, tud_blue, linewidth=2.5, label="Measured $\phi(t)$")
-        plt.plot(t, self.phi_sim_final, tud_red, linewidth=2.5, label="Estimated $\hat{\phi}(t)$")
-        plt.plot(t, self.phi_sim_lin, tud_green, linewidth=2.5, label="Linear $\hat{\phi}(t)$")
-        plt.title("Steering angle comparison", **csfont)
-        plt.xlabel("Time (s)", **hfont)
-        plt.ylabel("Steering angle (rad)", **hfont)
+        plt.plot(t, phi, self.colors[0], linewidth=self.lw, label="Measured $\phi(t)$")
+        plt.plot(t, self.phi_sim_final, self.colors[1], linewidth=self.lw, label="Estimated $\hat{\phi}(t)$")
+        plt.plot(t, self.phi_sim_lin, self.colors[2], linewidth=self.lw, label="Linear $\hat{\phi}(t)$")
+        plt.title("Steering angle comparison", **self.csfont)
+        plt.xlabel("Time (s)", **self.hfont)
+        plt.ylabel("Steering angle (rad)", **self.hfont)
         plt.xlim(t[0], 20)
-        plt.legend()
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.tight_layout(pad=1)
 
         plt.figure()
-        plt.plot(t, phidot, tud_blue, linewidth=2.5, label="Measured $\dot{\phi}(t)$")
-        plt.plot(t, self.phidot_sim_final, tud_red, linewidth=2.5, label="Estimated $\dot{\hat{\phi}}(t)$")
-        plt.plot(t, self.phidot_sim_lin, tud_green, linewidth=2.5, label="Linear $\dot{\hat{\phi}}(t)$")
-        plt.title("Steering rate comparison", **csfont)
-        plt.xlabel("Time (s)", **hfont)
-        plt.ylabel("Steering rate (rad/s)", **hfont)
+        plt.plot(t, phidot, self.colors[0], linewidth=self.lw, label="Measured $\dot{\phi}(t)$")
+        plt.plot(t, self.phidot_sim_final, self.colors[1], linewidth=self.lw, label="Estimated $\dot{\hat{\phi}}(t)$")
+        plt.plot(t, self.phidot_sim_lin, self.colors[2], linewidth=self.lw, label="Linear $\dot{\hat{\phi}}(t)$")
+        plt.title("Steering rate comparison", **self.csfont)
+        plt.xlabel("Time (s)", **self.hfont)
+        plt.ylabel("Steering rate (rad/s)", **self.hfont)
         plt.xlim(t[0], 20)
-        plt.legend()
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.tight_layout(pad=1)
 
         plt.figure()
-        plt.plot(t, u, tud_black, linewidth=1.5, label="input $u(t)$")
-        plt.plot(t, np.array(phidot) - np.array(self.phidot_sim_final), tud_green, linewidth=2.5, label="$\Delta \dot{\hat{\phi}}(t)$")
-        plt.title("Difference measured and simulated states", **csfont)
-        plt.xlabel("Time (s)", **hfont)
-        plt.ylabel("Difference in magnitude", **hfont)
-        plt.legend()
+        plt.plot(t, u, self.colors[0], linewidth=self.lw, label="input $u(t)$")
+        plt.plot(t, np.array(phidot) - np.array(self.phidot_sim_final), self.colors[1], linewidth=self.lw, label="$\Delta \dot{\hat{\phi}}(t)$")
+        plt.title("Difference measured and simulated states", **self.csfont)
+        plt.xlabel("Time (s)", **self.hfont)
+        plt.ylabel("Difference in magnitude", **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.tight_layout(pad=1)
 
         self.save_all_figures()
         plt.show()
 
     def save_all_figures(self):
-        pp = PdfPages('greybox.pdf')
+        a = input("Save in thesis folder? 0: No, 1: Yes   ")
+        if int(a) == 1:
+            location = "..\\..\\thesis\\img\\greybox.pdf"
+            pp = PdfPages(location)
+        else:
+            pp = PdfPages('greybox.pdf')
+
         figs = None
         if figs is None:
             figs = [plt.figure(n) for n in plt.get_fignums()]
