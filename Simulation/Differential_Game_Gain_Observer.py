@@ -86,19 +86,20 @@ class ControllerNG:
         L = np.matmul(self.B.transpose(), P)
         return L
 
-    def compute_inputs(self, Q, Lhat, e):
+    def compute_inputs(self, Q, Lhat, e, bias):
         L = self.compute_gains(Q, Lhat)
         u = np.inner(-L, e)
-        uhat = np.inner(-Lhat, e)
+        uhat = np.inner(-Lhat-bias, e)
         return u, uhat, L
 
     def update_cost(self, Lr, Lhat):
-        Qhhat = np.array([
-            [2*Lhat[0]*Lr[0] + Lhat[0]**2, 0],
-            [0, -2 * Lhat[0] * self.beta + 2 * (self.D + Lr[1]) + Lhat[1]**2]
-        ])
-
-        return Qhhat
+        p = 1/self.beta * Lhat
+        gamma_1 = self.alpha_1 - self.beta * Lr[0]
+        gamma_2 = self.alpha_2 - self.beta * Lr[1]
+        q_hhat1 = - 2 * gamma_1 * p[0] + Lhat[0] ** 2
+        q_hhat2 = - 2 * p[0] - 2 * gamma_2 * p[1] + Lhat[1] ** 2
+        Q_hhat = np.array([[q_hhat1, 0], [0, q_hhat2]])
+        return Q_hhat
 
     def compute_costs(self, x, u, Q):
         return np.matmul(np.matmul(x, Q), x.transpose()) + u**2
@@ -123,7 +124,7 @@ class ControllerNG:
         ref = np.array(inputs["reference"])
         T = np.array(inputs["time"])
         N = len(T)
-        print("bias = ", bias)
+        # print("bias = ", bias)
 
         y = np.zeros((N + 1, 6))
         ydot = np.zeros((N, 2))
@@ -155,13 +156,13 @@ class ControllerNG:
 
         for i in range(N):
             # Human cost is fixed, Robot cost based on estimator
-            Qr[i, :, :] = C
+            Qr[i, :, :] = C - Qhhat[i, :, :]
             Qh[i, :, :] = Qh0
 
             # Calculate derivative(s) of reference
             # Compute inputs
             e[i, :] = (y[i, 0:2] - ref[i, :])
-            ur[i], uhhat[i], Lr[i, :] = self.compute_inputs(Qr[i, :, :], Lhhat[i, :], e[i, :])
+            ur[i], uhhat[i], Lr[i, :] = self.compute_inputs(Qr[i, :, :], Lhhat[i, :], e[i, :], bias)
 
             # Actual human response
             try:
@@ -183,8 +184,8 @@ class ControllerNG:
             # Integrate a time-step
             y[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], uhhat[i], y[i, :], h, Gamma, K, kappa)
             y[i + 1, 1] = y[i + 1, 1] + vh[i]
-            Lhhat[i + 1, :] = y[i + 1, 2:4] + bias
-            Qhhat[i + 1, :, :] = self.update_cost(Lr[i, :].flatten(), Lhhat[i, :].flatten())
+            Lhhat[i + 1, :] = y[i + 1, 2:4]
+            Qhhat[i + 1, :, :] = self.update_cost(Lr[i, :], Lhhat[i, :])
 
             # Update P and Q
             Jh[i] = self.compute_costs(e[i, :], uh[i], Qh[i, :, :])

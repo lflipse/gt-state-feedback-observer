@@ -105,10 +105,10 @@ def ask_input():
            controller_compare, controller_compare_name, dynamics, dynamics_name,  r, reference
 
 def generate_reference(T):
-    x_d = 0.2
+    x_d = 0.5
 
     # Reference signal
-    fs1 = 1 / 8
+    fs1 = 1 / 5
 
     # Make signals
     r = x_d * (np.sin(2 * np.pi * fs1 * T))
@@ -167,9 +167,9 @@ def generate_controls(controller, input_dict, v=None, v_val=1.0):
 
     else:
         # Normalized Gradient Cost Observer
-        alpha = 1000
+        alpha = 100
         Gamma = 4 * np.array([[2, 0], [0, 2]])
-        K = alpha * np.array([[4, 0], [0, 2]])
+        K = alpha * np.array([[8, 0], [0, 3]])
         kappa = 1
         controls = ControllerNGObs(A, B, mu, sigma, False)
 
@@ -185,15 +185,15 @@ def generate_controls(controller, input_dict, v=None, v_val=1.0):
             inputs["K"] = K * v_val
         elif v == 2:
             if v_val < 1:
-                inputs["gain_estimation_bias"] = np.array([[0.0, -0.1*inputs["virtual_human_gain"][0,1]]])
+                inputs["gain_estimation_bias"] = np.array([0.0, 2.8])
             else:
-                inputs["gain_estimation_bias"] = np.array([[0.0, 0.1 * inputs["virtual_human_gain"][0, 1]]])
+                inputs["gain_estimation_bias"] = np.array([0.0, -1.4])
 
     return controls, inputs
 
 # Simulation parameters
-t = 20
-h = 0.01
+t = 12
+h = 0.005
 N = round(t/h) + 1
 T = np.array(range(N)) * h
 
@@ -248,11 +248,13 @@ input_dict = {
 controls, inputs = generate_controls(controller, input_dict)
 inputs2 = None
 inputs3 = None
+v = 0
+variable = "kappa"
 if e == 1:
     controls2, inputs2 = generate_controls(controller_compare, input_dict)
 # Sensitivity Analysis
 elif e == 2:
-    print("Choose which variable to test: 0: kappa, 1: alpha, 2: velocity gain bias")
+    print("Choose which variable to test: 0: kappa, 1: K, 2: velocity gain bias")
     v = input()
     if int(v) == 0:
         variable = "kappa"
@@ -289,5 +291,5 @@ if e == 2:
 
 # Plot
 plot_object = PlotStuff()
-plot_object.plot_stuff(inputs, outputs, inputs2=inputs2, inputs3=inputs3,
+plot_object.plot_stuff(inputs, outputs, v=int(v), inputs2=inputs2, inputs3=inputs3,
                        outputs2=outputs2, outputs3=outputs3, save=save, size=size)

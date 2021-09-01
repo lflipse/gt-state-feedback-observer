@@ -6,14 +6,14 @@ class PlotStuff:
     def __init__(self):
         print("Plotting stuff")
 
-    def plot_stuff(self, inputs1, outputs1, inputs2, outputs2, inputs3, outputs3, save, size="small"):
+    def plot_stuff(self, inputs1, outputs1, inputs2, outputs2, inputs3, outputs3, save, v, size="small"):
         # Figure properties
 
 
         # Colors
         tud_blue = "#0066A2"
         tud_blue2 = "#61A4B4"
-        tud_blue3 = "#82D7C6"
+        tud_blue3 = "#007188"
         tud_black = "#000000"
         tud_grey = "#808080"
         tud_red = "#c3312f"
@@ -44,19 +44,29 @@ class PlotStuff:
 
         csfont = {'fontname': 'Georgia', 'size': title_size}
         hfont = {'fontname': 'Georgia', 'size': label_size}
-            
-
-        robot_colors = [tud_blue, tud_blue2, tud_blue3]
-        human_colors = [tud_blue, tud_blue2, tud_blue3]
 
         list_inputs = [inputs1, inputs2, inputs3]
         list_outputs = [outputs1, outputs2, outputs3]
-
+        variable = "kappa"
+        var_label = None
         if inputs3 != None:
             print("we're doing sensitivity analysis")
             m = 3
             robot_colors = [tud_blue, tud_blue2, tud_blue3]
-            human_colors = [tud_blue, tud_blue2, tud_blue3]
+            human_colors = [tud_red, tud_blue3, tud_green]
+
+            if int(v) == 0:
+                variable = "kappa"
+                var_label = "$\kappa$"
+            elif int(v) == 1:
+                variable = "K"
+                var_label = "$K$"
+            elif int(v) == 2:
+                variable = "gain_estimation_bias"
+                var_label = "$\~L_{h,2}$"
+            else:
+                exit("erreur")
+
         elif inputs2 != None:
             print("we're comparing")
             m = 2
@@ -108,14 +118,25 @@ class PlotStuff:
                 Lhhat = outputs["human_estimated_gain"]
                 xhat = outputs["estimated_states"]
 
+            value = inputs[variable]
+            if v == 1:
+                # print(value)
+                value = int(value[0, 0])
+            if v == 2:
+                print(value)
+                try:
+                    value = value[0, 1]
+                except:
+                    value = value[1]
+
             # Plot stuff
             plt.figure(f1.number)
             if i == 0:
                 plt.plot(T, r[:, 0], tud_black, linewidth=lw, linestyle="-", alpha=0.7, label="Reference $r(t)$")
-
             try:
                 plt.plot(T, x[:-1, 0], robot_colors[i], linestyle="-", alpha=0.7, linewidth=lw, label="State $x(t)$")
-                plt.plot(T, xhat[:-1, 0], robot_colors[i], linestyle="--", linewidth=lw, label="Estimated state $\hat{x}(t)$")
+                plt.plot(T, xhat[:-1, 0], robot_colors[i], linestyle="--", linewidth=lw,
+                         label=self.create_labels(value, var_label, "state $\hat{x}(t)$"))
             except:
                 plt.plot(T, x[:-1, 0], robot_colors[i], linestyle="-", linewidth=lw, label="State $x(t)$")
             plt.title('Position', **csfont)
@@ -128,10 +149,10 @@ class PlotStuff:
             plt.figure(f8.number)
             if i == 0:
                 plt.plot(T, r[:, 1], tud_black, linewidth=lw, linestyle="-", alpha=0.7, label="Reference $\dot{r}(t)$")
-
             try:
                 plt.plot(T, x[:-1, 1], robot_colors[i], linestyle="-", alpha=0.7, linewidth=lw, label="State $\dot{x}(t)$")
-                plt.plot(T, xhat[:-1, 1], robot_colors[i], linestyle="--", linewidth=lw, label="Estimated state $\dot{\hat{x}}(t)$")
+                plt.plot(T, xhat[:-1, 1], robot_colors[i], linestyle="--", linewidth=lw,
+                         label=self.create_labels(value, var_label, "state $\dot{\hat{x}}(t)$"))
             except:
                 plt.plot(T, x[:-1, 1], robot_colors[i], linestyle="-", linewidth=lw, label="State $x(t)$")
             plt.title('Velocity', **csfont)
@@ -147,7 +168,8 @@ class PlotStuff:
             if estimates:
                 if i == 0:
                     plt.plot(T[1:], Jh[1:], human_colors[i], linestyle="-", linewidth=lw, alpha=0.7, label="Real human cost $J_h(t)$")
-                plt.plot(T[1:], Jhhat[1:], human_colors[i], linestyle="--", linewidth=lw, alpha=1, label="Estimated human cost $\hat{J}_h(t)$")
+                plt.plot(T[1:], Jhhat[1:], human_colors[i], linestyle="--", linewidth=lw, alpha=1,
+                         label=self.create_labels(value, var_label, "human cost $\hat{J}_h(t)$"))
             else:
                 if i == 0:
                     plt.plot(T[1:], Jh[1:], human_colors[i], linestyle="-", linewidth=lw, alpha=1, label="Human cost $J_h(t)$")
@@ -165,7 +187,8 @@ class PlotStuff:
             if estimates:
                 if i == 0:
                     plt.plot(T, uh, human_colors[i], linestyle="-", linewidth=lw, alpha=0.7, label="Real human input $u_h(t)$")
-                plt.plot(T, uhhat, human_colors[i], linestyle="--", linewidth=lw, label="Estimated human input $\hat{u}_h(t)$")
+                plt.plot(T, uhhat, human_colors[i], linestyle="--", linewidth=lw,
+                         label=self.create_labels(value, var_label, "human input $\hat{u}_h(t)$"))
             else:
                 if i == 0:
                     plt.plot(T, uh, human_colors[i], linestyle="-", linewidth=lw, label="Human input $u_h(t)$")
@@ -181,7 +204,8 @@ class PlotStuff:
             if i == 0:
                 plt.plot(T, Lh[:, 0], human_colors[i], linewidth=lw, alpha=0.7, label="Real human gain $L_{h,1}(t)$")
             try:
-                plt.plot(T, Lhhat[:-1, 0], human_colors[i], linewidth=lw, linestyle="--", label="Estimated human gain $\hat{L}_{h,1}(t)$")
+                plt.plot(T, Lhhat[:-1, 0], human_colors[i], linewidth=lw, linestyle="--",
+                         label=self.create_labels(value, var_label, "human gain $\hat{L}_{h,1}(t)$"))
             except:
                 print("did not work")
                 a=1
@@ -190,7 +214,7 @@ class PlotStuff:
             plt.title('Position gain', **csfont)
             plt.xlabel('Time (s)', **hfont)
             plt.ylabel('Gain value (N/m)', **hfont)
-            plt.legend(prop={"size": legend_size}, loc='upper right')
+            plt.legend(prop={"size": legend_size}, loc='lower right')
             plt.xlim(0, t)
             plt.tight_layout(pad=1)
 
@@ -198,7 +222,8 @@ class PlotStuff:
             if i == 0:
                 plt.plot(T, Lh[:, 1], human_colors[i], linewidth=lw, alpha=0.7, label="Real human gain $L_{h,2}(t)$")
             try:
-                plt.plot(T, Lhhat[:-1, 1], human_colors[i], linewidth=lw, linestyle="--", label="Estimated human gain $\hat{L}_{h,2}(t)$")
+                plt.plot(T, Lhhat[:-1, 1], human_colors[i], linewidth=lw, linestyle="--",
+                         label=self.create_labels(value, var_label, "human gain $\hat{L}_{h,2}(t)"))
             except:
                 a=1
             if m < 2:
@@ -214,7 +239,8 @@ class PlotStuff:
             if i == 0:
                 plt.plot(T, Qh[:, 0, 0], human_colors[i], linewidth=lw, alpha=0.7, label="Real human weight $Q_{h,(1,1)}(t)$")
             try:
-                plt.plot(T, Qhhat[:-1, 0, 0], human_colors[i], linewidth=lw, linestyle="--",  label="Estimated human weight$\hat{Q}_{h,(1,1)}(t)$")
+                plt.plot(T, Qhhat[:-1, 0, 0], human_colors[i], linewidth=lw, linestyle="--",
+                         label=self.create_labels(value, var_label, "human weight$\hat{Q}_{h,(1,1)}(t)$"))
             except:
                 a=1
             if m < 2:
@@ -222,7 +248,7 @@ class PlotStuff:
             plt.title('Position cost weight', **csfont)
             plt.xlabel('Time (s)', **hfont)
             plt.ylabel('Weight value (-)', **hfont)
-            plt.legend(prop={"size": legend_size}, loc='upper right')
+            plt.legend(prop={"size": legend_size}, loc='lower right')
             plt.xlim(0, t)
             plt.tight_layout(pad=1)
 
@@ -230,7 +256,8 @@ class PlotStuff:
             if i == 0:
                 plt.plot(T, Qh[:, 1, 1], human_colors[i], linewidth=lw, alpha=0.7, label="Real human weight $Q_{h,(2,2)}(t)$")
             try:
-                plt.plot(T, Qhhat[:-1, 1, 1], human_colors[i], linewidth=lw, linestyle="--", label="Estimated human weight $\hat{Q}_{h,(2,2)}(t)$")
+                plt.plot(T, Qhhat[:-1, 1, 1], human_colors[i], linewidth=lw, linestyle="--",
+                         label=self.create_labels(value, var_label, "human weight $\hat{Q}_{h,(2,2)}(t)$"))
             except:
                 a=1
             if m < 2:
@@ -248,11 +275,11 @@ class PlotStuff:
         try:
             if save:
                 if m == 1:
-                    name = location + size + '_' + 'performance.pdf'
+                    name = location + size + '_performance.pdf'
                 elif m == 2:
-                    name = location + size + '_' + 'comparison.pdf'
+                    name = location + size + '_comparison.pdf'
                 else:
-                    name = location + size + '_' + 'sensitivity.pdf'
+                    name = location + size + '_sensitivity_' + variable + '.pdf'
                 self.save_all_figures(name)
         except:
             exit("location not found, change in line 245")
@@ -267,3 +294,15 @@ class PlotStuff:
         for fig in figs:
             fig.savefig(pp, format='pdf')
         pp.close()
+
+    def create_labels(self, val, name, signal):
+        if name != None:
+            if (abs(val) > 1000 or abs(val) < 0.005) and val!= 0:
+                str_val = "{:.1e}".format(val)
+            else:
+                str_val = str(round(val, 2))
+
+            label = "Estimate with " + name + " = " + str_val
+        else:
+            label = "Estimated " + signal
+        return label
