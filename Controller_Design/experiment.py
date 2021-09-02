@@ -180,6 +180,8 @@ class Experiment:
                     output["virtual_human_gain_vel"] = vhg[1]
                     output["virtual_human_cost_pos"] = Qh[0]
                     output["virtual_human_cost_vel"] = Qh[1]
+                    output["virtual_human_gain"] = vhg
+                    output["virtual_human_cost"] = Qh
                     if self.controller_type == "Cost_observer":
                         output["estimated_human_cost_1"] = self.states["estimated_human_cost"][0, 0]
                         output["estimated_human_cost_2"] = self.states["estimated_human_cost"][1, 1]

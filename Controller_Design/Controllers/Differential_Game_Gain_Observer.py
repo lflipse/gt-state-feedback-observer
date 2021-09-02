@@ -29,7 +29,6 @@ class ControllerDGObs:
 
         Qr = C - Qh
 
-        # TODO: fix does not work
         if np.linalg.det(Qr) < 0:
             Qr = np.array([[0, 0], [0, 0]])
 

@@ -57,7 +57,7 @@ def input_controller():
     sim = input("Validate using simulation data? No = 0, Yes = 1.   Please choose: ")
     return controller, controller_type, int(sim), int(gen_data)
 
-def run_simulation(experiment_data, human_gain):
+def run_simulation(experiment_data):
     # Use the correct settings for the simulation
     inputs = {
         # "simulation_steps": N_exp,
@@ -80,7 +80,8 @@ def run_simulation(experiment_data, human_gain):
         "dynamics_type": "Steering_dynamics",
         "save": 0,
         "gain_estimation_bias": 0.0,
-        "virtual_human_gain": human_gain,
+        "virtual_human_gain": experiment_data["virtual_human_gain"],
+        "virtual_human_weight":  experiment_data["virtual_human_cost"]
     }
 
     controller_sim = NG_Obssim(A, B, mu=0.0, sigma=0.0, nonlin=True)
@@ -139,6 +140,7 @@ if __name__ == "__main__":
     Qh[0, :] = np.array([Qh2[0, 0], Qh2[1, 1]])
     Qh[2, :] = np.array([Qh1[0, 0], Qh1[1, 1]])
     Qh[4, :] = - np.array([Qh2[0, 0], Qh2[1, 1]])
+    virtual_human_weight = Qh
 
     # Ask for input
     controller, controller_type, sim, gen_dat = input_controller()
@@ -148,6 +150,7 @@ if __name__ == "__main__":
     else:
         virtual_human = True
 
+    # Check if we're generating data
     if gen_dat == 1:
         # Let's get cracking and get some data
         # Start the senso drive parallel process
@@ -207,9 +210,13 @@ if __name__ == "__main__":
         senso_drive_process.join(timeout=0)
 
     # Retrieve data
-    virtual_data = load_data_set("data_virtual_human.csv")
-    real_data = load_data_set("data_real_human.csv")
-    sim_data = run_simulation(virtual_data, human_weight)
+    try:
+        virtual_data = load_data_set("data_virtual_human.csv")
+        real_data = load_data_set("data_real_human.csv")
+    except:
+        exit("Missing datasets, first create these")
+
+    sim_data = run_simulation(virtual_data)
 
     # Analyse stuff
     plot_stuff = PlotStuff()

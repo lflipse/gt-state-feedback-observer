@@ -112,6 +112,7 @@ class ControllerNG:
 
         # Unpack dictionary
         Qh0 = inputs["human_weight"]
+        Qhvir = inputs["virtual_human_cost"]
         Lh0 = np.array(inputs["virtual_human_gain"])
         x0 = inputs["initial_state"]
         u0 = inputs["u_initial"]
@@ -157,7 +158,10 @@ class ControllerNG:
         for i in range(N):
             # Human cost is fixed, Robot cost based on estimator
             Qr[i, :, :] = C - Qhhat[i, :, :]
-            Qh[i, :, :] = Qh0
+            try:
+                Qh[i, :, :] = Qhvir[i, :, :]
+            except:
+                Qh[i, :, :] = Qh0
 
             # Calculate derivative(s) of reference
             # Compute inputs
