@@ -14,6 +14,7 @@ sys.path.insert(1, '..')
 # from Controller_Design.Controllers.Differential_Game_Gain_Descent import ControllerDG_GObs
 # from Controller_Design.Controllers.Li2019 import ControllerDG_Li
 
+from Controller_Design.reference_trajectory import Reference
 from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
 from Controller_Design.experiment import Experiment
 from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDGObs
@@ -52,17 +53,12 @@ def input_controller():
     # Select controller type
     controller = ControllerDGObs(A, B, Gamma, Pi, kappa, Qr_start, Qh1)
     controller_type = "Cost_observer"
+    gen_data = input("Generate data_set? No = 0, Yes = 1.   Please choose: ")
+    sim = input("Validate using simulation data? No = 0, Yes = 1.   Please choose: ")
+    return controller, controller_type, int(sim), int(gen_data)
 
-
-    print("Validate using simulation data? No = 0, Yes = 1")
-    sim = input("Please choose: ")
-    return controller, controller_type, sim, exp_type
-
-def run_simulation(experiment_data, exp_type, human_gain):
+def run_simulation(experiment_data, human_gain):
     # Use the correct settings for the simulation
-    print("expected: ", N)
-    N_exp = len(experiment_data["steering_angle"])
-    print("got: ", N_exp)
     inputs = {
         # "simulation_steps": N_exp,
         # "step_size": t_step,
@@ -87,20 +83,7 @@ def run_simulation(experiment_data, exp_type, human_gain):
         "virtual_human_gain": human_gain,
     }
 
-    if int(exp_type) == 0:
-        controller_sim = LQsim(A, B, mu=0.0, sigma=0.0)
-        inputs["robot_weight"] = np.array([[0, 0], [0, 0]])
-    elif int(exp_type) == 1:
-        controller_sim = LQsim(A, B, mu=0.0, sigma=0.0)
-    elif int(exp_type) == 2:
-        controller_sim = DGsim(A, B, mu=0.0, sigma=0.0)
-    elif int(exp_type) == 3:
-        controller_sim = NGsim(A, B, mu=0.0, sigma=0.0)
-    elif int(exp_type) == 4 or 5:
-        controller_sim = NG_Obssim(A, B, mu=0.0, sigma=0.0)
-    elif int(exp_type) == 6:
-        controller_sim = NG_Obssim(A, B, mu=0.0, sigma=0.0)
-
+    controller_sim = NG_Obssim(A, B, mu=0.0, sigma=0.0, nonlin=True)
     simulation_data = controller_sim.simulate(inputs)
     return simulation_data
 
@@ -119,12 +102,12 @@ if __name__ == "__main__":
     N_warmup = round(t_warmup / t_step)
     N_cooldown = round(t_cooldown / t_step)
     N_tot = N + N_warmup + N_cooldown
-    T = np.array(range(N)) * (t_step + 0.001)
-    T_ex = np.array(range(N+N_warmup+N_cooldown)) * t_step
     fr_min = 1/(20 * np.pi)
     fr_max = 1/(1 * np.pi)
     increments = 20
     reference = Reference(duration)
+    screen_width = 1920
+    screen_height = 1080
 
     # Dynamics
     Jw = 0.05480475491037145
@@ -157,48 +140,41 @@ if __name__ == "__main__":
     Qh[2, :] = np.array([Qh1[0, 0], Qh1[1, 1]])
     Qh[4, :] = - np.array([Qh2[0, 0], Qh2[1, 1]])
 
+    # Ask for input
+    controller, controller_type, sim, gen_dat = input_controller()
     virt = input("Do you want to use a virtual human being? 0. No, 1. Yes. Your answer = ")
     if int(virt) == 0:
         virtual_human = False
     else:
         virtual_human = True
 
+    if gen_dat == 1:
+        # Let's get cracking and get some data
+        # Start the senso drive parallel process
+        parent_conn, child_conn = mp.Pipe(True)
+        senso_dict = {
+            "stiffness": Kw,
+            "damping": Bw,
+            "alpha_1": A[1, 0],
+            "alpha_2": A[1, 1],
+            "beta": B[1, 0],
+            "controller": controller,
+            "controller_type": controller_type,
+            "parent_conn": parent_conn,
+            "child_conn": child_conn
+        }
+        senso_drive_process = SensoDriveModule(senso_dict)
+        senso_drive_process.start()
+        print("process started!")
 
-    screen_width = 1920
-    screen_height = 1080
-
-    # ask input
-    controller, controller_type, sim, exp_type = input_controller()
-
-    # Start the senso drive parallel process
-    parent_conn, child_conn = mp.Pipe(True)
-    senso_dict = {
-        "stiffness": Kw,
-        "damping": Bw,
-        "alpha_1": A[1, 0],
-        "alpha_2": A[1, 1],
-        "beta": B[1, 0],
-        "controller": controller,
-        "controller_type": controller_type,
-        "parent_conn": parent_conn,
-        "child_conn": child_conn
-    }
-    senso_drive_process = SensoDriveModule(senso_dict)
-    senso_drive_process.start()
-    print("process started!")
-
-    # Time to do an experiment!
-    full_screen = True
-    preview = True
-    do_exp = True
-
-    if do_exp == True:
+        # Time to do an experiment!
+        full_screen = True
+        preview = True
         experiment_input = {
             "damping": Bw,
             "stiffness": Kw,
             "reference": reference,
             "controller_type": controller_type,
-            "send_conn": send_conn,
             "parent_conn": parent_conn,
             "child_conn": child_conn,
             "senso_drive": senso_drive_process,
@@ -222,13 +198,20 @@ if __name__ == "__main__":
                 experiment_data = experiment_handler.experiment()
 
                 # Save data
-                string = "data.csv"
+                if virtual_human:
+                    string = "data_virtual_human.csv"
+                else:
+                    string = "data_real_human.csv"
                 to_csv(experiment_data, string)
 
         senso_drive_process.join(timeout=0)
-        live_plotter_process.join(timeout=0)
 
+    # Retrieve data
+    virtual_data = load_data_set("data_virtual_human.csv")
+    real_data = load_data_set("data_real_human.csv")
+    sim_data = run_simulation(virtual_data, human_weight)
 
-    # Plot stuff
+    # Analyse stuff
     plot_stuff = PlotStuff()
+    plot_stuff.plot(virtual_data, real_data, sim_data)
 
