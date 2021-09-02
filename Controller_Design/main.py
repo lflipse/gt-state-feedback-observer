@@ -256,20 +256,3 @@ if __name__ == "__main__":
     # Plot stuff
     plot_stuff = PlotStuff()
 
-    if int(sim) == 1:
-        # Estimate human gains
-        if controller_type == "Manual":
-            human_gain_estimator = HumanEstimator(Jw, Bw, Kw)
-            estimated_human_gains = human_gain_estimator.estimate(experiment_data)
-            simulation_data = run_simulation(experiment_data, exp_type, human_gain=estimated_human_gains)
-        else:
-            virtual_human_gains = np.array([experiment_data["virtual_human_gain_pos"],
-                                            experiment_data["virtual_human_gain_vel"]])
-            simulation_data = run_simulation(experiment_data, exp_type, human_gain=virtual_human_gains)
-        # plot_stuff.plot_stuff_with_sim_data(experiment_data, simulation_data, controller_type, virtual_human)
-        plot_stuff.plot_report(experiment_data, simulation_data)
-    else:
-        simulation_data = None
-        plot_stuff.plot_report(experiment_data, simulation_data)
-        # plot_stuff.plot_stuff(experiment_data, controller_type, virtual_human)
-
