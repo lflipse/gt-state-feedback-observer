@@ -4,26 +4,25 @@ import time
 import wres
 import platform
 import scipy.linalg as cp
-
+import pandas as pd
 import sys
 
 sys.path.insert(1, '..')
 
-from Controller_Design.reference_trajectory import Reference
-from Controller_Design.live_plotter import LivePlotter
+# from Controller_Design.Controllers.Linear_Quadratic import ControllerLQ
+# from Controller_Design.Controllers.Differential_Game import ControllerDG
+# from Controller_Design.Controllers.Differential_Game_Gain_Descent import ControllerDG_GObs
+# from Controller_Design.Controllers.Li2019 import ControllerDG_Li
+
 from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
 from Controller_Design.experiment import Experiment
-from Controller_Design.Controllers.Linear_Quadratic import ControllerLQ
-from Controller_Design.Controllers.Differential_Game import ControllerDG
-from Controller_Design.Controllers.Differential_Game_Gain_Descent import ControllerDG_GObs
-from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDG_GObsKal
-from Controller_Design.Controllers.Li2019 import ControllerDG_Li
+from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDGObs
 from Controller_Design.plots import PlotStuff
-from Simulations.Linear_Quadratic_Nonlin import ControllerLQ as LQsim
-# from Simulations.Differential_Game import ControllerDG as DGsim
-from Simulations.Differential_Game_Gain_Descent import ControllerNG as NGsim
-from Simulations.Differential_Game_Gain_Observer import ControllerNG as NG_Obssim
-from Controller_Design.human_gains import HumanEstimator
+from Simulation.Linear_Quadratic import ControllerLQ as LQsim
+from Simulation.Differential_Game_Gain_Descent import ControllerNG as NGsim
+from Simulation.Differential_Game_Gain_Observer import ControllerNG as NG_Obssim
+
+
 
 def compute_virtual_gain(Qh1, Qr_end, A, B):
     # Iterative procedure for calculating gains
@@ -34,35 +33,28 @@ def compute_virtual_gain(Qh1, Qr_end, A, B):
         Lr = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh, B, Qr_end, 1))
     return Lh
 
+def to_csv(to_be_saved, file):
+    columns = []
+    for key in to_be_saved.keys():
+        columns.append(key)
+    df = pd.DataFrame(data=to_be_saved)
+    df.to_csv(file)
+
+def load_data_set(file):
+    try:
+        df = pd.read_csv(file, index_col=0)
+        data_set = df.to_dict(orient='list')
+    except:
+        exit("Failed to download set")
+        data_set = None
+
+    return data_set
+
 def input_controller():
     # Select controller type
-    print("Choose a controller type. 0: Manual control, 1: LQ control, 2: Differential Game, 3: Differential Game w/ obs",
-          "4: Differential Game w/ obs Kalman, 5: Differential Game w/ obs Li2019, 6: Cost Observer")
-    exp_type = input("Please choose: ")
-    if int(exp_type) == 0:
-        controller = None
-        controller_type = "Manual"
-    elif int(exp_type) == 1:
-        controller = ControllerLQ(A, B, Qr_start)
-        controller_type = "LQ"
-    elif int(exp_type) == 2:
-        controller = ControllerDG(A, B, Qr_start, Qh1)
-        controller_type = "DG"
-    elif int(exp_type) == 3:
-        controller = ControllerDG_GObs(A, B, Gamma, Pi, kappa, Qr_start, Qh1)
-        controller_type = "Gain_observer"
-    elif int(exp_type) == 4:
-        controller = ControllerDG_GObsKal(A, B, Gamma, Pi, kappa, Qr_start, Qh1)
-        controller_type = "Gain_observer"
-    elif int(exp_type) == 5:
-        controller = ControllerDG_Li(A, B, Gamma, Pi, kappa, Qr_start, Qh1)
-        controller_type = "Gain_observer"
-    elif int(exp_type) == 6:
-        controller = ControllerDG_GObsKal(A, B, Gamma, Pi, kappa, Qr_start, Qh1)
-        controller_type = "Cost_observer"
-    else:
-        print("You chose: ", int(exp_type))
-        exit("That's no option, try again.")
+    controller = ControllerDGObs(A, B, Gamma, Pi, kappa, Qr_start, Qh1)
+    controller_type = "Cost_observer"
+
 
     print("Validate using simulation data? No = 0, Yes = 1")
     sim = input("Please choose: ")
@@ -174,12 +166,8 @@ if __name__ == "__main__":
         virtual_human = True
 
 
-    print("Observer dynamics", A - Pi)
-
     screen_width = 1920
     screen_height = 1080
-    # screen_width = 720
-    # screen_height = 480
 
     # ask input
     controller, controller_type, sim, exp_type = input_controller()
@@ -201,25 +189,10 @@ if __name__ == "__main__":
     senso_drive_process.start()
     print("process started!")
 
-    # Start the data plotting parallel process
-    send_conn, receive_conn = mp.Pipe(True)
-    live_plotter_process = LivePlotter(receive_conn)
-    live_plotter_process.start()
-    print("Second process started!")
-
     # Time to do an experiment!
     full_screen = True
     preview = True
     do_exp = True
-
-    if controller_type == "Manual" and int(sim) == 1:
-        estimate_gains = input("Do you want to estimate the human gains? 0: No, 1: Yes.  Your anwser = ")
-        if int(estimate_gains) == 1:
-            # human_estimator =
-            generate_data_set = input("Do you want to generate a new dataset? 0: No, 1: Yes Your answer = ")
-            if int(generate_data_set) == 0:
-                # experiment_data = load_data_set_manual()
-                do_exp = False
 
     if do_exp == True:
         experiment_input = {
@@ -249,6 +222,11 @@ if __name__ == "__main__":
         if platform.system() == 'Windows':
             with wres.set_resolution(10000):
                 experiment_data = experiment_handler.experiment()
+
+                # Save data
+                string = "data.csv"
+                to_csv(experiment_data, string)
+
         senso_drive_process.join(timeout=0)
         live_plotter_process.join(timeout=0)
 

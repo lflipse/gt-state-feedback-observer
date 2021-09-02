@@ -3,7 +3,7 @@ import scipy.linalg as cp
 import control.matlab as con
 import time
 
-class ControllerDG_GObsKal:
+class ControllerDGObs:
     def __init__(self, A, B, Gamma, Pi, kappa, Qr, Qh):
         self.A = A
         self.B = B
