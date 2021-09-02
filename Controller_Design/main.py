@@ -22,8 +22,6 @@ from Simulation.Linear_Quadratic import ControllerLQ as LQsim
 from Simulation.Differential_Game_Gain_Descent import ControllerNG as NGsim
 from Simulation.Differential_Game_Gain_Observer import ControllerNG as NG_Obssim
 
-
-
 def compute_virtual_gain(Qh1, Qr_end, A, B):
     # Iterative procedure for calculating gains
     Lh = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, Qh1, 1))
