@@ -3,7 +3,7 @@ import numpy as np
 import wres
 import platform
 
-from Controller_Design.visuals import Visualize
+from Experiment.visuals import Visualize
 
 if platform.system() == 'Windows':
     import wres
@@ -15,7 +15,6 @@ class Experiment:
         super().__init__()
         self.parent_conn = input["parent_conn"]
         self.child_conn = input["child_conn"]
-        self.data_plotter_conn = input["send_conn"]
         self.senso_process = input["senso_drive"]
         self.t_warmup = input["warm_up_time"]
         self.t_cooldown = input["cooldown_time"]
@@ -37,6 +36,8 @@ class Experiment:
             "ref": None,
             "factor": 0,
             "exit": False,
+            "reset": False,
+            "manual": input["manual"],
         }
         self.visualize_dict = {
             "time_stamp": 0,
@@ -59,13 +60,13 @@ class Experiment:
         self.variables = dict()
 
         # Initialize pygame visualization
-        self.visualize = Visualize(input["screen_width"], input["screen_height"], self.preview, input["full_screen"])
+        self.visualize = Visualize(input["screen_width"], input["screen_height"], input["full_screen"])
 
         print("init complete!")
 
     def experiment(self):
         print("sleeping for 1.5 seconds to see if motor is active")
-        self.visualize.visualize_experiment(0, [], 0, text="Initializing", top_text="")
+        self.visualize.visualize_experiment(0, [], 0, text="Initializing", top_text="", sigma=0)
         time.sleep(1.5)
 
         self.t0 = time.perf_counter_ns()
@@ -97,7 +98,7 @@ class Experiment:
                 dt = self.t_warmup - self.time
                 top_text = ""
                 if dt > 3:
-                    text = "Controller_Design starts in:"
+                    text = "Experiment starts in:"
                 else:
                     text = str(round(dt, 1))
 
@@ -107,7 +108,7 @@ class Experiment:
                 self.send_dict["factor"] = 1
                 self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = True
-                self.send_dict["robot_cost"] = 0.5 * ((self.Qr_start + self.Qr_end) + np.tanh(self.time - self.t_warmup - 0.5 * self.t_exp) * (self.Qr_end - self.Qr_start))
+                self.send_dict["robot_cost"] = self.Qr_start
                 self.send_dict["sharing_rule"] = self.sharing_rule
                 r_prev = self.reference_preview(self.time, t_prev=1)
 
@@ -146,42 +147,47 @@ class Experiment:
 
             # Visualize experiment
             self.visualize.visualize_experiment(self.send_dict["ref"][0], angle=self.states["steering_angle"],
-                                                r_prev=r_prev, text=text, top_text=top_text)
+                                                r_prev=r_prev, text=text, top_text=top_text, sigma=0)
 
             if self.store:
                 output = {
+                    "time": self.time - self.t_warmup,
                     "steering_angle": self.states["steering_angle"],
                     "steering_rate": self.states["steering_rate"],
-                    "angle_error": self.states["angle_error"],
-                    "rate_error": self.states["rate_error"],
+                    "angle_error": self.states["angle_error"][0],
+                    "rate_error": self.states["rate_error"][0],
                     "acceleration": self.states["steering_acc"],
-                    "cost": self.states["cost"],
-                    "reference": ref,
-                    "torque": self.states["torque"].flatten(),
+                    "reference_angle": ref[0],
+                    "reference_rate": ref[1],
                     "measured_input": self.states["measured_input"],
                     "execution_time": h,
-                    "time": self.time - self.t_warmup,
                 }
+                try:
+                    output['torque'] = self.states["torque"][0, 0]
+                except:
+                    output["torque"] = 0
                 if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
-                    print(self.states["estimated_human_gain"])
                     output["estimated_human_gain_pos"] = self.states["estimated_human_gain"].flatten()[0]
                     output["estimated_human_gain_vel"] = self.states["estimated_human_gain"].flatten()[1]
-
-                    # print(self.states["robot_gain"])
                     output["robot_gain_pos"] = self.states["robot_gain"][0, 0]
                     output["robot_gain_vel"] = self.states["robot_gain"][0, 1]
-                    output["state_estimate"] = self.states["state_estimate"]
-                    output["estimated_human_input"] = self.states["estimated_human_torque"].flatten()
+                    output["state_estimate_pos"] = self.states["state_estimate"][0, 0]
+                    output["state_estimate_vel"] = self.states["state_estimate"][1, 0]
+                    try:
+                        output["estimated_human_input"] = self.states["estimated_human_torque"][0][0]
+                    except:
+                        output["estimated_human_input"] = self.states["estimated_human_torque"][0]
+                        print("here?")
                     output["input_estimation_error"] = self.states["input_estimation_error"].flatten()
-                    output["virtual_human_torque"] = self.states["virtual_human_torque"]
+                    output["virtual_human_torque"] = self.states["virtual_human_torque"][0]
                     output["xi_gamma"] = self.states["xi_gamma"]
                     output["state_estimate_derivative"] = self.states["state_estimate_derivative"]
                     output["virtual_human_gain_pos"] = vhg[0]
                     output["virtual_human_gain_vel"] = vhg[1]
                     output["virtual_human_cost_pos"] = Qh[0]
                     output["virtual_human_cost_vel"] = Qh[1]
-                    output["virtual_human_gain"] = vhg
-                    output["virtual_human_cost"] = Qh
+                    output["robot_cost_pos"] = self.states["robot_cost_calc"][0, 0]
+                    output["robot_cost_vel"] = self.states["robot_cost_calc"][1, 1]
                     if self.controller_type == "Cost_observer":
                         output["estimated_human_cost_1"] = self.states["estimated_human_cost"][0, 0]
                         output["estimated_human_cost_2"] = self.states["estimated_human_cost"][1, 1]

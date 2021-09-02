@@ -9,11 +9,9 @@ import random
 import os
 
 from Experiment.reference_trajectory import Reference
-from Controller_Design.live_plotter import LivePlotter
 from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
 from Experiment.experiment import Experiment
-from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDG_GObsKal
-from Experiment.plots import PlotStuff
+from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDGObs
 from Experiment.analysis import Analysis
 from Experiment.visuals import Visualize
 
@@ -67,9 +65,9 @@ if __name__ == "__main__":
 
     # TODO: verify values
     alpha = 8
-    Gamma = alpha * np.array([[2.5, 0], [0, 0.0]])
+    K = alpha * np.array([[2.5, 0], [0, 0.0]])
     # Pi = -0.1*np.array([[-1, 0.5], [-1.5, 2]])
-    Pi = 4 * np.array([[2, 0], [0, 2]])
+    Gamma = 4 * np.array([[2, 0], [0, 2]])
     kappa = 0.7
     C = np.array([[30.0, 0.0], [0.0, 1.0]])
     conditions_experiment = [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -79,14 +77,14 @@ if __name__ == "__main__":
     random.shuffle(conditions_experiment)
     conditions_experiment = [9, 8, 7, 6, 5, 4, 3, 2, 1]
 
-    print("Observer dynamics", A - Pi)
+    print("Observer dynamics", A - Gamma)
 
     # Visual stuff
     screen_width = 1920
     screen_height = 1080
 
     # Insert controller
-    controller = ControllerDG_GObsKal(A, B, Gamma, Pi, kappa, C, None)
+    controller = ControllerDGObs(A, B, K, Gamma, kappa, C, None)
     controller_type = "Cost_observer"
 
 

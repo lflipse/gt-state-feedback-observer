@@ -112,8 +112,12 @@ class ControllerNG:
 
         # Unpack dictionary
         Qh0 = inputs["human_weight"]
-        Qhvir = inputs["virtual_human_cost"]
+
         Lh0 = np.array(inputs["virtual_human_gain"])
+        vhg1 = inputs["virtual_human_gain_pos"]
+        vhg2 = inputs["virtual_human_gain_vel"]
+        Qh1 = inputs["virtual_human_cost_pos"]
+        Qh2 = inputs["virtual_human_cost_vel"]
         x0 = inputs["initial_state"]
         u0 = inputs["u_initial"]
         e0 = inputs["e_initial"]
@@ -122,10 +126,9 @@ class ControllerNG:
         K = inputs["K"]
         C = inputs["sharing_rule"]
         bias = inputs["gain_estimation_bias"]
-        ref = np.array(inputs["reference"])
+        ref = inputs["reference"]
         T = np.array(inputs["time"])
         N = len(T)
-        # print("bias = ", bias)
 
         y = np.zeros((N + 1, 6))
         ydot = np.zeros((N, 2))
@@ -152,14 +155,14 @@ class ControllerNG:
         Jh = np.zeros(N)
         Jhhat = np.zeros(N)
         Jr = np.zeros(N)
-        e[0, :] = e0
+        e[0, :] = np.array(e0)
         ur[0] = u0
 
         for i in range(N):
             # Human cost is fixed, Robot cost based on estimator
             Qr[i, :, :] = C - Qhhat[i, :, :]
             try:
-                Qh[i, :, :] = Qhvir[i, :, :]
+                Qh[i, :, :] = np.array([[Qh1[i], 0], [0, Qh2[i]]])
             except:
                 Qh[i, :, :] = Qh0
 
@@ -169,12 +172,20 @@ class ControllerNG:
             ur[i], uhhat[i], Lr[i, :] = self.compute_inputs(Qr[i, :, :], Lhhat[i, :], e[i, :], bias)
 
             # Actual human response
-            try:
-                Lh[i, :] = Lh0[:, i]
-                uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
-            except:
-                Lh[i, :] = Lh0[:, i].flatten()
-                uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
+            if vhg1 != None:
+                try:
+                    Lh[i, :] = np.array([vhg1[i], vhg2[i]])
+                    uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
+                except:
+                    Lh[i, :] = Lh0[:, i].flatten()
+                    uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
+            else:
+                try:
+                    Lh[i, :] = Lh0[:, i]
+                    uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
+                except:
+                    Lh[i, :] = Lh0[:, i].flatten()
+                    uhbar[i] = np.matmul(-Lh[i, :], e[i, :])
 
             # uhbar[i], urhat, Lh[i, :], Lrhat, Ph[i, :, :] = self.compute_inputs(Qh[i, :, :],  Pr[i, :], e[i, :], bias)
             vh[i] = np.random.normal(self.mu, self.sigma, 1)

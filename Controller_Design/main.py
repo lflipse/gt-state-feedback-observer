@@ -43,6 +43,7 @@ def load_data_set(file):
     try:
         df = pd.read_csv(file, index_col=0)
         data_set = df.to_dict(orient='list')
+        # print(data_set)
     except:
         exit("Failed to download set")
         data_set = None
@@ -51,27 +52,31 @@ def load_data_set(file):
 
 def input_controller():
     # Select controller type
-    controller = ControllerDGObs(A, B, Gamma, Pi, kappa, Qr_start, Qh1)
+    controller = ControllerDGObs(A, B, K, Gamma, kappa, Qr_start, Qh1)
     controller_type = "Cost_observer"
     gen_data = input("Generate data_set? No = 0, Yes = 1.   Please choose: ")
-    sim = input("Validate using simulation data? No = 0, Yes = 1.   Please choose: ")
-    return controller, controller_type, int(sim), int(gen_data)
+    return controller, controller_type, int(gen_data)
 
 def run_simulation(experiment_data):
     # Use the correct settings for the simulation
+
+    ref = np.array([experiment_data["reference_angle"], experiment_data["reference_rate"]]).transpose()
+    print()
+
     inputs = {
         # "simulation_steps": N_exp,
         # "step_size": t_step,
         "time": experiment_data["time"],
-        "reference_signal": [],
+        "reference_signal": ref,
         "human_weight": Qh1,
         "robot_weight": Qr_start,
         "alpha": alpha,
+        "K": K,
         "Gamma": Gamma,
         "kappa": kappa,
         "e_initial": [experiment_data["angle_error"][0], experiment_data["rate_error"][0]],
         "u_initial": experiment_data["torque"][0],
-        "reference": experiment_data["reference"],
+        "reference": ref,
         "initial_state": [experiment_data["steering_angle"][0], experiment_data["steering_rate"][0]],
         "sharing_rule": C,
         "controller_type_name": controller_type,
@@ -80,8 +85,11 @@ def run_simulation(experiment_data):
         "dynamics_type": "Steering_dynamics",
         "save": 0,
         "gain_estimation_bias": 0.0,
-        "virtual_human_gain": experiment_data["virtual_human_gain"],
-        "virtual_human_weight":  experiment_data["virtual_human_cost"]
+        "virtual_human_gain_pos": experiment_data["virtual_human_gain_pos"],
+        "virtual_human_gain_vel": experiment_data["virtual_human_gain_vel"],
+        "virtual_human_cost_pos": experiment_data["virtual_human_cost_pos"],
+        "virtual_human_cost_vel": experiment_data["virtual_human_cost_vel"],
+        "virtual_human_gain": None,
     }
 
     controller_sim = NG_Obssim(A, B, mu=0.0, sigma=0.0, nonlin=True)
@@ -118,15 +126,13 @@ if __name__ == "__main__":
     B = np.array([[0], [1 / Jw]])
 
     # TODO: verify values
-    alpha = 30
-    Gamma = alpha * np.array([[2.5, 0], [0, 0.125]])
-    # Pi = -0.1*np.array([[-1, 0.5], [-1.5, 2]])
-    Pi = -4 * np.array([[2, 0], [0, 2]])
-    kappa = 0.7
+    alpha = 7
+    K = alpha * np.array([[2.5, 0], [0, 0.125]])
+    Gamma = 4 * np.array([[2, 0], [0, 2]])
+    kappa = 1
     Qr_end = np.array([[10.0, 0.0], [0.0, 0.1]])
     Qr_start = np.array([[10.0, 0.0], [0.0, 0.1]])
-
-    C = Qr_start
+    C = np.array([[50.0, 0.0], [0.0, 0.3]])
 
     Qh1 = np.array([[25.0, 0.0], [0.0, 0.2]])
     Qh2 = np.array([[12.0, 0.0], [0.0, 0.1]])
@@ -143,16 +149,18 @@ if __name__ == "__main__":
     virtual_human_weight = Qh
 
     # Ask for input
-    controller, controller_type, sim, gen_dat = input_controller()
-    virt = input("Do you want to use a virtual human being? 0. No, 1. Yes. Your answer = ")
-    if int(virt) == 0:
-        virtual_human = False
-    else:
-        virtual_human = True
+    controller, controller_type, gen_dat = input_controller()
+    manual = False
 
     # Check if we're generating data
     if gen_dat == 1:
         # Let's get cracking and get some data
+        virt = input("Do you want to use a virtual human being? 0. No, 1. Yes. Your answer = ")
+        if int(virt) == 0:
+            virtual_human = False
+        else:
+            virtual_human = True
+
         # Start the senso drive parallel process
         parent_conn, child_conn = mp.Pipe(True)
         senso_dict = {
@@ -194,6 +202,7 @@ if __name__ == "__main__":
             "init_robot_cost": Qr_start,
             "final_robot_cost": Qr_end,
             "sharing_rule": C,
+            "manual": manual,
         }
         experiment_handler = Experiment(experiment_input)
         if platform.system() == 'Windows':
@@ -215,7 +224,7 @@ if __name__ == "__main__":
         real_data = load_data_set("data_real_human.csv")
     except:
         exit("Missing datasets, first create these")
-
+    # print(virtual_data)
     sim_data = run_simulation(virtual_data)
 
     # Analyse stuff

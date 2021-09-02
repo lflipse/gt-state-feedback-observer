@@ -8,7 +8,7 @@ class PlotStuff:
     def __init__(self):
         print("Plotting stuff")
 
-    def plot(self, exp_data, sim_data):
+    def plot(self, exp_data, virt_data, sim_data):
         csfont = {'fontname': 'Georgia'}
         hfont = {'fontname': 'Georgia'}
 
@@ -24,10 +24,9 @@ class PlotStuff:
         t = exp_data["time"]
         ur = exp_data["torque"]
         x = exp_data["steering_angle"]
-        ref = np.array(exp_data["reference"])
-        r = ref[:, 0]
+        r = exp_data["reference_angle"]
         xdot = exp_data["steering_rate"]
-        rdot = ref[:, 1]
+        rdot = exp_data["reference_rate"]
         e = exp_data["angle_error"]
         edot = exp_data["rate_error"]
         t_ex = exp_data["execution_time"]
@@ -55,23 +54,23 @@ class PlotStuff:
             ydot_sim = sim_data["ydot"]
             acc_sim = ydot_sim[:, 1]
 
-
-        x_hat = np.array(exp_data["state_estimate"])
+        x_hat = exp_data["state_estimate_pos"]
+        x_hatdot = exp_data["state_estimate_vel"]
         Lhhat_pos = exp_data["estimated_human_gain_pos"]
         Lhhat_vel = exp_data["estimated_human_gain_vel"]
         Lr_pos = exp_data["robot_gain_pos"]
         Lr_vel = exp_data["robot_gain_vel"]
-        uhhat = exp_data["estimated_human_input"]
+        uhhat = np.array(exp_data["estimated_human_input"])
         uhtilde = exp_data["input_estimation_error"]
 
         uhtilde = exp_data["input_estimation_error"]
         xddot = exp_data["acceleration"]
         xi_gamma = np.array(exp_data["xi_gamma"])
-        xhatdot = np.array(exp_data["state_estimate_derivative"])
+        xhatdot = exp_data["state_estimate_derivative"]
 
         Lh_vir_pos = exp_data["virtual_human_gain_pos"]
         Lh_vir_vel = exp_data["virtual_human_gain_vel"]
-        uh_vir = exp_data["virtual_human_torque"]
+        uh_vir = np.array(exp_data["virtual_human_torque"])
 
         # Steering angle
         plt.figure()
@@ -82,7 +81,7 @@ class PlotStuff:
         if sim_data != None:
             plt.plot(t_sim, x_sim[:-1], tud_blue, linewidth=2.5, linestyle="-", alpha=0.5,
                     label="Simulated $\phi_{sim}(t)$")
-        plt.plot(t, x_hat[:, 0], tud_red, linewidth=2.5, linestyle="--", label="Estimated $\hat{\phi}(t)$")
+        plt.plot(t, x_hat, tud_red, linewidth=2.5, linestyle="--", label="Estimated $\hat{\phi}(t)$")
         plt.xlabel('Time (s)', **hfont)
         plt.ylabel('Steering angle (rad)', **hfont)
         plt.legend(prop={"size": 8}, loc='upper right')
@@ -97,7 +96,7 @@ class PlotStuff:
         if sim_data != None:
             plt.plot(t_sim, xdot_sim[:-1], tud_blue, linewidth=2.5, linestyle="-", alpha=0.5,
                     label="Simulated $\dot{\phi}_{sim}(t)$")
-        plt.plot(t, xhatdot[:, 0], tud_red, linewidth=2.5, linestyle="--", label="Estimated $\dot{\hat{\phi}}(t)$")
+        plt.plot(t, x_hatdot, tud_red, linewidth=2.5, linestyle="--", label="Estimated $\dot{\hat{\phi}}(t)$")
         plt.xlabel('Time (s)', **hfont)
         plt.ylabel('Steering rate (rad/s)', **hfont)
         plt.legend(prop={"size": 8}, loc='upper right')
@@ -145,7 +144,7 @@ class PlotStuff:
         plt.plot(t, Lr_pos, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
         if sim_data != None:
             plt.plot(t_sim, Lr_pos_sim, tud_blue, linewidth=2.5, label="Simulated $L_{r,sim}(t)$", alpha=0.5, )
-            plt.plot(t_sim, Lhhat_pos_sim, tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
+            plt.plot(t_sim, Lhhat_pos_sim[:-1], tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
                      label="Simulated (human) $\hat{L}_{h,sim}(t)$")
         plt.plot(t, Lhhat_pos, tud_red, linewidth=2.5, linestyle="--", alpha=1, label="Estimated (human) $\hat{L}_{h}(t)$")
         plt.plot(t, Lh_vir_pos, tud_black, linewidth=2.5, linestyle="--", alpha=1, label="Virtual (human) $L_{h,vir}(t)$")
@@ -243,7 +242,7 @@ class PlotStuff:
         plt.plot(t, Lr_pos, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
         if sim_data != None:
             plt.plot(t_sim, Lr_pos_sim, tud_blue, linewidth=2.5, label="Simulated $L_{r,sim}(t)$", alpha=0.5, )
-            plt.plot(t_sim, Lhhat_pos_sim, tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
+            plt.plot(t_sim, Lhhat_pos_sim[:-1], tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
                      label="Simulated (human) $\hat{L}_{h,sim}(t)$")
         plt.plot(t, Lhhat_pos, tud_red, linewidth=2.5, linestyle="--", alpha=1,
                  label="Estimated (human) $\hat{L}_{h}(t)$")
@@ -272,7 +271,7 @@ class PlotStuff:
         if sim_data != None:
             no_sim = True
             plt.plot(t_sim, Lr_vel_sim, tud_blue, linewidth=2.5, label="Simulated (robot) $L_{r,sim}(t)$", alpha=0.5)
-            plt.plot(t_sim, Lhhat_vel_sim, tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
+            plt.plot(t_sim, Lhhat_vel_sim[:-1], tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
                  label="Simulated (human) $\hat{L}_{h,sim}(t)$")
         else:
             no_sim = False
@@ -302,7 +301,7 @@ class PlotStuff:
         if sim_data != None:
             no_sim = True
             plt.plot(t_sim, Lr_vel_sim, tud_blue, linewidth=2.5, label="Simulated (robot) $L_{r,sim}(t)$", alpha=0.5)
-            plt.plot(t_sim, Lhhat_vel_sim, tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
+            plt.plot(t_sim, Lhhat_vel_sim[:-1], tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
                      label="Simulated (human) $\hat{L}_{h,sim}(t)$")
         else:
             no_sim = False

@@ -4,11 +4,11 @@ import control.matlab as con
 import time
 
 class ControllerDGObs:
-    def __init__(self, A, B, Gamma, Pi, kappa, Qr, Qh):
+    def __init__(self, A, B, K, Gamma, kappa, Qr, Qh):
         self.A = A
         self.B = B
         self.Gamma = Gamma
-        self.Pi = Pi
+        self.K = K
         self.kappa = kappa
         self.Qr = Qr
         self.Qh = Qh
@@ -60,11 +60,11 @@ class ControllerDGObs:
         ur = np.matmul(-Lr, xi)
         Jr = self.compute_costs(xi, ur)
 
-        x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat + self.nonlinear_term(x)) - np.matmul(self.Pi, x_tilde)
+        x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat + self.nonlinear_term(x)) - np.matmul(self.Gamma, x_tilde)
         xi_tilde_dot = x_hat_dot - x_dot
-        uh_tilde = (1 / (np.matmul(self.B.transpose(), self.B))) * np.matmul(self.B.transpose(), xi_tilde_dot - np.matmul((self.A - self.Pi), x_tilde))
+        uh_tilde = (1 / (np.matmul(self.B.transpose(), self.B))) * np.matmul(self.B.transpose(), xi_tilde_dot - np.matmul((self.A - self.Gamma), x_tilde))
         m_squared = 1 + self.kappa * np.matmul(xi.transpose(), xi)
-        xi_gamma = np.matmul(xi.transpose(), self.Gamma)
+        xi_gamma = np.matmul(xi.transpose(), self.K)
         Lhhat_dot = uh_tilde * xi_gamma / m_squared
 
         output = {

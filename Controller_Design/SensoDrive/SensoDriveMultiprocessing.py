@@ -147,7 +147,6 @@ class SensoDriveModule(mp.Process):
 
                 try:
                     self.states["sharing_rule"] = msg["sharing_rule"]
-                    # print("received: ", msg["sharing_rule"])
                 except:
                     self.states["sharing_rule"] = self.states["sharing_rule"]
                     print("sharing rule not succesfully recieved")
@@ -346,9 +345,7 @@ class SensoDriveModule(mp.Process):
         return output
 
     def virtual_human(self):
-        # print(self.states["virtual_human_gain"], self.states["error_state"])
         self.states["virtual_human_torque"] = np.matmul(-self.states["virtual_human_gain"], self.states["error_state"])
-        # print(self.states["virtual_human_torque"])
         self.states["torque"] += self.states["virtual_human_torque"]
 
     def map_si_to_sensodrive(self, settings):
@@ -410,8 +407,6 @@ class SensoDriveModule(mp.Process):
         if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
             # Update human gain estimate and calculate torque
             if not self.states["experiment"]:
-                # TODO: warmstarten
-                # test = 1
                 self.states["estimated_human_gain"] = np.array([0, 0])
                 self.states["estimated_human_cost"] = np.array([[0, 0], [0, 0]])
                 self.states["state_estimate"] = self.states["state"]
