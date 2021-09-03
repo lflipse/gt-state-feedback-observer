@@ -62,12 +62,6 @@ class PlotStuff:
         Lr_vel = exp_data["robot_gain_vel"]
         uhhat = np.array(exp_data["estimated_human_input"])
         uhtilde = exp_data["input_estimation_error"]
-
-        uhtilde = exp_data["input_estimation_error"]
-        xddot = exp_data["acceleration"]
-        xi_gamma = np.array(exp_data["xi_gamma"])
-        xhatdot = exp_data["state_estimate_derivative"]
-
         Lh_vir_pos = exp_data["virtual_human_gain_pos"]
         Lh_vir_vel = exp_data["virtual_human_gain_vel"]
         uh_vir = np.array(exp_data["virtual_human_torque"])
