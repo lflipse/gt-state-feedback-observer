@@ -6,318 +6,232 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 class PlotStuff:
     def __init__(self):
-        print("Plotting stuff")
-
-    def plot(self, exp_data, virt_data, sim_data):
-        csfont = {'fontname': 'Georgia'}
-        hfont = {'fontname': 'Georgia'}
+        self.lw = 4
+        self.title_size = 24
+        self.label_size = 22
+        self.legend_size = 15
+        self.csfont = {'fontname': 'Georgia', 'size': self.title_size}
+        self.hfont = {'fontname': 'Georgia', 'size': self.label_size}
 
         # Colors
-        tud_blue = "#0066A2"
-        tud_black = "#000000"
-        tud_red = "#c3312f"
-        tud_green = "#00A390"
-        tud_yellow = "#F1BE3E"
+        self.tud_blue = "#0066A2"
+        self.tud_black = "#000000"
+        self.tud_red = "#c3312f"
+        self.tud_green = "#00A390"
+        self.tud_yellow = "#F1BE3E"
 
+        print("Plotting stuff")
+
+    def plot(self, human_data, virt_data, sim_data):
         # UNPACK DATA
-        # General
-        t = exp_data["time"]
-        ur = exp_data["torque"]
-        x = exp_data["steering_angle"]
-        r = exp_data["reference_angle"]
-        xdot = exp_data["steering_rate"]
-        rdot = exp_data["reference_rate"]
-        e = exp_data["angle_error"]
-        edot = exp_data["rate_error"]
-        t_ex = exp_data["execution_time"]
+        # Human experiment data
+        t_h = human_data["time"]
+        ur_h = human_data["torque"]
+        x_h = human_data["steering_angle"]
+        r_h = human_data["reference_angle"]
+        xdot_h = human_data["steering_rate"]
+        rdot_h = human_data["reference_rate"]
+        t_ex_h = human_data["execution_time"]
+        x_hat_h = human_data["state_estimate_pos"]
+        x_hatdot_h = human_data["state_estimate_vel"]
+        Lhhat_pos_h = human_data["estimated_human_gain_pos"]
+        Lhhat_vel_h = human_data["estimated_human_gain_vel"]
+        Lr_pos_h = human_data["robot_gain_pos"]
+        Lr_vel_h = human_data["robot_gain_vel"]
+        Qhhat_pos_h = human_data["estimated_human_cost_pos"]
+        Qhhat_vel_h = human_data["estimated_human_cost_vel"]
+        Qr_pos_h = human_data["robot_cost_pos"]
+        Qr_vel_h = human_data["robot_cost_vel"]
+        uhhat_h = np.array(human_data["estimated_human_input"])
 
-        if sim_data != None:
+        # Virtual human data
+        Lh_pos_vir = virt_data["virtual_human_gain_pos"]
+        Lh_vel_vir = virt_data["virtual_human_gain_vel"]
+        uh_vir = np.array(virt_data["virtual_human_torque"])
+        t_vir = virt_data["time"]
+        ur_vir = virt_data["torque"]
+        x_vir = virt_data["steering_angle"]
+        r_vir = virt_data["reference_angle"]
+        xdot_vir = virt_data["steering_rate"]
+        rdot_vir = virt_data["reference_rate"]
+        t_ex_vir = virt_data["execution_time"]
+        x_hat_vir = virt_data["state_estimate_pos"]
+        x_hatdot_vir = virt_data["state_estimate_vel"]
+        Lhhat_pos_vir = virt_data["estimated_human_gain_pos"]
+        Lhhat_vel_vir = virt_data["estimated_human_gain_vel"]
+        Lr_pos_vir = virt_data["robot_gain_pos"]
+        Lr_vel_vir = virt_data["robot_gain_vel"]
+        Qhhat_pos_vir = virt_data["estimated_human_cost_pos"]
+        Qhhat_vel_vir = virt_data["estimated_human_cost_vel"]
+        Qr_pos_vir = virt_data["robot_cost_pos"]
+        Qr_vel_vir = virt_data["robot_cost_vel"]
+        Qh_pos_vir = virt_data["virtual_human_cost_pos"]
+        Qh_vel_vir = virt_data["virtual_human_cost_vel"]
+        uhhat_vir = np.array(virt_data["estimated_human_input"])
 
-            # Simulation
-            t_sim = sim_data["time"]
-            ur_sim = sim_data["robot_input"]
-            states_sim = sim_data["states"]
-            x_sim = states_sim[:, 0]
-            xdot_sim = states_sim[:, 1]
-            xi_sim = sim_data["error_states"]
-            e_sim = xi_sim[:, 0]
-            edot_sim = xi_sim[:, 1]
+        # Simulation data
+        t_sim = sim_data["time"]
+        ur_sim = sim_data["robot_input"]
+        states_sim = sim_data["states"]
+        x_sim = states_sim[:, 0]
+        xdot_sim = states_sim[:, 1]
+        xi_sim = sim_data["error_states"]
 
-            Lhhat_sim = sim_data["human_estimated_gain"]
-            Lhhat_pos_sim = Lhhat_sim[:, 0]
-            Lhhat_vel_sim = Lhhat_sim[:, 1]
-            Lr_sim = sim_data["robot_gain"]
-            Lr_pos_sim = Lr_sim[:, 0]
-            Lr_vel_sim = Lr_sim[:, 1]
-            uhhat_sim = sim_data["human_estimated_input"]
+        Lhhat_sim = sim_data["human_estimated_gain"]
+        Lhhat_pos_sim = Lhhat_sim[:, 0]
+        Lhhat_vel_sim = Lhhat_sim[:, 1]
+        Lr_sim = sim_data["robot_gain"]
+        Lr_pos_sim = Lr_sim[:, 0]
+        Lr_vel_sim = Lr_sim[:, 1]
+        uhhat_sim = sim_data["human_estimated_input"]
 
-            ydot_sim = sim_data["ydot"]
-            acc_sim = ydot_sim[:, 1]
-
-        x_hat = exp_data["state_estimate_pos"]
-        x_hatdot = exp_data["state_estimate_vel"]
-        Lhhat_pos = exp_data["estimated_human_gain_pos"]
-        Lhhat_vel = exp_data["estimated_human_gain_vel"]
-        Lr_pos = exp_data["robot_gain_pos"]
-        Lr_vel = exp_data["robot_gain_vel"]
-        uhhat = np.array(exp_data["estimated_human_input"])
-        uhtilde = exp_data["input_estimation_error"]
-        Lh_vir_pos = exp_data["virtual_human_gain_pos"]
-        Lh_vir_vel = exp_data["virtual_human_gain_vel"]
-        uh_vir = np.array(exp_data["virtual_human_torque"])
-
+        # Let's get plottin'
+        # Virtual human first
         # Steering angle
         plt.figure()
-        plt.title("Measured and estimated steering angle", **csfont)
-        plt.plot(t, r, tud_black, linewidth=2.5, linestyle="-", alpha=0.7, label="Reference $\phi_r(t)$")
-        plt.plot(t, x, tud_blue, linestyle="--", linewidth=2.5, label="Steering angle $\phi(t)$")
-
-        if sim_data != None:
-            plt.plot(t_sim, x_sim[:-1], tud_blue, linewidth=2.5, linestyle="-", alpha=0.5,
-                    label="Simulated $\phi_{sim}(t)$")
-        plt.plot(t, x_hat, tud_red, linewidth=2.5, linestyle="--", label="Estimated $\hat{\phi}(t)$")
-        plt.xlabel('Time (s)', **hfont)
-        plt.ylabel('Steering angle (rad)', **hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
+        plt.title("Measured and estimated steering angle", **self.csfont)
+        plt.plot(t_vir, r_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Reference $\phi_r(t)$")
+        plt.plot(t_vir, x_vir, self.tud_blue, linestyle="--", linewidth=self.lw, label="Steering angle $\phi(t)$")
+        plt.plot(t_sim, x_sim[:-1], self.tud_blue, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Simulated $\phi_{sim}(t)$")
+        plt.plot(t_vir, x_hat_vir, self.tud_red, linewidth=self.lw, linestyle="--", label="Estimated $\hat{\phi}(t)$")
+        plt.xlabel('Time (s)', **self.hfont)
+        plt.ylabel('Steering angle (rad)', **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
         plt.xlim(0, 10)
         plt.tight_layout(pad=1)
 
         # Steering rate
         plt.figure()
-        plt.title("Measured and estimated steering rate", **csfont)
-        plt.plot(t, rdot, tud_black, linewidth=2.5, linestyle="-", alpha=0.7, label="Reference $\dot{\phi}_r(t)$")
-        plt.plot(t, xdot, tud_blue, linestyle="--", linewidth=2.5, label="Steering rate $\dot{\phi}(t)$")
-        if sim_data != None:
-            plt.plot(t_sim, xdot_sim[:-1], tud_blue, linewidth=2.5, linestyle="-", alpha=0.5,
-                    label="Simulated $\dot{\phi}_{sim}(t)$")
-        plt.plot(t, x_hatdot, tud_red, linewidth=2.5, linestyle="--", label="Estimated $\dot{\hat{\phi}}(t)$")
-        plt.xlabel('Time (s)', **hfont)
-        plt.ylabel('Steering rate (rad/s)', **hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, 10)
-        plt.tight_layout(pad=1)
-
-        # Input torque (robot)
-        plt.figure()
-        plt.title("Input torque", **csfont)
-        plt.plot(t, ur, tud_blue, linestyle="--", linewidth=2, label="Input torque (robot) $u_r(t)$")
-        plt.plot(t, uhhat, tud_red, linestyle="--", linewidth=2, alpha=1, label="Estimated (human) $\hat{u}_h(t)$")
-        if sim_data != None:
-            plt.plot(t_sim, ur_sim, tud_blue, linestyle="-", linewidth=2, alpha=0.5, label="Simulated (robot) $u_{r,sim}(t)$")
-            plt.plot(t_sim, uhhat_sim, tud_red, linewidth=2, linestyle="-", alpha=0.5, label="Simulated (human) $\hat{u}_{h,sim}(t)$")
-        plt.plot(t, uh_vir, tud_black, linestyle="--", linewidth=2, alpha=1, label="Virtual (human) $u_{h,vir}(t)$")
-        plt.xlabel('Time (s)', **hfont)
-        plt.ylabel('Torque (Nm)', **hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, 10)
-        plt.tight_layout(pad=1)
-
-        # Input torque (human)
-        plt.figure()
-        plt.title("Input torque", **csfont)
-        # plt.plot(t, ur, tud_blue, linestyle="--", linewidth=2, label="Input torque (robot) $u_r(t)$")
-        if sim_data != None:
-            plt.plot(t_sim, ur_sim, tud_blue, linestyle="-", linewidth=2, alpha=0.5,
-                    label="Simulated (robot) $u_{r,sim}(t)$")
-        # plt.plot(t, uhhat, tud_red, linestyle="--", linewidth=2, alpha=1, label="Estimated (human) $\hat{u}_h(t)$")
-            plt.plot(t_sim, uhhat_sim, tud_red, linewidth=2, linestyle="-", alpha=0.5,
-                    label="Simulated (human) $\hat{u}_{h,sim}(t)$")
-        # plt.plot(t, uh_vir, tud_black, linestyle="--", linewidth=2, alpha=1, label="Virtual (human) $u_{h,vir}(t)$")
-        plt.xlabel('Time (s)', **hfont)
-        plt.ylabel('Torque (Nm)', **hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
+        plt.title("Measured and estimated steering rate", **self.csfont)
+        plt.plot(t_vir, rdot_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Reference $\phi_r(t)$")
+        plt.plot(t_vir, xdot_vir, self.tud_blue, linestyle="--", linewidth=self.lw,
+                 label="Steering rate $\dot{\phi}(t)$")
+        plt.plot(t_sim, xdot_sim[:-1], self.tud_blue, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Simulated $\dot{\phi_{sim}}(t)$")
+        plt.plot(t_vir, x_hatdot_vir, self.tud_red, linewidth=self.lw, linestyle="--",
+                 label="Estimated $\dot{\hat{\phi}}(t)$")
+        plt.xlabel('Time (s)', **self.hfont)
+        plt.ylabel('Steering angle (rad)', **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
         plt.xlim(0, 10)
         plt.tight_layout(pad=1)
 
         options = {"arrowstyle": '->'}
+        n = len(Lh_vel_vir)
 
-        n = len(Lh_vir_vel)
-
-        # Controller gains
-        plt.figure()
-        plt.plot(t, Lr_pos, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
-        if sim_data != None:
-            plt.plot(t_sim, Lr_pos_sim, tud_blue, linewidth=2.5, label="Simulated $L_{r,sim}(t)$", alpha=0.5, )
-            plt.plot(t_sim, Lhhat_pos_sim[:-1], tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
-                     label="Simulated (human) $\hat{L}_{h,sim}(t)$")
-        plt.plot(t, Lhhat_pos, tud_red, linewidth=2.5, linestyle="--", alpha=1, label="Estimated (human) $\hat{L}_{h}(t)$")
-        plt.plot(t, Lh_vir_pos, tud_black, linewidth=2.5, linestyle="--", alpha=1, label="Virtual (human) $L_{h,vir}(t)$")
-
+        # TODO ---> Fix, wat hiermee te doen
         try:
-            self.stepinfo(t, Lhhat_pos, Lh_vir_pos)
+            self.stepinfo(t_vir, Lhhat_pos_vir, Lh_pos_vir)
         except:
             print("does not work")
 
-        plt.title('Steering angle gain', **csfont)
-        plt.xlabel('Time (s)', **hfont)
-        plt.ylabel('Gain value (Nm/rad)', **hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, 15)
-        plt.ylim(-0.2, 6)
 
-        try:
-            Qh1 = exp_data["estimated_human_cost_1"]
-            Qh2 = exp_data["estimated_human_cost_2"]
-            Qh_vir_pos = exp_data["virtual_human_cost_pos"]
-            Qh_vir_vel = exp_data["virtual_human_cost_vel"]
-
-            plt.figure()
-            # plt.plot(t, Lr_pos, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
-            # if sim_data != None:
-            #     plt.plot(t_sim, Lr_pos_sim, tud_blue, linewidth=2.5, label="Simulated $L_{r,sim}(t)$", alpha=0.5, )
-            #     plt.plot(t_sim, Lhhat_pos_sim, tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
-            #              label="Simulated (human) $\hat{L}_{h,sim}(t)$")
-            plt.plot(t, Qh1, tud_red, linewidth=2.5, linestyle="--", alpha=1,
-                     label="Estimated (human) $\hat{Q}_{h,1}(t)$")
-            plt.plot(t, Qh_vir_pos, tud_black, linewidth=2.5, linestyle="--", alpha=1,
-                     label="Virtual (human) $Q_{h,1,vir}(t)$")
-            plt.annotate("Weak action", (7.5, Qh_vir_pos[int(n / 12)]), xytext=(7.5, Qh_vir_pos[int(n / 12)] + 5),
-                         arrowprops=options)
-            plt.annotate("No interaction", (22.5, Qh_vir_pos[int(3 * n / 12)]),
-                         xytext=(18, Qh_vir_pos[int(3 * n / 12)] - 5), arrowprops=options)
-            plt.annotate("Strong action", (37.5, Qh_vir_pos[int(5 * n / 12)]),
-                         xytext=(34, Qh_vir_pos[int(5 * n / 12)] + 5), arrowprops=options)
-            plt.annotate("No interaction", (52.5, Qh_vir_pos[int(7 * n / 12)]),
-                         xytext=(48, Qh_vir_pos[int(7 * n / 12)] + 5), arrowprops=options)
-            plt.annotate("Counteracting steering", (67.5, Qh_vir_pos[int(9 * n / 12)]),
-                         xytext=(48, Qh_vir_pos[int(9 * n / 12)] - 5), arrowprops=options)
-            plt.annotate("No interaction", (82.5, Qh_vir_pos[int(11 * n / 12)]),
-                         xytext=(70, Qh_vir_pos[int(11 * n / 12)] + 5), arrowprops=options)
-
-            plt.title('Steering angle error weight', **csfont)
-            plt.xlabel('Time (s)', **hfont)
-            plt.ylabel('Weight value (-)', **hfont)
-            plt.legend(prop={"size": 8}, loc='upper right')
-            plt.xlim(0, t[-1])
-            plt.ylim(-30, 35)
-
-            plt.figure()
-            # plt.plot(t, Lr_pos, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
-            # if sim_data != None:
-            #     plt.plot(t_sim, Lr_pos_sim, tud_blue, linewidth=2.5, label="Simulated $L_{r,sim}(t)$", alpha=0.5, )
-            #     plt.plot(t_sim, Lhhat_pos_sim, tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
-            #              label="Simulated (human) $\hat{L}_{h,sim}(t)$")
-            plt.plot(t, Qh2, tud_red, linewidth=2.5, linestyle="--", alpha=1,
-                     label="Estimated (human) $\hat{Q}_{h,2}(t)$")
-            plt.plot(t, Qh_vir_vel, tud_black, linewidth=2.5, linestyle="--", alpha=1,
-                     label="Virtual (human) $Q_{h,2,vir}(t)$")
-            plt.annotate("Weak action", (7.5, Qh_vir_vel[int(n / 12)]), xytext=(7.5, Qh_vir_vel[int(n / 12)] + 0.5),
-                         arrowprops=options)
-            plt.annotate("No interaction", (22.5, Qh_vir_vel[int(3 * n / 12)]),
-                         xytext=(18, Qh_vir_vel[int(3 * n / 12)] - 0.5), arrowprops=options)
-            plt.annotate("Strong action", (37.5, Qh_vir_vel[int(5 * n / 12)]),
-                         xytext=(34, Qh_vir_vel[int(5 * n / 12)] + 0.5), arrowprops=options)
-            plt.annotate("No interaction", (52.5, Qh_vir_vel[int(7 * n / 12)]),
-                         xytext=(48, Qh_vir_vel[int(7 * n / 12)] + 0.5), arrowprops=options)
-            plt.annotate("Counteracting steering", (67.5, Qh_vir_vel[int(9 * n / 12)]),
-                         xytext=(48, Qh_vir_vel[int(9 * n / 12)] - 0.5), arrowprops=options)
-            plt.annotate("No interaction", (82.5, Qh_vir_vel[int(11 * n / 12)]),
-                         xytext=(70, Qh_vir_vel[int(11 * n / 12)] + 0.5), arrowprops=options)
-
-            plt.title('Steering rate error weight', **csfont)
-            plt.xlabel('Time (s)', **hfont)
-            plt.ylabel('Weight value (-)', **hfont)
-            plt.legend(prop={"size": 8}, loc='upper right')
-            plt.xlim(0, t[-1])
-            plt.ylim(-1, 1)
-
-            plt.figure()
-            plt.plot(t, Qh1)
-            plt.plot(t, Qh_vir_pos)
-            plt.figure()
-            plt.plot(t, Qh2)
-            plt.plot(t, Qh_vir_vel)
-        except:
-            Qh = np.array(exp_data["estimated_human_cost"])
-            print(Qh.size)
-            print("well that did not work...")
+        # Cost function weights
+        plt.figure()
+        plt.plot(t_vir, Qhhat_pos_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
+                 label="Estimated (human) $\hat{Q}_{h,1}(t)$")
+        plt.plot(t_vir, Qh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Virtual (human) $Q_{h,1,vir}(t)$")
+        plt.annotate("Weak action", (7.5, Qh_pos_vir[int(n / 12)]), xytext=(7.5, Qh_vir_pos[int(n / 12)] + 5),
+                     arrowprops=options)
+        plt.annotate("No interaction", (22.5, Qh_pos_vir[int(3 * n / 12)]),
+                     xytext=(18, Qh_pos_vir[int(3 * n / 12)] - 5), arrowprops=options)
+        plt.annotate("Strong action", (37.5, Qh_pos_vir[int(5 * n / 12)]),
+                     xytext=(34, Qh_pos_vir[int(5 * n / 12)] + 5), arrowprops=options)
+        plt.annotate("No interaction", (52.5, Qh_pos_vir[int(7 * n / 12)]),
+                     xytext=(48, Qh_pos_vir[int(7 * n / 12)] + 5), arrowprops=options)
+        plt.annotate("Counteracting steering", (67.5, Qh_pos_vir[int(9 * n / 12)]),
+                     xytext=(48, Qh_pos_vir[int(9 * n / 12)] - 5), arrowprops=options)
+        plt.annotate("No interaction", (82.5, Qh_pos_vir[int(11 * n / 12)]),
+                     xytext=(70, Qh_pos_vir[int(11 * n / 12)] + 5), arrowprops=options)
+        plt.title('Steering angle error weight', **self.csfont)
+        plt.xlabel('Time (s)', **self.hfont)
+        plt.ylabel('Weight value (-)', **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.xlim(0, t_vir[-1])
+        plt.ylim(-30, 35)
 
         plt.figure()
-        plt.plot(t, Lr_pos, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
-        if sim_data != None:
-            plt.plot(t_sim, Lr_pos_sim, tud_blue, linewidth=2.5, label="Simulated $L_{r,sim}(t)$", alpha=0.5, )
-            plt.plot(t_sim, Lhhat_pos_sim[:-1], tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
-                     label="Simulated (human) $\hat{L}_{h,sim}(t)$")
-        plt.plot(t, Lhhat_pos, tud_red, linewidth=2.5, linestyle="--", alpha=1,
-                 label="Estimated (human) $\hat{L}_{h}(t)$")
-        plt.plot(t, Lh_vir_pos, tud_black, linewidth=2.5, linestyle="--", alpha=1,
-                 label="Virtual (human) $L_{h,vir}(t)$")
-        plt.annotate("Weak action", (7.5, Lh_vir_pos[int(n/12)]), xytext=(7.5, Lh_vir_pos[int(n/12)] + 2), arrowprops=options)
-        plt.annotate("No interaction", (22.5, Lh_vir_pos[int(3*n/12)]), xytext=(18, Lh_vir_pos[int(3*n/12)] - 2), arrowprops=options)
-        plt.annotate("Strong action", (37.5, Lh_vir_pos[int(5*n/12)]), xytext=(34, Lh_vir_pos[int(5*n/12)] + 1.5), arrowprops=options)
-        plt.annotate("No interaction", (52.5, Lh_vir_pos[int(7*n/12)]), xytext=(48, Lh_vir_pos[int(7*n/12)] + 2), arrowprops=options)
-        plt.annotate("Counteracting steering", (67.5, Lh_vir_pos[int(9*n/12)]), xytext=(48, Lh_vir_pos[int(9*n/12)] - 1.5), arrowprops=options)
-        plt.annotate("No interaction", (82.5, Lh_vir_pos[int(11*n/12)]), xytext=(70, Lh_vir_pos[int(11*n/12)] + 2), arrowprops=options)
+        plt.plot(t_vir, Qhhat_vel_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
+                 label="Estimated (human) $\hat{Q}_{h,2}(t)$")
+        plt.plot(t_vir, Qh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Virtual (human) $Q_{h,2,vir}(t)$")
+        plt.annotate("Weak action", (7.5, Qh_vel_vir[int(n / 12)]), xytext=(7.5, Qh_vel_vir[int(n / 12)] + 0.5),
+                     arrowprops=options)
+        plt.annotate("No interaction", (22.5, Qh_vel_vir[int(3 * n / 12)]),
+                     xytext=(18, Qh_vel_vir[int(3 * n / 12)] - 0.5), arrowprops=options)
+        plt.annotate("Strong action", (37.5, Qh_vel_vir[int(5 * n / 12)]),
+                     xytext=(34, Qh_vel_vir[int(5 * n / 12)] + 0.5), arrowprops=options)
+        plt.annotate("No interaction", (52.5, Qh_vel_vir[int(7 * n / 12)]),
+                     xytext=(48, Qh_vel_vir[int(7 * n / 12)] + 0.5), arrowprops=options)
+        plt.annotate("Counteracting steering", (67.5, Qh_vel_vir[int(9 * n / 12)]),
+                     xytext=(48, Qh_vel_vir[int(9 * n / 12)] - 0.5), arrowprops=options)
+        plt.annotate("No interaction", (82.5, Qh_vel_vir[int(11 * n / 12)]),
+                     xytext=(70, Qh_vel_vir[int(11 * n / 12)] + 0.5), arrowprops=options)
+        plt.title('Steering rate error weight', **self.csfont)
+        plt.xlabel('Time (s)', **self.hfont)
+        plt.ylabel('Weight value (-)', **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.xlim(0, t_vir[-1])
+        plt.ylim(-1, 1)
 
-        plt.title('Steering angle gain', **csfont)
-        plt.xlabel('Time (s)', **hfont)
-        plt.ylabel('Gain value (Nm/rad)', **hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, t[-1])
+        plt.figure()
+        plt.plot(t_vir, Lr_pos_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Gain (robot) $L_{r}(t)$")
+        if sim_data != None:
+            plt.plot(t_sim, Lr_pos_sim, self.tud_blue, linewidth=self.lw, label="Simulated $L_{r,sim}(t)$", alpha=0.7, )
+            plt.plot(t_sim, Lhhat_pos_sim[:-1], self.tud_red, linewidth=2.5, linestyle="-", alpha=0.7,
+                     label="Simulated (human) $\hat{L}_{h,sim}(t)$")
+        plt.plot(t_vir, Lhhat_pos_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
+                 label="Estimated (human) $\hat{L}_{h}(t)$")
+        plt.plot(t_vir, Lh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="--", alpha=1,
+                 label="Virtual (human) $L_{h,vir}(t)$")
+        plt.annotate("Weak action", (7.5, Lh_pos_vir[int(n/12)]), xytext=(7.5, Lh_pos_vir[int(n/12)] + 2), arrowprops=options)
+        plt.annotate("No interaction", (22.5, Lh_pos_vir[int(3*n/12)]), xytext=(18, Lh_pos_vir[int(3*n/12)] - 2), arrowprops=options)
+        plt.annotate("Strong action", (37.5, Lh_pos_vir[int(5*n/12)]), xytext=(34, Lh_pos_vir[int(5*n/12)] + 1.5), arrowprops=options)
+        plt.annotate("No interaction", (52.5, Lh_pos_vir[int(7*n/12)]), xytext=(48, Lh_pos_vir[int(7*n/12)] + 2), arrowprops=options)
+        plt.annotate("Counteracting steering", (67.5, Lh_pos_vir[int(9*n/12)]), xytext=(48, Lh_pos_vir[int(9*n/12)] - 1.5), arrowprops=options)
+        plt.annotate("No interaction", (82.5, Lh_pos_vir[int(11*n/12)]), xytext=(70, Lh_pos_vir[int(11*n/12)] + 2), arrowprops=options)
+
+        plt.title('Steering angle gain', **self.csfont)
+        plt.xlabel('Time (s)', **self.hfont)
+        plt.ylabel('Gain value (Nm/rad)', **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.xlim(0, t_vir[-1])
         plt.ylim(-4.5, 9)
 
 
-
         plt.figure()
-        plt.plot(t, Lr_vel, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
-        plt.plot(t, Lhhat_vel, tud_red, linewidth=2.5, linestyle="--", alpha=1,
+        plt.plot(t_vir, Lr_vel_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Gain (robot) $L_{r}(t)$")
+        plt.plot(t_vir, Lhhat_vel_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
                  label="Estimated (human) $\hat{L}_{h}(t)$")
-        if sim_data != None:
-            no_sim = True
-            plt.plot(t_sim, Lr_vel_sim, tud_blue, linewidth=2.5, label="Simulated (robot) $L_{r,sim}(t)$", alpha=0.5)
-            plt.plot(t_sim, Lhhat_vel_sim[:-1], tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
-                 label="Simulated (human) $\hat{L}_{h,sim}(t)$")
-        else:
-            no_sim = False
-
-        plt.plot(t, Lh_vir_vel, tud_black, linewidth=2.5, linestyle="--", alpha=1, label="Virtual (human) $L_{h,vir}(t)$")
-
-        plt.annotate("Weak action", (7.5, Lh_vir_vel[int(n/12)]), xytext=(7.5, Lh_vir_vel[int(n/12)] + 0.5), arrowprops=options)
-        plt.annotate("No interaction", (22.5, Lh_vir_vel[int(3*n/12)]), xytext=(15, Lh_vir_vel[int(3*n/12)] - 0.5), arrowprops=options)
-        plt.annotate("Strong action", (37.5, Lh_vir_vel[int(5*n/12)]), xytext=(20, Lh_vir_vel[int(5*n/12)] + 0.2), arrowprops=options)
-        plt.annotate("No interaction", (52.5, Lh_vir_vel[int(7*n/12)]), xytext=(48, Lh_vir_vel[int(7*n/12)] + 0.65), arrowprops=options)
-        plt.annotate("Counteracting steering", (67.5, Lh_vir_vel[int(9*n/12)]), xytext=(55, Lh_vir_vel[int(9*n/12)] - 0.2),
+        plt.plot(t_sim, Lr_vel_sim, self.tud_blue, linewidth=self.lw, label="Simulated (robot) $L_{r,sim}(t)$", alpha=0.7)
+        plt.plot(t_sim, Lhhat_vel_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
+             label="Simulated (human) $\hat{L}_{h,sim}(t)$")
+        plt.plot(t_vir, Lh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7, label="Virtual (human) $L_{h,vir}(t)$")
+        plt.annotate("Weak action", (7.5, Lh_vel_vir[int(n/12)]), xytext=(7.5, Lh_vel_vir[int(n/12)] + 0.5), arrowprops=options)
+        plt.annotate("No interaction", (22.5, Lh_vel_vir[int(3*n/12)]), xytext=(15, Lh_vel_vir[int(3*n/12)] - 0.5), arrowprops=options)
+        plt.annotate("Strong action", (37.5, Lh_vel_vir[int(5*n/12)]), xytext=(20, Lh_vel_vir[int(5*n/12)] + 0.2), arrowprops=options)
+        plt.annotate("No interaction", (52.5, Lh_vel_vir[int(7*n/12)]), xytext=(48, Lh_vel_vir[int(7*n/12)] + 0.65), arrowprops=options)
+        plt.annotate("Counteracting steering", (67.5, Lh_vel_vir[int(9*n/12)]), xytext=(55, Lh_vel_vir[int(9*n/12)] - 0.2),
                      arrowprops=options)
-        plt.annotate("No interaction", (82.5, Lh_vir_vel[int(11*n/12)]), xytext=(70, Lh_vir_vel[int(11*n/12)] + 0.65), arrowprops=options)
-
-        plt.title('Steering rate gain', **csfont)
-        plt.xlabel('Time (s)', **hfont)
-        plt.ylabel('Gain value (Nms/rad)', **hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, t[-1])
+        plt.annotate("No interaction", (82.5, Lh_vel_vir[int(11*n/12)]), xytext=(70, Lh_vel_vir[int(11*n/12)] + 0.65), arrowprops=options)
+        plt.title('Steering rate gain', **self.csfont)
+        plt.xlabel('Time (s)', **self.hfont)
+        plt.ylabel('Gain value (Nms/rad)', **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.xlim(0, t_vir[-1])
         plt.ylim(-0.9, 1.5)
         plt.tight_layout(pad=1)
 
-        plt.figure()
-        plt.plot(t, Lr_vel, tud_blue, linewidth=2.5, linestyle="--", label="Gain (robot) $L_{r}(t)$")
-        plt.plot(t, Lhhat_vel, tud_red, linewidth=2.5, linestyle="--", alpha=1,
-                 label="Estimated (human) $\hat{L}_{h}(t)$")
-        if sim_data != None:
-            no_sim = True
-            plt.plot(t_sim, Lr_vel_sim, tud_blue, linewidth=2.5, label="Simulated (robot) $L_{r,sim}(t)$", alpha=0.5)
-            plt.plot(t_sim, Lhhat_vel_sim[:-1], tud_red, linewidth=2.5, linestyle="-", alpha=0.5,
-                     label="Simulated (human) $\hat{L}_{h,sim}(t)$")
-        else:
-            no_sim = False
-
-        plt.plot(t, Lh_vir_vel, tud_black, linewidth=2.5, linestyle="--", alpha=1,
-                 label="Virtual (human) $L_{h,vir}(t)$")
-
         try:
-            self.stepinfo(t, Lhhat_vel, Lh_vir_vel)
+            self.stepinfo(t_vir, Lhhat_vel_vir, Lh_vel_vir)
         except:
             print("does not work")
 
-        plt.title('Steering rate gain', **csfont)
-        plt.xlabel('Time (s)', **hfont)
-        plt.ylabel('Gain value (Nms/rad)', **hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, 15)
-        plt.ylim(-0.2, 0.6)
-        plt.tight_layout(pad=1)
-
-        self.save_all_figures(no_sim)
-
+        self.save_all_figures()
         plt.show()
 
     def stepinfo(self, t, L, Lref):
@@ -364,29 +278,9 @@ class PlotStuff:
         print("start, end and risetime", rise_start, rise_end, rise_time)
 
 
-    def save_figure_dump(self, type):
-        working_dir = os.getcwd()
-        dateTimeObj = datetime.now()
-        location1 = working_dir + "\\fig_dump\\" + str(dateTimeObj.month)
-        location2 = location1 + "\\" + str(dateTimeObj.day)
 
-        if not os.path.exists(location1):
-            os.makedirs(location1)
-            print("made directory: ", location1)
-
-        if not os.path.exists(location2):
-            os.makedirs(location2)
-            print("made directory: ", location2)
-
-        string = location2 + "\\" + str(dateTimeObj.hour) + "_" + str(dateTimeObj.minute) + "_" + \
-                 str(dateTimeObj.second) + "_" + str(type) + ".pdf"
-        plt.savefig(string)
-
-    def save_all_figures(self, no_sim):
-        if no_sim is True:
-            pp = PdfPages('validation_virtual.pdf')
-        else:
-            pp = PdfPages('validation_human.pdf')
+    def save_all_figures(self):
+        pp = PdfPages('validation.pdf')
         figs = None
         if figs is None:
             figs = [plt.figure(n) for n in plt.get_fignums()]
