@@ -38,8 +38,8 @@ class PlotStuff:
         Lhhat_vel_h = human_data["estimated_human_gain_vel"]
         Lr_pos_h = human_data["robot_gain_pos"]
         Lr_vel_h = human_data["robot_gain_vel"]
-        Qhhat_pos_h = human_data["estimated_human_cost_pos"]
-        Qhhat_vel_h = human_data["estimated_human_cost_vel"]
+        Qhhat_pos_h = human_data["estimated_human_cost_1"]
+        Qhhat_vel_h = human_data["estimated_human_cost_2"]
         Qr_pos_h = human_data["robot_cost_pos"]
         Qr_vel_h = human_data["robot_cost_vel"]
         uhhat_h = np.array(human_data["estimated_human_input"])
@@ -61,8 +61,8 @@ class PlotStuff:
         Lhhat_vel_vir = virt_data["estimated_human_gain_vel"]
         Lr_pos_vir = virt_data["robot_gain_pos"]
         Lr_vel_vir = virt_data["robot_gain_vel"]
-        Qhhat_pos_vir = virt_data["estimated_human_cost_pos"]
-        Qhhat_vel_vir = virt_data["estimated_human_cost_vel"]
+        Qhhat_pos_vir = virt_data["estimated_human_cost_1"]
+        Qhhat_vel_vir = virt_data["estimated_human_cost_2"]
         Qr_pos_vir = virt_data["robot_cost_pos"]
         Qr_vel_vir = virt_data["robot_cost_vel"]
         Qh_pos_vir = virt_data["virtual_human_cost_pos"]
@@ -135,7 +135,7 @@ class PlotStuff:
                  label="Estimated (human) $\hat{Q}_{h,1}(t)$")
         plt.plot(t_vir, Qh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
                  label="Virtual (human) $Q_{h,1,vir}(t)$")
-        plt.annotate("Weak action", (7.5, Qh_pos_vir[int(n / 12)]), xytext=(7.5, Qh_vir_pos[int(n / 12)] + 5),
+        plt.annotate("Weak action", (7.5, Qh_pos_vir[int(n / 12)]), xytext=(7.5, Qh_pos_vir[int(n / 12)] + 5),
                      arrowprops=options)
         plt.annotate("No interaction", (22.5, Qh_pos_vir[int(3 * n / 12)]),
                      xytext=(18, Qh_pos_vir[int(3 * n / 12)] - 5), arrowprops=options)
@@ -153,6 +153,7 @@ class PlotStuff:
         plt.legend(prop={"size": self.legend_size}, loc='upper right')
         plt.xlim(0, t_vir[-1])
         plt.ylim(-30, 35)
+        plt.tight_layout(pad=1)
 
         plt.figure()
         plt.plot(t_vir, Qhhat_vel_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
@@ -177,6 +178,7 @@ class PlotStuff:
         plt.legend(prop={"size": self.legend_size}, loc='upper right')
         plt.xlim(0, t_vir[-1])
         plt.ylim(-1, 1)
+        plt.tight_layout(pad=1)
 
         plt.figure()
         plt.plot(t_vir, Lr_pos_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Gain (robot) $L_{r}(t)$")
@@ -201,7 +203,7 @@ class PlotStuff:
         plt.legend(prop={"size": self.legend_size}, loc='upper right')
         plt.xlim(0, t_vir[-1])
         plt.ylim(-4.5, 9)
-
+        plt.tight_layout(pad=1)
 
         plt.figure()
         plt.plot(t_vir, Lr_vel_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Gain (robot) $L_{r}(t)$")

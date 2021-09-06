@@ -70,7 +70,7 @@ class ControllerNG:
         x_tilde_dot = x_hat_dot - x_dot
 
         pseudo_B = 1/(np.matmul(self.B.transpose(), self.B)) * self.B.transpose()
-        u_h_tilde = np.matmul(pseudo_B, x_tilde_dot - np.matmul(self.A - Gamma, x_tilde))
+        u_h_tilde = np.matmul(pseudo_B, x_tilde_dot - np.matmul((self.A - Gamma), x_tilde))
         m_squared = 1 + kappa * np.matmul(e.transpose(), e)
         Lhhat_dot = u_h_tilde / m_squared * np.matmul(e.transpose(), K)
         ydot = np.array([x_dot.transpose(), Lhhat_dot, x_hat_dot.transpose()]).flatten()

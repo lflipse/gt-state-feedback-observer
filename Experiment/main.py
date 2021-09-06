@@ -75,7 +75,7 @@ if __name__ == "__main__":
     roles = ["", "Undetermined", "Follower", "Leader", "Undertmined", "Follower", "Leader",
              "Robot Only", "Human Only", "Human Only"]
     random.shuffle(conditions_experiment)
-    conditions_experiment = [9, 8, 7, 6, 5, 4, 3, 2, 1]
+    # conditions_experiment = [9, 8, 7, 6, 5, 4, 3, 2, 1]
 
     print("Observer dynamics", A - Gamma)
 
@@ -178,10 +178,5 @@ if __name__ == "__main__":
     visualize.quit()
     senso_drive_process.join(timeout=0)
     # live_plotter_process.join(timeout=0)
-
-    # Plot stuff
-    analysis = Analysis()
-    analysis.initialize()
-    analysis.analyse()
 
 

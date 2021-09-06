@@ -29,14 +29,12 @@ class ControllerDGObs:
 
         Qr = C - Qh
 
-        if np.linalg.det(Qr) < 0:
-            Qr = np.array([[0, 0], [0, 0]])
+        # if np.linalg.det(Qr) < 0:
+        #     Qr = np.array([[0, 0], [0, 0]])
+        #
+        # if np.linalg.det(C) < 0.1:
+        #     Qr = np.array([[0, 0], [0, 0]])
 
-        if np.linalg.det(C) < 0.1:
-            Qr = np.array([[0, 0], [0, 0]])
-
-        # print("estimated human: ", Qh)
-        # print("sharing rule: ", C)
         uhhat = np.matmul(-Lh_hat, xi)
 
         # Compute Controller gain
@@ -45,8 +43,7 @@ class ControllerDGObs:
         # print(Pr)
         try:
             Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
-            # Pr = con.care(Acl, self.B, Qr, 1)
-            # print(Pr)
+
         except:
             print("Debugs:")
             print("Qh = ", Qh)
@@ -54,7 +51,6 @@ class ControllerDGObs:
             print("Lhhat = ", Lh_hat)
             print("failed to find finite solution")
             return -1
-            # exit("failed to find finite solution")
 
         Lr = np.matmul(self.B.transpose(), Pr)
         ur = np.matmul(-Lr, xi)

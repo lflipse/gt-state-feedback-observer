@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 class Reference:
     def __init__(self, duration):
@@ -68,7 +69,7 @@ class Reference:
         reference_velocity = 0
         for i in range(10):
             wt = (period[i] / self.duration) * (2 * np.pi)
-            reference_position += amplitude[i] * np.sin(wt * t + phases[i])
-            reference_velocity += amplitude[i] * wt * np.cos(wt * t + phases[i])
+            reference_position += amplitude[i] * math.sin(wt * t + phases[i])
+            reference_velocity += amplitude[i] * wt * math.cos(wt * t + phases[i])
         ref = np.array([reference_position, reference_velocity])
         return ref

@@ -126,21 +126,21 @@ if __name__ == "__main__":
     B = np.array([[0], [1 / Jw]])
 
     # TODO: verify values
-    alpha = 7
-    K = alpha * np.array([[2.5, 0], [0, 0.125]])
+    alpha = 10
     Gamma = 4 * np.array([[2, 0], [0, 2]])
+    K = alpha * np.array([[8, 0], [0, 3]])
     kappa = 1
     Qr_end = np.array([[10.0, 0.0], [0.0, 0.1]])
     Qr_start = np.array([[10.0, 0.0], [0.0, 0.1]])
-    C = np.array([[50.0, 0.0], [0.0, 0.3]])
+    C = np.array([[50.0, 0.0], [0.0, 1.0]])
 
-    Qh1 = np.array([[25.0, 0.0], [0.0, 0.2]])
-    Qh2 = np.array([[12.0, 0.0], [0.0, 0.1]])
+    Qh1 = np.array([[25.0, 0.0], [0.0, 0.5]])
+    Qh2 = np.array([[12.0, 0.0], [0.0, 0.5]])
 
     vhg = np.zeros((6, 2))
-    vhg[0, :] = compute_virtual_gain(Qh2, Qr_end, A, B)
-    vhg[2, :] = compute_virtual_gain(Qh1, Qr_end, A, B)
-    vhg[4, :] = -compute_virtual_gain(Qh2, Qr_end, A, B)
+    vhg[0, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)
+    vhg[2, :] = compute_virtual_gain(Qh1, C-Qh1, A, B)
+    vhg[4, :] = -compute_virtual_gain(Qh2, C-Qh2, A, B)
     virtual_human_gain = vhg
     Qh = np.zeros((6, 2))
     Qh[0, :] = np.array([Qh2[0, 0], Qh2[1, 1]])
