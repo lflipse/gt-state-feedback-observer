@@ -19,8 +19,6 @@ class Experiment:
         self.t_warmup = input["warm_up_time"]
         self.t_cooldown = input["cooldown_time"]
         self.t_exp = input["experiment_time"]
-        self.Qr_start = input["init_robot_cost"]
-        self.Qr_end = input["final_robot_cost"]
         self.virtual_human_cost = input["virtual_human_cost"]
         self.sharing_rule = input["sharing_rule"]
         self.duration = self.t_warmup + self.t_exp + self.t_cooldown
@@ -92,7 +90,6 @@ class Experiment:
                 self.send_dict["factor"] = 1 / (1 + np.exp(-2 * self.time)) - 1 / (1 + np.exp(2 * self.time))
                 self.send_dict["ref"] = ref * self.send_dict["factor"]
                 self.send_dict["experiment"] = False
-                self.send_dict["robot_cost"] = self.Qr_start
                 self.send_dict["sharing_rule"] = self.sharing_rule
                 r_prev = self.reference_preview(self.time, t_prev=1)
                 dt = self.t_warmup - self.time
@@ -108,7 +105,6 @@ class Experiment:
                 self.send_dict["factor"] = 1
                 self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = True
-                self.send_dict["robot_cost"] = self.Qr_start
                 self.send_dict["sharing_rule"] = self.sharing_rule
                 r_prev = self.reference_preview(self.time, t_prev=1)
 
@@ -180,7 +176,6 @@ class Experiment:
                         print("here?")
                     output["input_estimation_error"] = self.states["input_estimation_error"].flatten()
                     output["virtual_human_torque"] = self.states["virtual_human_torque"][0]
-                    output["xi_gamma"] = self.states["xi_gamma"]
                     output["state_estimate_derivative"] = self.states["state_estimate_derivative"]
                     output["virtual_human_gain_pos"] = vhg[0]
                     output["virtual_human_gain_vel"] = vhg[1]

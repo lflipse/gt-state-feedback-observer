@@ -80,9 +80,12 @@ class PlotStuff:
         Lhhat_sim = sim_data["human_estimated_gain"]
         Lhhat_pos_sim = Lhhat_sim[:, 0]
         Lhhat_vel_sim = Lhhat_sim[:, 1]
-        Lr_sim = sim_data["robot_gain"]
-        Lr_pos_sim = Lr_sim[:, 0]
-        Lr_vel_sim = Lr_sim[:, 1]
+        Qhhat_sim = sim_data["human_estimated_Q"]
+        Qhhat_pos_sim = Qhhat_sim[:, 0, 0]
+        Qhhat_vel_sim = Qhhat_sim[:, 1, 1]
+        Qr_sim = sim_data["robot_gain"]
+        # Lr_pos_sim = Lr_sim[:, 0]
+        # Lr_vel_sim = Lr_sim[:, 1]
         uhhat_sim = sim_data["human_estimated_input"]
 
         # Let's get plottin'
@@ -101,6 +104,9 @@ class PlotStuff:
         plt.legend(prop={"size": self.legend_size}, loc='upper right')
         plt.xlim(0, 10)
         plt.tight_layout(pad=1)
+
+        plt.figure()
+        plt.plot(t_vir, t_ex_vir)
 
         # Steering rate
         plt.figure()
@@ -122,15 +128,11 @@ class PlotStuff:
         options = {"arrowstyle": '->'}
         n = len(Lh_vel_vir)
 
-        # TODO ---> Fix, wat hiermee te doen
-        try:
-            self.stepinfo(t_vir, Lhhat_pos_vir, Lh_pos_vir)
-        except:
-            print("does not work")
-
 
         # Cost function weights
         plt.figure()
+        plt.plot(t_sim, Qhhat_pos_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Simulated (human) $\hat{Q}_{h,1}(t)$")
         plt.plot(t_vir, Qhhat_pos_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
                  label="Estimated (human) $\hat{Q}_{h,1}(t)$")
         plt.plot(t_vir, Qh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
@@ -156,6 +158,8 @@ class PlotStuff:
         plt.tight_layout(pad=1)
 
         plt.figure()
+        plt.plot(t_sim, Qhhat_vel_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Simulated (human) $\hat{Q}_{h,2}(t)$")
         plt.plot(t_vir, Qhhat_vel_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
                  label="Estimated (human) $\hat{Q}_{h,2}(t)$")
         plt.plot(t_vir, Qh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
@@ -181,14 +185,14 @@ class PlotStuff:
         plt.tight_layout(pad=1)
 
         plt.figure()
-        plt.plot(t_vir, Lr_pos_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Gain (robot) $L_{r}(t)$")
+        # plt.plot(t_vir, Lr_pos_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Gain (robot) $L_{r}(t)$")
         if sim_data != None:
-            plt.plot(t_sim, Lr_pos_sim, self.tud_blue, linewidth=self.lw, label="Simulated $L_{r,sim}(t)$", alpha=0.7, )
-            plt.plot(t_sim, Lhhat_pos_sim[:-1], self.tud_red, linewidth=2.5, linestyle="-", alpha=0.7,
+            # plt.plot(t_sim, Lr_pos_sim, self.tud_blue, linewidth=self.lw, label="Simulated $L_{r,sim}(t)$", alpha=0.7, )
+            plt.plot(t_sim, Lhhat_pos_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
                      label="Simulated (human) $\hat{L}_{h,sim}(t)$")
         plt.plot(t_vir, Lhhat_pos_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
                  label="Estimated (human) $\hat{L}_{h}(t)$")
-        plt.plot(t_vir, Lh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="--", alpha=1,
+        plt.plot(t_vir, Lh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
                  label="Virtual (human) $L_{h,vir}(t)$")
         plt.annotate("Weak action", (7.5, Lh_pos_vir[int(n/12)]), xytext=(7.5, Lh_pos_vir[int(n/12)] + 2), arrowprops=options)
         plt.annotate("No interaction", (22.5, Lh_pos_vir[int(3*n/12)]), xytext=(18, Lh_pos_vir[int(3*n/12)] - 2), arrowprops=options)
@@ -206,10 +210,10 @@ class PlotStuff:
         plt.tight_layout(pad=1)
 
         plt.figure()
-        plt.plot(t_vir, Lr_vel_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Gain (robot) $L_{r}(t)$")
+        # plt.plot(t_vir, Lr_vel_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Gain (robot) $L_{r}(t)$")
         plt.plot(t_vir, Lhhat_vel_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
                  label="Estimated (human) $\hat{L}_{h}(t)$")
-        plt.plot(t_sim, Lr_vel_sim, self.tud_blue, linewidth=self.lw, label="Simulated (robot) $L_{r,sim}(t)$", alpha=0.7)
+        # plt.plot(t_sim, Lr_vel_sim, self.tud_blue, linewidth=self.lw, label="Simulated (robot) $L_{r,sim}(t)$", alpha=0.7)
         plt.plot(t_sim, Lhhat_vel_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
              label="Simulated (human) $\hat{L}_{h,sim}(t)$")
         plt.plot(t_vir, Lh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7, label="Virtual (human) $L_{h,vir}(t)$")
@@ -228,10 +232,12 @@ class PlotStuff:
         plt.ylim(-0.9, 1.5)
         plt.tight_layout(pad=1)
 
-        try:
-            self.stepinfo(t_vir, Lhhat_vel_vir, Lh_vel_vir)
-        except:
-            print("does not work")
+        # TODO --> Fix
+        # try:
+        #     self.stepinfo(t_vir, Lhhat_vel_vir, Lh_vel_vir)
+        #
+        # except:
+        #     print("does not work")
 
         self.save_all_figures()
         plt.show()

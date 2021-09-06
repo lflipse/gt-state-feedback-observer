@@ -1,27 +1,21 @@
 import numpy as np
 import scipy.linalg as cp
-import control.matlab as con
-import time
+
 
 class ControllerDGObs:
-    def __init__(self, A, B, K, Gamma, kappa, Qr, Qh):
+    def __init__(self, A, B, K, Gamma, kappa):
         self.A = A
         self.B = B
         self.Gamma = Gamma
         self.K = K
         self.kappa = kappa
-        self.Qr = Qr
-        self.Qh = Qh
-        self.Lh_hat = np.array([0.0, 0.0])
-
-    def compute_costs(self, x, u):
-        return np.matmul(np.matmul(x.transpose(), self.Qr), x) + u**2
 
     def compute_control_input(self, states):
         xi = states["error_state"]
         x = states["state"]
         x_hat = states["state_estimate"]
         x_tilde = x_hat - x
+
         x_dot = states["state_derivative"]
         Lh_hat = states["estimated_human_gain"]
         Qh = states["estimated_human_cost"]
@@ -29,18 +23,12 @@ class ControllerDGObs:
 
         Qr = C - Qh
 
-        # if np.linalg.det(Qr) < 0:
-        #     Qr = np.array([[0, 0], [0, 0]])
-        #
-        # if np.linalg.det(C) < 0.1:
-        #     Qr = np.array([[0, 0], [0, 0]])
-
-        uhhat = np.matmul(-Lh_hat, xi)
+        if np.linalg.det(Qr) < 0:
+            Qr = np.array([[0, 0], [0, 0]])
 
         # Compute Controller gain
         Acl = self.A - self.B * Lh_hat
-        # Pr = con.care(Acl, self.B, Qr, 1)
-        # print(Pr)
+
         try:
             Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
 
@@ -54,25 +42,26 @@ class ControllerDGObs:
 
         Lr = np.matmul(self.B.transpose(), Pr)
         ur = np.matmul(-Lr, xi)
-        Jr = self.compute_costs(xi, ur)
+        uhhat = np.matmul(-Lh_hat, xi)
 
+        # Observer equations
         x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat + self.nonlinear_term(x)) - np.matmul(self.Gamma, x_tilde)
         xi_tilde_dot = x_hat_dot - x_dot
-        uh_tilde = (1 / (np.matmul(self.B.transpose(), self.B))) * np.matmul(self.B.transpose(), xi_tilde_dot - np.matmul((self.A - self.Gamma), x_tilde))
+
+        # Update law for human gain
+        pseudo_B = 1 / np.matmul(self.B.transpose(), self.B) * self.B.transpose()
+        uh_tilde = np.matmul(pseudo_B,  xi_tilde_dot - np.matmul(self.A - self.Gamma, x_tilde))
         m_squared = 1 + self.kappa * np.matmul(xi.transpose(), xi)
-        xi_gamma = np.matmul(xi.transpose(), self.K)
-        Lhhat_dot = uh_tilde * xi_gamma / m_squared
+        Lhhat_dot = uh_tilde / m_squared * np.matmul(xi.transpose(), self.K)
 
         output = {
             "torque": ur,
             "estimated_human_torque": uhhat,
-            "cost": Jr,
             "state_estimate_derivative": x_hat_dot,
             "estimated_human_gain_derivative": Lhhat_dot,
             "robot_gain": Lr,
             "robot_P": Pr,
             "input_estimation_error": uh_tilde / m_squared,
-            "xi_gamma": xi_gamma,
             "robot_cost": Qr,
         }
 

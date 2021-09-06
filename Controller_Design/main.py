@@ -9,27 +9,28 @@ import sys
 
 sys.path.insert(1, '..')
 
+# Uncomment below to use different controllers
 # from Controller_Design.Controllers.Linear_Quadratic import ControllerLQ
 # from Controller_Design.Controllers.Differential_Game import ControllerDG
 # from Controller_Design.Controllers.Differential_Game_Gain_Descent import ControllerDG_GObs
 # from Controller_Design.Controllers.Li2019 import ControllerDG_Li
+# from Simulation.Linear_Quadratic import ControllerLQ as LQsim
+# from Simulation.Differential_Game_Gain_Descent import ControllerNG as NGsim
 
 from Controller_Design.reference_trajectory import Reference
 from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
 from Controller_Design.experiment import Experiment
 from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDGObs
 from Controller_Design.plots import PlotStuff
-from Simulation.Linear_Quadratic import ControllerLQ as LQsim
-from Simulation.Differential_Game_Gain_Descent import ControllerNG as NGsim
 from Simulation.Differential_Game_Gain_Observer import ControllerNG as NG_Obssim
 
-def compute_virtual_gain(Qh1, Qr_end, A, B):
+def compute_virtual_gain(Qh, Qr, A, B):
     # Iterative procedure for calculating gains
-    Lh = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, Qh1, 1))
-    Lr = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, Qr_end, 1))
+    Lh = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, Qh, 1))
+    Lr = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, Qr, 1))
     for i in range(10):
-        Lh = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lr, B, Qh1, 1))
-        Lr = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh, B, Qr_end, 1))
+        Lh = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lr, B, Qh, 1))
+        Lr = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh, B, Qr, 1))
     return Lh
 
 def to_csv(to_be_saved, file):
@@ -52,7 +53,7 @@ def load_data_set(file):
 
 def input_controller():
     # Select controller type
-    controller = ControllerDGObs(A, B, K, Gamma, kappa, Qr_start, Qh1)
+    controller = ControllerDGObs(A, B, K, Gamma, kappa)
     controller_type = "Cost_observer"
     gen_data = input("Generate data_set? No = 0, Yes = 1.   Please choose: ")
     return controller, controller_type, int(gen_data)
@@ -69,7 +70,6 @@ def run_simulation(experiment_data):
         "time": experiment_data["time"],
         "reference_signal": ref,
         "human_weight": Qh1,
-        "robot_weight": Qr_start,
         "alpha": alpha,
         "K": K,
         "Gamma": Gamma,
@@ -126,16 +126,14 @@ if __name__ == "__main__":
     B = np.array([[0], [1 / Jw]])
 
     # TODO: verify values
-    alpha = 10
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    K = alpha * np.array([[8, 0], [0, 3]])
+    alpha = 30
+    K = alpha * np.array([[2.5, 0], [0, 0.25]])
     kappa = 1
-    Qr_end = np.array([[10.0, 0.0], [0.0, 0.1]])
-    Qr_start = np.array([[10.0, 0.0], [0.0, 0.1]])
-    C = np.array([[50.0, 0.0], [0.0, 1.0]])
+    C = np.array([[50.0, 0.0], [0.0, 1]])
 
     Qh1 = np.array([[25.0, 0.0], [0.0, 0.5]])
-    Qh2 = np.array([[12.0, 0.0], [0.0, 0.5]])
+    Qh2 = np.array([[12.0, 0.0], [0.0, 0.25]])
 
     vhg = np.zeros((6, 2))
     vhg[0, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)
@@ -199,8 +197,6 @@ if __name__ == "__main__":
             "virtual_human": virtual_human,
             "virtual_human_gain": virtual_human_gain,
             "virtual_human_cost": Qh,
-            "init_robot_cost": Qr_start,
-            "final_robot_cost": Qr_end,
             "sharing_rule": C,
             "manual": manual,
         }
@@ -229,5 +225,5 @@ if __name__ == "__main__":
 
     # Analyse stuff
     plot_stuff = PlotStuff()
-    plot_stuff.plot(virtual_data, real_data, sim_data)
+    plot_stuff.plot(real_data, virtual_data, sim_data)
 
