@@ -39,22 +39,7 @@ if __name__ == "__main__":
         import wres
 
     # Simulation parameters
-    t_warmup = 5
-    t_cooldown = 5
-    t_exp = 30
-    t_prev = 1.2
-    duration = t_warmup + t_cooldown + t_exp
-    t_step = 0.015
-    N = round(t_exp / t_step)
-    N_warmup = round(t_warmup / t_step)
-    N_cooldown = round(t_cooldown / t_step)
-    N_tot = N + N_warmup + N_cooldown
-    T = np.array(range(N)) * (t_step + 0.001)
-    T_ex = np.array(range(N+N_warmup+N_cooldown)) * t_step
-    fr_min = 1/(20 * np.pi)
-    fr_max = 1/(1 * np.pi)
-    increments = 20
-    reference = Reference(duration)
+    reference = Reference(duration=None)
 
     # Dynamics
     Jw = 0.05480475491037145
@@ -70,23 +55,26 @@ if __name__ == "__main__":
     Gamma = 4 * np.array([[2, 0], [0, 2]])
     kappa = 0.7
     C = np.array([[30.0, 0.0], [0.0, 1.0]])
-    conditions_experiment = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-    sigma_h = 0.1 * np.array([0.1, 0.2, 0.2, 0.2, 1.5, 1.5, 1.5, 0.1, 0.2, 1.5])
-    roles = ["", "Undetermined", "Follower", "Leader", "Undertmined", "Follower", "Leader",
-             "Robot Only", "Human Only", "Human Only"]
-    random.shuffle(conditions_experiment)
-    # conditions_experiment = [9, 8, 7, 6, 5, 4, 3, 2, 1]
 
-    print("Observer dynamics", A - Gamma)
+    # Experiment data
+    t_warmup = 5
+    t_cooldown = 5
+    t_period = 10
+    sigma = [0.01, 0.05, 0.01, 0.05]
+    periods = len(sigma)
+    t_exp = periods * t_period
+    t_prev = 1.2
+    repetitions = 2
+    conditions = repetitions * 2
+    duration = t_warmup + t_cooldown + t_exp
 
     # Visual stuff
     screen_width = 1920
     screen_height = 1080
 
     # Insert controller
-    controller = ControllerDGObs(A, B, K, Gamma, kappa, C, None)
+    controller = ControllerDGObs(A, B, K, Gamma, kappa)
     controller_type = "Cost_observer"
-
 
     # Start the senso drive parallel process
     parent_conn, child_conn = mp.Pipe(True)
@@ -102,13 +90,6 @@ if __name__ == "__main__":
         "child_conn": child_conn
     }
     senso_drive_process = SensoDriveModule(senso_dict)
-
-
-    # Start the data plotting parallel process
-    # send_conn, receive_conn = mp.Pipe(True)
-    # live_plotter_process = LivePlotter(receive_conn)
-    # live_plotter_process.start()
-    # print("Second process started!")
 
     # Time to do an experiment!
     full_screen = True
@@ -131,16 +112,16 @@ if __name__ == "__main__":
         "warm_up_time": t_warmup,
         "experiment_time": t_exp,
         "cooldown_time": t_cooldown,
+        "period_time": t_period,
         "virtual_human": False,
         "virtual_human_gain": None,
         "virtual_human_cost": None,
         "init_robot_cost": None,
         "final_robot_cost": None,
         "sharing_rule": C,
-        "conditions": conditions_experiment,
-        "human_noise": sigma_h,
-        "roles": roles,
-
+        "periods": periods,
+        "repetitions": repetitions,
+        "sigma": sigma,
     }
 
     # Make folder for the participant
@@ -164,15 +145,15 @@ if __name__ == "__main__":
     experiment_handler = Experiment(experiment_input, visualize)
 
     # Loop over the conditions
-    for i in range(len(conditions_experiment)):
+    for i in range(conditions):
 
         if platform.system() == 'Windows':
             with wres.set_resolution(10000):
                 # Do trial
-                experiment_data = experiment_handler.experiment(condition=conditions_experiment[i])
+                experiment_data = experiment_handler.experiment(condition=i)
 
                 # Save data
-                string = "data\\" + str(participant) + "\\trial_" + str(i) + "_condition_" + str(conditions_experiment[i]) + ".csv"
+                string = "data\\" + str(participant) + "\\trial_" + str(i) + ".csv"
                 to_csv(experiment_data, string)
 
     visualize.quit()

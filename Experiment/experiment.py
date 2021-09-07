@@ -24,15 +24,15 @@ class Experiment:
         self.t_warmup = input["warm_up_time"]
         self.t_cooldown = input["cooldown_time"]
         self.t_exp = input["experiment_time"]
+        self.periods = input["periods"]
+        self.t_period = input["period_time"]
         self.Qr_start = input["init_robot_cost"]
         self.Qr_end = input["final_robot_cost"]
         self.virtual_human_cost = input["virtual_human_cost"]
         self.sharing_rule = input["sharing_rule"]
-        self.conditions = input["conditions"]
         self.preview_time = input["preview_time"]
-        print("conditions --> ", self.conditions)
-        self.human_noise = input["human_noise"]
-        self.role = input["roles"]
+        self.repetitions = input["repetitions"]
+        self.sigma = input["sigma"]
         self.duration = self.t_warmup + self.t_exp + self.t_cooldown
         self.t_now = 0
         self.t_last = 0
@@ -77,7 +77,7 @@ class Experiment:
         self.variables = dict()
 
         print("sleeping for 2 seconds to see if motor is active")
-        self.visualize.visualize_experiment(0, [], 0, text="Initializing", top_text="", sigma=0, role="")
+        self.visualize.visualize_experiment(0, [], 0, text="Initializing", top_text="", sigma=0)
         time.sleep(1.5)
 
         print("init complete!")
@@ -93,13 +93,12 @@ class Experiment:
         self.time = 0
         self.cond = 0
         self.variables = dict()
-        if condition > 7:
+
+        # First x trials are manual control
+        if condition < self.repetitions:
             self.send_dict["manual"] = True
         else:
             self.send_dict["manual"] = False
-
-        # Draw a random reference trajectory
-        self.ref_sig = random.randint(0, 3)
 
         # Press spacebar to start trial
         while not ready:
@@ -122,14 +121,13 @@ class Experiment:
             if keyboard.is_pressed(' '):
                 break
             self.visualize.visualize_experiment(0, [], new_states["steering_angle"],
-                                                text="Press spacebar to start the trial", top_text="",
-                                                sigma=0, role="")
+                                                text="Press spacebar to start the trial", top_text="", sigma=0, )
 
         self.t0 = time.perf_counter_ns()
         self.t_last = time.perf_counter_ns()
+        self.send_dict["reset"] = False
         self.time = 0
         self.cond = 0
-        self.send_dict["reset"] = False
         self.time = 0
 
         # Loop over 1 trial
@@ -144,9 +142,23 @@ class Experiment:
             h = (self.t_now - self.t_last) * 1e-9
             self.t_last = self.t_now
             self.time = (self.t_last - self.t0) * 1e-9
+            self.time_exp = self.time - self.t_warmup
+
+            # Compute conditions
+            c = math.floor(self.time_exp/self.t_period)
+            if c >= 0:
+                sigma_h = self.sigma[c]
+            else:
+                sigma_h = self.sigma[0]
 
             # Compute reference
             ref = self.reference.generate_reference(self.time, sigma=0, player="robot", ref_sign=self.ref_sig)
+            self.reference_preview(self.time, h, sigma_h=sigma_h)
+
+            if condition < self.repetitions:
+                self.send_dict["sharing_rule"] = self.estimated_human_cost
+            else:
+                self.send_dict["sharing_rule"] = self.sharing_rule
 
             # WARM_UP
             if self.time < self.t_warmup:
@@ -155,12 +167,9 @@ class Experiment:
                 self.send_dict["factor"] = 1 / (1 + np.exp(-2 * self.time)) - 1 / (1 + np.exp(2 * self.time))
                 self.send_dict["ref"] = ref * self.send_dict["factor"]
                 self.send_dict["experiment"] = False
-                self.send_dict["robot_cost"] = self.Qr_start
-                if condition > 7:
-                    self.send_dict["sharing_rule"] = self.estimated_human_cost
-                else:
-                    self.send_dict["sharing_rule"] = self.sharing_rule
-                self.reference_preview(self.time, h, sigma_h=self.human_noise[self.cond])
+
+
+                # Text to display
                 dt = self.t_warmup - self.time
                 top_text = ""
                 if dt > 3:
@@ -174,41 +183,19 @@ class Experiment:
                 self.send_dict["factor"] = 1
                 self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = True
-                self.send_dict["robot_cost"] = self.sharing_rule
-                if condition > 7:
-                    self.send_dict["sharing_rule"] = self.estimated_human_cost
-                else:
-                    self.send_dict["sharing_rule"] = self.sharing_rule
-                self.reference_preview(self.time, h, sigma_h=self.human_noise[self.cond])
 
-                if self.time - self.t_warmup > 0.2 * self.t_exp:
-                    if self.time - self.t_warmup < 0.8 * self.t_exp:
-                        self.cond = condition
-                    else:
-                        self.cond = 0
-
-                if self.t_warmup + 0.2 * self.t_exp <= self.time <= self.t_warmup + 3.0 + 0.2 * self.t_exp:
-                    text = "Your role is now: " + self.role[self.cond]
-                else:
-                    if condition == 7:
-                        text = "this is a robot only run!"
-                    else:
-                        text = ""
+                # Determine condition
+                text = ""
                 top_text = "Time = " + str(round(self.time - self.t_warmup, 1))
 
             # COOLDOWN
             else:
-                self.cond = 0
                 self.store = False
-                self.send_dict["factor"] = 0.96 * self.send_dict["factor"]
-                self.send_dict["ref"] = 0.96 * self.send_dict["ref"]
-                text = "Finished trial"
+                self.send_dict["factor"] = 1 / (1 + np.exp(-2 * (self.time - self.t_warmup - self.t_exp))) - 1 / \
+                                           (1 + np.exp(2 * (self.time - self.t_warmup - self.t_exp)))
+                self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = False
-                if condition > 7:
-                    self.send_dict["sharing_rule"] = self.estimated_human_cost
-                else:
-                    self.send_dict["sharing_rule"] = self.sharing_rule
-                self.reference_preview(self.time, h, sigma_h=self.human_noise[self.cond])
+                text = "Finished trial"
                 top_text = ""
 
             # Send data to the child
@@ -228,8 +215,7 @@ class Experiment:
 
             # Visualize experiment
             self.visualize.visualize_experiment(self.send_dict["ref"][0], angle=self.states["steering_angle"],
-                                                r_prev=self.preview_positions, text=text, top_text=top_text,
-                                                role=self.role[self.cond], sigma=self.human_noise[self.cond])
+                                                r_prev=self.preview_positions, text=text, top_text=top_text, sigma=sigma_h)
 
             if self.store:
                 output = {
@@ -241,12 +227,10 @@ class Experiment:
                     "acceleration": self.states["steering_acc"],
                     "reference_angle": ref[0],
                     "reference_rate": ref[1],
-
                     "measured_input": self.states["measured_input"],
                     "execution_time": h,
                     "condition": self.cond,
-                    "human_noise": self.human_noise[self.cond],
-                    "role": self.role[self.cond],
+                    "human_noise": sigma_h,
                 }
                 try:
                     output['torque'] = self.states["torque"][0, 0]

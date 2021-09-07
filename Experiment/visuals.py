@@ -38,7 +38,7 @@ class Visualize:
         self.font_top = pygame.font.SysFont('georgia', 20)
         self.flicker = 0
 
-    def visualize_experiment(self, r, r_prev, angle, text, top_text, sigma, role=""):
+    def visualize_experiment(self, r, r_prev, angle, text, top_text, sigma):
         x = self.translate_to_position(angle)
         x_r = self.translate_to_position(r)
 
@@ -50,7 +50,7 @@ class Visualize:
         self.show_player(x)
         self.show_text(text, dark=dark)
         self.show_lower_text(top_text, dark=dark)
-        self.show_top_text(role, dark=dark)
+        # self.show_top_text(role, dark=dark)
 
         pygame.display.update()
 
@@ -109,20 +109,6 @@ class Visualize:
                     for point in points:
                         pygame.draw.circle(self.screen, self.preview_color, point, 5)
 
-            if sigma > 0.1:
-                # flicker the reference
-                if self.flicker == 0 and self.preview_color[0] > 154:
-                    self.flicker = 1
-                elif self.flicker == 1 and self.preview_color[0] < 1:
-                    self.flicker = 0
-                if self.flicker == 1:
-                    self.preview_color = (max(self.preview_color[0]-1, 0), max(self.preview_color[1]-1, 0),
-                                          max(self.preview_color[2]-1, 0))
-                else:
-                    self.preview_color = (min(self.preview_color[0]+1, 155), min(self.preview_color[1]+1, 135),
-                                          min(self.preview_color[2]+1, 12))
-            else:
-                self.preview_color = (155, 135, 12)
 
 
     def draw_arrows(self, x, x_r):
