@@ -112,12 +112,18 @@ class ControllerNG:
 
         # Unpack dictionary
         Qh0 = inputs["human_weight"]
-
         Lh0 = np.array(inputs["virtual_human_gain"])
-        vhg1 = inputs["virtual_human_gain_pos"]
-        vhg2 = inputs["virtual_human_gain_vel"]
-        Qh1 = inputs["virtual_human_cost_pos"]
-        Qh2 = inputs["virtual_human_cost_vel"]
+        try:
+            vhg1 = inputs["virtual_human_gain_pos"]
+            vhg2 = inputs["virtual_human_gain_vel"]
+            Qh1 = inputs["virtual_human_cost_pos"]
+            Qh2 = inputs["virtual_human_cost_vel"]
+        except:
+            vhg1 = None
+            vhg2 = None
+            Qh1 = None
+            Qh2 = None
+
         x0 = inputs["initial_state"]
         u0 = inputs["u_initial"]
         e0 = inputs["e_initial"]
