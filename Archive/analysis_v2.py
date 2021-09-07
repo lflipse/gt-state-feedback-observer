@@ -23,7 +23,7 @@ class Analysis():
         self.plot_stuff = PlotStuff()
 
     def unpack_data(self):
-        path = "data"
+        path = "../Experiment/data"
         list_dir = os.listdir(path)
         self.participants = len(list_dir)
         for i in range(self.participants):
