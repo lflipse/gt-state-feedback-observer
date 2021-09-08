@@ -28,7 +28,7 @@ def compute_virtual_gain(Qh, Qr, A, B):
     # Iterative procedure for calculating gains
     Lh = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, Qh, 1))
     Lr = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, Qr, 1))
-    for i in range(10):
+    for i in range(40):
         Lh = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lr, B, Qh, 1))
         Lr = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh, B, Qr, 1))
     return Lh
@@ -120,17 +120,17 @@ if __name__ == "__main__":
 
     # Dynamics
     Jw = 0.05480475491037145
-    Bw = 0.5  # Max = 0.5
-    Kw = 0.0  # Max = 2.5
+    Bw = 0.5
+    Kw = 0.0
     A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
     B = np.array([[0], [1 / Jw]])
 
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 30
-    K = alpha * np.array([[2.5, 0], [0, 0.25]])
+    alpha = 1
+    K = alpha * np.array([[30.0, 0], [0, 3.0]])
     kappa = 1
-    C = np.array([[50.0, 0.0], [0.0, 1]])
+    C = np.array([[50.0, 0.0], [0.0, 1.0]])
 
     Qh1 = np.array([[25.0, 0.0], [0.0, 0.5]])
     Qh2 = np.array([[12.0, 0.0], [0.0, 0.25]])

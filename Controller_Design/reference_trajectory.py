@@ -4,7 +4,7 @@ import math
 
 class Reference:
     def __init__(self, duration):
-        bw = 3.5
+        bw = 6
         period = np.array([5, 8, 11, 17, 26, 37, 49, 57, 73, 97])
         self.duration = (period[7] * 2 * np.pi) / bw
         frequencies = 2 * np.pi * period / self.duration

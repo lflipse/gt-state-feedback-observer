@@ -71,8 +71,8 @@ class Experiment:
         self.t_last = time.perf_counter_ns()
 
         # Let's make this 1 loop
+        while self.time < 0.2 * self.duration:
         # while self.time < self.duration:
-        while self.time < self.duration:
 
             # Check whether the process has not been quited
             self.visualize.check_quit()
@@ -122,7 +122,7 @@ class Experiment:
                 self.store = False
                 self.send_dict["factor"] = 0.96 * self.send_dict["factor"]
                 self.send_dict["ref"] = 0.96 * self.send_dict["ref"]
-                text = "Finished Controller_Design"
+                text = "Finished Experiment"
                 self.send_dict["experiment"] = False
                 self.send_dict["sharing_rule"] = self.sharing_rule
                 r_prev = []

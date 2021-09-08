@@ -48,8 +48,8 @@ class Analysis():
                 self.cut_data(i, j)
 
         self.build_metrics()
-        self.plot_stuff.plot_trial(self.raw_data[0, 3])
-        # self.plot_stuff.plot_trial(self.raw_data[1, 1])
+        self.plot_stuff.plot_trial(self.raw_data[0, 0])
+        self.plot_stuff.plot_trial(self.raw_data[1, 2])
 
         # General experiment data
         self.plot_stuff.plot_experiment(self.metrics, False)
@@ -67,6 +67,7 @@ class Analysis():
         self.metrics["human_angle_cost"] = {}
         self.metrics["robot_angle_cost"] = {}
         self.metrics["condition"] = {}
+        # self.metrics["repetition"] = {}
 
         # RMS
         rms_angle_error = []
@@ -79,15 +80,19 @@ class Analysis():
         robot_angle_cost = []
 
         # Info
+        repetitions = []
         conditions = []
         participant = []
 
         for i in range(self.participants):
             for j in range(self.trials):
-                # Find condition
+                # Find repetition
                 cond = self.filtered_data[i, j]["condition"]
                 condition = cond[10]  # Not very nicely done this
                 conditions.append(condition)
+                rep = self.filtered_data[i, j]["repetition"]
+                repetition = rep[10]  # Not very nicely done this
+                repetitions.append(repetition)
                 participant.append(i)
 
                 # RMSE
@@ -113,8 +118,10 @@ class Analysis():
         self.metrics["rms_robot_torque"] = rms_robot_torque
         self.metrics["human_angle_cost"] = human_angle_cost
         self.metrics["robot_angle_cost"] = robot_angle_cost
+        self.metrics["repetition"] = repetitions
         self.metrics["condition"] = conditions
         self.metrics["participant"] = participant
+
 
     def cut_data(self, participant, trial):
         # Find start and end indices

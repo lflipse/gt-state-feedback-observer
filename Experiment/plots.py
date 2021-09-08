@@ -36,8 +36,7 @@ class PlotStuff:
 
     def plot_experiment(self, data, compare):
         pd_metric = pd.DataFrame.from_dict(data)
-        solos = pd_metric["condition"] < 7
-        pd_metric_no_solo = pd_metric[solos]
+
         print(pd_metric)
         if compare:
             # plot box-plots for all metrics
@@ -92,9 +91,9 @@ class PlotStuff:
         uhtilde = data["input_estimation_error"]
 
         # Conditions
-        conditions = data["condition"]
+        repetition = data["repetition"]
         human_noise = data["human_noise"]
-        role = data["role"]
+
         xddot = data["acceleration"]
         xhatdot = data["state_estimate_vel"]
 

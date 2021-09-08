@@ -32,6 +32,7 @@ class Experiment:
         self.sharing_rule = input["sharing_rule"]
         self.preview_time = input["preview_time"]
         self.repetitions = input["repetitions"]
+        self.repetition = 0
         self.sigma = input["sigma"]
         self.duration = self.t_warmup + self.t_exp + self.t_cooldown
         self.t_now = 0
@@ -95,9 +96,12 @@ class Experiment:
         self.variables = dict()
 
         # First x trials are manual control
+        self.repetition = condition % self.repetitions
         if condition < self.repetitions:
+            cond = "Manual Control"
             self.send_dict["manual"] = True
         else:
+            cond = "Shared Control"
             self.send_dict["manual"] = False
 
         # Press spacebar to start trial
@@ -146,13 +150,15 @@ class Experiment:
 
             # Compute conditions
             c = math.floor(self.time_exp/self.t_period)
-            if c >= 0:
-                sigma_h = self.sigma[c]
-            else:
+            if c < 0:
                 sigma_h = self.sigma[0]
+            elif c >= self.periods:
+                sigma_h = self.sigma[-1]
+            else:
+                sigma_h = self.sigma[c]
 
             # Compute reference
-            ref = self.reference.generate_reference(self.time, sigma=0, player="robot", ref_sign=self.ref_sig)
+            ref = self.reference.generate_reference(self.time, sigma=0, player="robot", ref_sign=self.repetition)
             self.reference_preview(self.time, h, sigma_h=sigma_h)
 
             if condition < self.repetitions:
@@ -229,7 +235,8 @@ class Experiment:
                     "reference_rate": ref[1],
                     "measured_input": self.states["measured_input"],
                     "execution_time": h,
-                    "condition": self.cond,
+                    "repetition": self.repetition,
+                    "condition": cond,
                     "human_noise": sigma_h,
                 }
                 try:
@@ -295,7 +302,7 @@ class Experiment:
                 t_new = self.preview_times[-1] + dt
             except:
                 t_new = dt
-            ref = self.reference.generate_reference(t_new, sigma_h, player="human", ref_sign=self.ref_sig)
+            ref = self.reference.generate_reference(t_new, sigma_h, player="human", ref_sign=self.repetition)
             self.preview_times = np.append(self.preview_times, t_new)
             self.preview_positions = np.append(self.preview_positions, ref[0])
             self.preview_speed = np.append(self.preview_speed, ref[1])

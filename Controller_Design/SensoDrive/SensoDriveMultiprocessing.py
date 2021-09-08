@@ -360,7 +360,7 @@ class SensoDriveModule(mp.Process):
         """
 
         # Compute the control input
-        output = self.controller.compute_control_input(self.states)
+        output = self.controller.compute_control_input(self.states, self.settings["manual"])
         self.update_controller_states(output)
         if self.settings["manual"]:
             self.states["torque"] = 0
@@ -422,7 +422,7 @@ class SensoDriveModule(mp.Process):
             self.states["robot_gain"] = output["robot_gain"]
             self.states["robot_P"] = output["robot_P"]
             self.states["robot_cost_calc"] = output["robot_cost"]
-            # self.states["xdot_test"] = output["xdot_test"]
+
 
     def map_sensodrive_to_si(self, received):
         """

@@ -20,9 +20,12 @@ class ControllerNG:
         k3 = h * self.ydot(r, ur, uh, uhhat, y + 0.5 * k2, Gamma, K, kappa)
         k4 = h * self.ydot(r, ur, uh, uhhat, y + k3, Gamma, K, kappa)
 
+        pdot = self.ydot(r, ur, uh, uhhat, y, Gamma, K, kappa)
+        ydot = pdot[0:2]
+
         # Update next value of y
         y_new = y + (1.0 / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
-        return y_new
+        return y_new, ydot
 
     def nonlinear_term(self, x):
         # Parameters
@@ -203,7 +206,7 @@ class ControllerNG:
                 h = T[i] - T[i-1]
 
             # Integrate a time-step
-            y[i + 1, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], uhhat[i], y[i, :], h, Gamma, K, kappa)
+            y[i + 1, :], ydot[i, :] = self.numerical_integration(ref[i, :], ur[i], uh[i], uhhat[i], y[i, :], h, Gamma, K, kappa)
             y[i + 1, 1] = y[i + 1, 1] + vh[i]
             Lhhat[i + 1, :] = y[i + 1, 2:4]
             Qhhat[i + 1, :, :] = self.update_cost(Lr[i, :], Lhhat[i, :])

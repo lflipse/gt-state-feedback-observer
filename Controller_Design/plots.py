@@ -53,6 +53,7 @@ class PlotStuff:
         x_vir = virt_data["steering_angle"]
         r_vir = virt_data["reference_angle"]
         xdot_vir = virt_data["steering_rate"]
+        xddot_vir = virt_data["acceleration"]
         rdot_vir = virt_data["reference_rate"]
         t_ex_vir = virt_data["execution_time"]
         x_hat_vir = virt_data["state_estimate_pos"]
@@ -75,6 +76,8 @@ class PlotStuff:
         states_sim = sim_data["states"]
         x_sim = states_sim[:, 0]
         xdot_sim = states_sim[:, 1]
+        dstates_sim = sim_data["ydot"]
+        xddot_sim = dstates_sim[:, 1]
         xi_sim = sim_data["error_states"]
 
         Lhhat_sim = sim_data["human_estimated_gain"]
@@ -106,6 +109,27 @@ class PlotStuff:
         plt.tight_layout(pad=1)
 
         plt.figure()
+        plt.title("Accelation filtered")
+        plt.plot(t_vir, xddot_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Filtered $\ddot{\phi}(t)$")
+        plt.plot(t_sim, xddot_sim, self.tud_blue, linewidth=self.lw, linestyle="-", alpha=0.7, label="Simulated $\ddot{\phi}(t)$")
+        plt.xlabel('Time (s)', **self.hfont)
+        plt.ylabel('Steering acceleration (rad/s^2)', **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.xlim(0, 10)
+        plt.tight_layout(pad=1)
+
+        plt.figure()
+        plt.title("velocity filtered")
+        plt.plot(t_vir, xdot_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Filtered $\dot{\phi}(t)$")
+        plt.plot(t_sim, xdot_sim[:-1], self.tud_blue, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Simulated $\dot{\phi}(t)$")
+        plt.xlabel('Time (s)', **self.hfont)
+        plt.ylabel('Steering rate (rad/s)', **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.xlim(0, 10)
+        plt.tight_layout(pad=1)
+
+        plt.figure()
         plt.plot(t_vir, t_ex_vir)
 
         # Steering rate
@@ -121,7 +145,7 @@ class PlotStuff:
                  label="Estimated $\dot{\hat{\phi}}(t)$")
         plt.xlabel('Time (s)', **self.hfont)
         plt.ylabel('Steering angle (rad)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.legend(prop={"size": self.legend_size}, loc='lower right')
         plt.xlim(0, 10)
         plt.tight_layout(pad=1)
 
@@ -152,7 +176,7 @@ class PlotStuff:
         plt.title('Steering angle error weight', **self.csfont)
         plt.xlabel('Time (s)', **self.hfont)
         plt.ylabel('Weight value (-)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.legend(prop={"size": self.legend_size}, loc='lower right')
         plt.xlim(0, t_vir[-1])
         plt.ylim(-30, 35)
         plt.tight_layout(pad=1)
@@ -179,7 +203,7 @@ class PlotStuff:
         plt.title('Steering rate error weight', **self.csfont)
         plt.xlabel('Time (s)', **self.hfont)
         plt.ylabel('Weight value (-)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.legend(prop={"size": self.legend_size}, loc='lower right')
         plt.xlim(0, t_vir[-1])
         plt.ylim(-1, 1)
         plt.tight_layout(pad=1)
@@ -204,7 +228,7 @@ class PlotStuff:
         plt.title('Steering angle gain', **self.csfont)
         plt.xlabel('Time (s)', **self.hfont)
         plt.ylabel('Gain value (Nm/rad)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.legend(prop={"size": self.legend_size}, loc='lower right')
         plt.xlim(0, t_vir[-1])
         plt.ylim(-4.5, 9)
         plt.tight_layout(pad=1)

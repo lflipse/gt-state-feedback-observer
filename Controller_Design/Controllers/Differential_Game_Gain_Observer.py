@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.linalg as cp
 
-
 class ControllerDGObs:
     def __init__(self, A, B, K, Gamma, kappa):
         self.A = A
@@ -10,7 +9,7 @@ class ControllerDGObs:
         self.K = K
         self.kappa = kappa
 
-    def compute_control_input(self, states):
+    def compute_control_input(self, states, manual):
         xi = states["error_state"]
         x = states["state"]
         x_hat = states["state_estimate"]
@@ -21,27 +20,33 @@ class ControllerDGObs:
         Qh = states["estimated_human_cost"]
         C = states["sharing_rule"]
 
-        Qr = C - Qh
-
-        if np.linalg.det(Qr) < 0:
+        if manual:
             Qr = np.array([[0, 0], [0, 0]])
+            Pr = Qr
+            Lr = np.array([[0, 0]])
+            ur = 0
+        else:
+            Qr = C - Qh
+            # if np.linalg.det(Qr) < 0:
+            #     Qr = np.array([[0, 0], [0, 0]])
+            #     print("Qr too low here")
 
-        # Compute Controller gain
-        Acl = self.A - self.B * Lh_hat
+            # Compute Controller gain
+            Acl = self.A - self.B * Lh_hat
 
-        try:
-            Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
+            try:
+                Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
 
-        except:
-            print("Debugs:")
-            print("Qh = ", Qh)
-            print("Qr = ", Qr)
-            print("Lhhat = ", Lh_hat)
-            print("failed to find finite solution")
-            return -1
+            except:
+                print("Debugs:")
+                print("Qh = ", Qh)
+                print("Qr = ", Qr)
+                print("Lhhat = ", Lh_hat)
+                print("failed to find finite solution")
+                return -1
 
-        Lr = np.matmul(self.B.transpose(), Pr)
-        ur = np.matmul(-Lr, xi)
+            Lr = np.matmul(self.B.transpose(), Pr)
+            ur = np.matmul(-Lr, xi)
         uhhat = np.matmul(-Lh_hat, xi)
 
         # Observer equations
