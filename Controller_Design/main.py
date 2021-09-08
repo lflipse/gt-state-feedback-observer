@@ -127,13 +127,13 @@ if __name__ == "__main__":
 
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 1
-    K = alpha * np.array([[30.0, 0], [0, 3.0]])
+    alpha = 10
+    K = alpha * np.array([[10.0, 0], [0, 0.5]])
     kappa = 1
-    C = np.array([[50.0, 0.0], [0.0, 1.0]])
+    C = np.array([[50.0, 0.0], [0.0, 2.0]])
 
-    Qh1 = np.array([[25.0, 0.0], [0.0, 0.5]])
-    Qh2 = np.array([[12.0, 0.0], [0.0, 0.25]])
+    Qh1 = np.array([[25.0, 0.0], [0.0, 1.0]])
+    Qh2 = np.array([[12.0, 0.0], [0.0, 0.5]])
 
     vhg = np.zeros((6, 2))
     vhg[0, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)
@@ -158,6 +158,8 @@ if __name__ == "__main__":
             virtual_human = False
         else:
             virtual_human = True
+            alpha = 1
+            K = alpha * np.array([[10.0, 0], [0, 0.5]])
 
         # Start the senso drive parallel process
         parent_conn, child_conn = mp.Pipe(True)

@@ -71,7 +71,7 @@ class Experiment:
         self.t_last = time.perf_counter_ns()
 
         # Let's make this 1 loop
-        while self.time < 0.2 * self.duration:
+        while self.time < self.duration:
         # while self.time < self.duration:
 
             # Check whether the process has not been quited

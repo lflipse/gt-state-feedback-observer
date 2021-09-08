@@ -17,11 +17,11 @@ class SensoDriveModule(mp.Process):
         self.message = TPCANMsg()
         self._pcan_channel = None
         self.exit = False
-        self.frequency = 500  # Hz
+        self.frequency = 300  # Hz
         self.time_step = 1 / self.frequency
         self._time_step_in_ns = self.time_step * 1e9
-        self._bq_filter_velocity = LowPassFilterBiquad(fc=50, fs=self.frequency)
-        self._bq_filter_acc = LowPassFilterBiquad(fc=5, fs=self.frequency)
+        self._bq_filter_velocity = LowPassFilterBiquad(fc=25, fs=self.frequency)
+        self._bq_filter_acc = LowPassFilterBiquad(fc=2.5, fs=self.frequency)
         self.controller = senso_dict["controller"]
         self.controller_type = senso_dict["controller_type"]
         self.now = 0
@@ -228,7 +228,7 @@ class SensoDriveModule(mp.Process):
             "estimated_human_torque": 0,
             "cost": 0,
             "measured_input": 0,
-            "estimated_human_gain": np.array([0, 0]),
+            "estimated_human_gain": np.array([[0, 0]]),
             "estimated_human_gain_derivative": np.array([0, 0]),
             "virtual_human_gain": np.array([0.0, 0.0]),
             "virtual_human_torque": 0,
@@ -268,7 +268,7 @@ class SensoDriveModule(mp.Process):
         gain_derivative = np.array(self.states["estimated_human_gain_derivative"])
         new_estimated_gain = old_estimated_gain + gain_derivative * delta
         self.states["estimated_human_gain"] = new_estimated_gain
-        # self.states["estimated_human_gain"][0, 1] = max(-1, min(1, self.states["estimated_human_gain"][0, 1]))
+
 
         self.states["state_derivative"] = np.array([[self.states["steering_rate"]],
                                                     [self.states["steering_acc"]]])
@@ -278,6 +278,14 @@ class SensoDriveModule(mp.Process):
         if not self.states["experiment"]:
             self.states["estimated_human_gain"] = np.array([0.0, 0.0])
             self.states["estimated_human_cost"] = np.array([[0.0, 0.0], [0.0, 0.0]])
+
+        # Cap for safety reasons
+        try:
+            self.states["estimated_human_gain"][0, 1] = max(-0.5, min(2, self.states["estimated_human_gain"][0, 1]))
+            self.states["estimated_human_gain"][0, 0] = max(-4, min(8, self.states["estimated_human_gain"][0, 0]))
+        except:
+            self.states["estimated_human_gain"][1] = max(-0.5, min(2, self.states["estimated_human_gain"][1]))
+            self.states["estimated_human_gain"][0] = max(-4, min(8, self.states["estimated_human_gain"][0]))
 
 
 

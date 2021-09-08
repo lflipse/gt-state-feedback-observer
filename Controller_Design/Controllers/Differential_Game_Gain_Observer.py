@@ -27,25 +27,18 @@ class ControllerDGObs:
             ur = 0
         else:
             Qr = C - Qh
-            # if np.linalg.det(Qr) < 0:
-            #     Qr = np.array([[0, 0], [0, 0]])
-            #     print("Qr too low here")
+            if np.linalg.det(Qr) < 0:
+                Qr = np.array([[0, 0], [0, 0]])
+                Pr = np.array([[0, 0], [0, 0]])
+                Lr = np.array([[0, 0]])
+                print("Qr too low here")
 
             # Compute Controller gain
-            Acl = self.A - self.B * Lh_hat
-
-            try:
+            else:
+                Acl = self.A - self.B * Lh_hat
                 Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
+                Lr = np.matmul(self.B.transpose(), Pr)
 
-            except:
-                print("Debugs:")
-                print("Qh = ", Qh)
-                print("Qr = ", Qr)
-                print("Lhhat = ", Lh_hat)
-                print("failed to find finite solution")
-                return -1
-
-            Lr = np.matmul(self.B.transpose(), Pr)
             ur = np.matmul(-Lr, xi)
         uhhat = np.matmul(-Lh_hat, xi)
 
