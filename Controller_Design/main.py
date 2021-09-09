@@ -58,18 +58,23 @@ def input_controller():
     gen_data = input("Generate data_set? No = 0, Yes = 1.   Please choose: ")
     return controller, controller_type, int(gen_data)
 
-def compute_virtual_cost(L, Lh, A, B):
+def compute_virtual_cost(Lh, C, A, B):
     beta = B[1]
     alpha_1 = A[0, 1]
     alpha_2 = A[1, 1]
     p = 1 / beta * Lh
-    Lr = L[0]
-    gamma_1 = alpha_1 - beta * Lr[0]
-    gamma_2 = alpha_2 - beta * Lr[1]
-    q_hhat1 = - 2 * gamma_1 * p[0] + Lh[0] ** 2
-    q_hhat2 = - 2 * p[0] - 2 * gamma_2 * p[1] + Lh[1] ** 2
-    Q_hhat = np.array([q_hhat1, q_hhat2])
-    return Q_hhat
+    Qh = np.array([[0,0], [0,0]])
+    for i in range(20):
+        Qr = C - Qh
+        L = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh, B, Qr, 1))
+        Lr = L[0]
+        gamma_1 = alpha_1 - beta * Lr[0]
+        gamma_2 = alpha_2 - beta * Lr[1]
+        q_hhat1 = - 2 * gamma_1 * p[0] + Lh[0] ** 2
+        q_hhat2 = - 2 * p[0] - 2 * gamma_2 * p[1] + Lh[1] ** 2
+        Qh = np.array([[q_hhat1[0],0], [0,q_hhat2[0]]])
+    print(Qh)
+    return np.array([q_hhat1, q_hhat2])
 
 def run_simulation(experiment_data):
     # Use the correct settings for the simulation
@@ -157,7 +162,7 @@ if __name__ == "__main__":
     Qh = np.zeros((6, 2))
     Qh[0, :] = np.array([Qh2[0, 0], Qh2[1, 1]])
     Qh[2, :] = np.array([Qh1[0, 0], Qh1[1, 1]])
-    Qh3 = compute_virtual_cost(Lr, vhg[4, :], A, B)
+    Qh3 = compute_virtual_cost(vhg[4, :], C, A, B)
     Qh[4, :] = Qh3.transpose()
     virtual_human_weight = Qh
 
@@ -233,9 +238,9 @@ if __name__ == "__main__":
 
     # Retrieve data
     try:
-        # virtual_data = load_data_set("data_virtual_human.csv")
+        virtual_data = load_data_set("data_virtual_human.csv")
         # real_data = load_data_set("data_real_human.csv")
-        virtual_data = load_data_set("data_virtual_human_final.csv")
+        # virtual_data = load_data_set("data_virtual_human_final.csv")
         real_data = load_data_set("data_real_human_final.csv")
     except:
         exit("Missing datasets, first create these")
