@@ -20,8 +20,12 @@ class Reference:
             'amplitude': amplitude,
         }
 
-        csfont = {'fontname': 'Georgia'}
-        hfont = {'fontname': 'Georgia'}
+        self.lw = 4
+        self.title_size = 24
+        self.label_size = 22
+        self.legend_size = 13
+        self.csfont = {'fontname': 'Georgia', 'size': self.title_size}
+        self.hfont = {'fontname': 'Georgia', 'size': self.label_size}
 
         # Colors
         tud_blue = "#0066A2"
@@ -33,16 +37,17 @@ class Reference:
 
         plt.figure()
         for i in range(len(period)):
-            plt.plot(frequencies[i], amplitude[i], color=tud_blue, marker='o')
-            plt.plot([frequencies[i], frequencies[i]], [0, amplitude[i]], tud_blue, alpha=0.7, linewidth=2.5)
+            plt.plot(frequencies[i], amplitude[i], color=tud_blue, linewidth=self.lw, marker='o')
+            plt.plot([frequencies[i], frequencies[i]], [0, amplitude[i]], tud_blue, linewidth=self.lw, alpha=0.7)
 
-        plt.title("Reference trajectory in frequency domain", **csfont)
-        plt.xlabel("Frequency (rad/s)", **hfont)
-        plt.ylabel("Amplitude (-)", **hfont)
+        plt.title("Frequency domain reference", **self.csfont)
+        plt.xlabel("Frequency (rad/s)", **self.hfont)
+        plt.ylabel("Amplitude (-)", **self.hfont)
         plt.xlim(frequencies[0] - 0.1, frequencies[-1] + 10)
         plt.ylim(0.01, amplitude[0] + 0.1)
         plt.yscale("log")
         plt.xscale("log")
+        plt.tight_layout(pad=1)
 
         # Show forcing function:
         fs = 100
@@ -54,11 +59,12 @@ class Reference:
             r[i] = ref[0]
 
         plt.figure()
-        plt.plot(t, r, tud_blue, linewidth=2.5)
-        plt.title("Reference trajectory in time domain", **csfont)
-        plt.xlabel("Time (s)", **hfont)
-        plt.ylabel("Amplitude (-)", **hfont)
+        plt.plot(t, r, tud_blue, linewidth=self.lw)
+        plt.title("Time domain reference", **self.csfont)
+        plt.xlabel("Time (s)", **self.hfont)
+        plt.ylabel("Amplitude (-)", **self.hfont)
         plt.xlim(0, 10)
+        plt.tight_layout(pad=1)
 
 
     def generate_reference(self, t):

@@ -130,9 +130,6 @@ class PlotStuff:
         plt.xlim(0, 10)
         plt.tight_layout(pad=1)
 
-        plt.figure()
-        plt.plot(t_vir, t_ex_vir)
-
         # Steering rate
         plt.figure()
         plt.title("Measured and estimated steering rate", **self.csfont)
@@ -152,7 +149,6 @@ class PlotStuff:
 
         options = {"arrowstyle": '->'}
         n = len(Lh_vel_vir)
-
 
         # Cost function weights
         plt.figure()
@@ -253,13 +249,6 @@ class PlotStuff:
         plt.xlim(0, t_vir[-1])
         plt.ylim(-0.5, 0.8)
         plt.tight_layout(pad=1)
-
-        # TODO --> Fix
-        # try:
-        #     self.stepinfo(t_vir, Lhhat_vel_vir, Lh_vel_vir)
-        #
-        # except:
-        #     print("does not work")
 
         # ACTUAL HUMAN
 
@@ -366,7 +355,42 @@ class PlotStuff:
         plt.ylim(-0.8, 0.8)
         plt.tight_layout(pad=1)
 
+        # Metrics
+        plt.figure()
+        plt.plot(t_sim, Lhhat_pos_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Simulated (human) $\hat{L}_{h,1,sim}(t)$")
+        plt.plot(t_vir, Lhhat_pos_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
+                 label="Estimated (human) $\hat{L}_{h,1}(t)$")
+        plt.plot(t_vir, Lh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Virtual (human) $L_{h,1,vir}(t)$")
+        self.stepinfo(t_vir, Lhhat_pos_vir, Lh_pos_vir)
+        plt.title('Steering angle gain', **self.csfont)
+        plt.xlabel('Time (s)', **self.hfont)
+        plt.ylabel('Gain value (Nm/rad)', **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.xlim(0, 15)
+        plt.ylim(-0.1, 1.9)
+        plt.tight_layout(pad=1)
+
+        plt.figure()
+        plt.plot(t_sim, Lhhat_vel_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Simulated (human) $\hat{L}_{h,2,sim}(t)$")
+        plt.plot(t_vir, Lhhat_vel_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
+                 label="Estimated (human) $\hat{L}_{h,2}(t)$")
+        plt.plot(t_vir, Lh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Virtual (human) $L_{h,2,vir}(t)$")
+        self.stepinfo(t_vir, Lhhat_vel_vir, Lh_vel_vir)
+        plt.title('Steering rate gain', **self.csfont)
+        plt.xlabel('Time (s)', **self.hfont)
+        plt.ylabel('Gain value (Nms/rad)', **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.xlim(0, 15)
+        plt.ylim(-0.1, 0.6)
+        plt.tight_layout(pad=1)
+
         self.save_all_figures()
+
+
         plt.show()
 
     def stepinfo(self, t, L, Lref):
@@ -404,10 +428,10 @@ class PlotStuff:
         plt.plot([t[settling_time], t[settling_time]], [-20, L[settling_time]], 'k--', alpha=0.7)
         plt.plot([t[0], t[-1]], [1.05 * Lref[int(n/12)], 1.05 * Lref[int(n/12)]], 'k--', alpha=0.4)
         plt.plot([t[0], t[-1]], [0.95 * Lref[int(n/12)], 0.95 * Lref[int(n/12)]], 'k--', alpha=0.4)
-        if t[settling_time] < 14:
+        if t[settling_time] < 14.5:
             plt.plot([t[settling_time]], [L[settling_time]], 'ko', alpha=0.7)
             options = {"arrowstyle": '->'}
-            plt.annotate("Settling time", (t[settling_time], L[settling_time]), xytext=(5, Lref[int(n/12)]*1.4), arrowprops=options)
+            plt.annotate("Settling time", (t[settling_time], L[settling_time]), xytext=(t[settling_time]*0.8, Lref[int(n/12)]*0.8), arrowprops=options)
 
 
         print("start, end and risetime", rise_start, rise_end, rise_time)

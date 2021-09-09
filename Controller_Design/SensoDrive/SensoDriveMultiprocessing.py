@@ -17,11 +17,11 @@ class SensoDriveModule(mp.Process):
         self.message = TPCANMsg()
         self._pcan_channel = None
         self.exit = False
-        self.frequency = 300  # Hz
+        self.frequency = 500  # Hz
         self.time_step = 1 / self.frequency
         self._time_step_in_ns = self.time_step * 1e9
-        self._bq_filter_velocity = LowPassFilterBiquad(fc=25, fs=self.frequency)
-        self._bq_filter_acc = LowPassFilterBiquad(fc=2.5, fs=self.frequency)
+        self._bq_filter_velocity = LowPassFilterBiquad(fc=50, fs=self.frequency)
+        self._bq_filter_acc = LowPassFilterBiquad(fc=6, fs=self.frequency)
         self.controller = senso_dict["controller"]
         self.controller_type = senso_dict["controller_type"]
         self.now = 0
