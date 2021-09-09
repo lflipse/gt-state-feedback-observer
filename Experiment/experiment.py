@@ -238,6 +238,7 @@ class Experiment:
                     "repetition": self.repetition,
                     "condition": cond,
                     "human_noise": sigma_h,
+                    "period": c,
                 }
                 try:
                     output['torque'] = self.states["torque"][0, 0]

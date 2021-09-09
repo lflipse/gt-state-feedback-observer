@@ -35,6 +35,7 @@ class PlotStuff:
 
 
     def plot_experiment(self, data, compare):
+        print(data)
         pd_metric = pd.DataFrame.from_dict(data)
 
         print(pd_metric)
@@ -56,7 +57,7 @@ class PlotStuff:
             if compare:
                 hue = y + "_index"
             else:
-                hue = None
+                hue = 'period'
             # print(y)
             # if y == "rms_human_torque" or y == "human_angle_cost" or y == "robot_angle_cost":
             #     metric = pd_metric_no_solo
