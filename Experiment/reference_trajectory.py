@@ -4,15 +4,15 @@ import matplotlib.pyplot as plt
 
 class Reference:
     def __init__(self, duration):
-        bw = 4
-        period = np.array([5, 8, 11, 17, 29, 43, 57, 73, 97, 121])
+        bw = 5
+        period = np.array([5, 8, 11, 17, 26, 37, 49, 57, 73, 97])
         self.duration = (period[7] * 2 * np.pi) / bw
         frequencies = 2 * np.pi * period / self.duration
-        phases = [1.79893804, 4.3567642, -2.362783088, 3.58145111, -1.92977185, -1.1689079, -0.61034581,
-                  -1.75180265, -2.03232366, 3.2509144]
+        phases = [5.79893804, 0.2467642, -1.362783088, 2.56145111, -1.92977185, -1.1689079, -0.61034581,
+                  -0.75180265, -0.03232366, 3.2509144]
         print("duration = ", self.duration)
         print("frequencies = ", frequencies)
-        self.amp = 0.3
+        self.amp = 0.1
         amplitude = self.amp * np.array([1, 1, 1, 1, 1, 1, 1, 0.1, 0.1, 0.1])
         self.forcing_function = {
             'period': period,

@@ -107,12 +107,21 @@ class Experiment:
         else:
             setting = "Bad Visuals"
 
-        if condition < (self.repetitions * self.visual_conditions):
+        # if condition < (self.repetitions * self.visual_conditions):
+        if condition >= (self.repetitions * self.visual_conditions):
             cond = "Manual Control"
             self.send_dict["manual"] = True
         else:
             cond = "Shared Control"
             self.send_dict["manual"] = False
+            sharing_rule = self.sharing_rule
+
+        if condition < self.repetitions:
+            self.send_dict["sharing_rule"] = self.estimated_human_cost
+        else:
+            self.send_dict["sharing_rule"] = self.sharing_rule
+
+        print(cond)
 
         # Press spacebar to start trial
         while not ready:
@@ -161,11 +170,9 @@ class Experiment:
             # Compute reference
             ref = self.reference.generate_reference(self.time, sigma=0, player="robot", ref_sign=self.repetition)
             self.reference_preview(self.time, h, sigma_h=sigma_h)
-
-            if condition < self.repetitions:
-                self.send_dict["sharing_rule"] = self.estimated_human_cost
-            else:
-                self.send_dict["sharing_rule"] = self.sharing_rule
+            if cond == "Manual Control":
+                sharing_rule = self.estimated_human_cost
+            self.send_dict["sharing_rule"] = sharing_rule
 
             # WARM_UP
             if self.time < self.t_warmup:
@@ -218,7 +225,7 @@ class Experiment:
             else:
                 self.states = new_states
 
-            # self.estimated_human_cost = np.array(self.states["estimated_human_gain"])
+            self.estimated_human_cost = np.array(self.states["estimated_human_cost"])
 
             # Visualize experiment
             self.visualize.visualize_experiment(self.send_dict["ref"][0], angle=self.states["steering_angle"],
@@ -255,12 +262,14 @@ class Experiment:
 
                     output["state_estimate_pos"] = self.states["state_estimate"][0][0]
                     output["state_estimate_vel"] = self.states["state_estimate"][1][0]
+                    output["input_estimation_error"] = self.states["input_estimation_error"]
+                    output["state_estimate_derivative"] = self.states["state_estimate_derivative"][1][0]
+
                     try:
                         output["estimated_human_input"] = self.states["estimated_human_torque"][0, 0]
-                        output["input_estimation_error"] = self.states["input_estimation_error"][0, 0]
                     except:
                         output["estimated_human_input"] = self.states["estimated_human_torque"][0]
-                        output["input_estimation_error"] = self.states["input_estimation_error"][0]
+
 
                     output["robot_cost_pos"] = self.states["robot_cost_calc"][0, 0]
                     output["robot_cost_vel"] = self.states["robot_cost_calc"][1, 1]

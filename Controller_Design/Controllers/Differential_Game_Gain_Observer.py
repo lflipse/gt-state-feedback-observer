@@ -59,7 +59,7 @@ class ControllerDGObs:
             "estimated_human_gain_derivative": Lhhat_dot,
             "robot_gain": Lr,
             "robot_P": Pr,
-            "input_estimation_error": uh_tilde / m_squared,
+            "input_estimation_error": uh_tilde[0, 0],
             "robot_cost": Qr,
         }
 

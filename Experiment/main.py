@@ -50,10 +50,11 @@ if __name__ == "__main__":
 
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 8
-    K = alpha * np.array([[5, 0], [0, 0]])
+    alpha = 7
+    K = alpha * np.array([[10.0, 0], [0, 0.0]])
     kappa = 1
-    C = np.array([[20.0, 0.0], [0.0, 1.0]])
+    C = np.array([[30.0, 0.0], [0.0, 1.0]])
+
 
     # Experiment data
     t_warmup = 5
@@ -65,7 +66,7 @@ if __name__ == "__main__":
     t_prev = 1.2
     repetitions = 2
     visual_conditions = 2
-    haptic_conditions = 2
+    haptic_conditions = 1
     conditions = repetitions * visual_conditions * haptic_conditions
     duration = t_warmup + t_cooldown + t_exp
 

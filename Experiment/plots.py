@@ -177,6 +177,18 @@ class PlotStuff:
         plt.xlim(0, t[-1])
         plt.tight_layout(pad=1)
 
+
+
+        uhtilde = np.array(data["input_estimation_error"])
+        x_hatdot = np.array(data["state_estimate_derivative"])
+        print(uhtilde)
+
+        plt.figure()
+        plt.plot(t, uhtilde)
+        plt.figure()
+        plt.plot(t, xddot)
+        plt.plot(t, x_hatdot)
+
         # plt.show()
 
         # self.save_all_figures()
