@@ -35,7 +35,6 @@ class PlotStuff:
 
 
     def plot_experiment(self, data, compare):
-        print(data)
         pd_metric = pd.DataFrame.from_dict(data)
 
         print(pd_metric)
@@ -57,7 +56,7 @@ class PlotStuff:
             if compare:
                 hue = y + "_index"
             else:
-                hue = 'period'
+                hue = 'settings'
             # print(y)
             # if y == "rms_human_torque" or y == "human_angle_cost" or y == "robot_angle_cost":
             #     metric = pd_metric_no_solo
@@ -112,7 +111,7 @@ class PlotStuff:
         plt.xlabel('Time (s)', **self.hfont)
         plt.ylabel('Steering angle (rad)', **self.hfont)
         plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, 10)
+        plt.xlim(0, t[-1])
         plt.tight_layout(pad=1)
 
         # Steering rate
@@ -124,7 +123,7 @@ class PlotStuff:
         plt.xlabel('Time (s)', **self.hfont)
         plt.ylabel('Steering rate (rad/s)', **self.hfont)
         plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, 10)
+        plt.xlim(0, t[-1])
         plt.tight_layout(pad=1)
 
         # Input torque (robot)
@@ -135,7 +134,7 @@ class PlotStuff:
         plt.xlabel('Time (s)', **self.hfont)
         plt.ylabel('Torque (Nm)', **self.hfont)
         plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, 10)
+        plt.xlim(0, t[-1])
         plt.tight_layout(pad=1)
 
         plt.figure(self.fig3)

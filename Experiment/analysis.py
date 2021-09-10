@@ -49,8 +49,8 @@ class Analysis():
                 self.cut_data(i, j)
 
         self.build_metrics()
-        self.plot_stuff.plot_trial(self.raw_data[1, 2])
-        self.plot_stuff.plot_trial(self.raw_data[1, 3])
+        self.plot_stuff.plot_trial(self.raw_data[0, 4])
+        self.plot_stuff.plot_trial(self.raw_data[0, 5])
 
         # General experiment data
         self.plot_stuff.plot_experiment(self.metrics, False)
@@ -68,7 +68,7 @@ class Analysis():
         self.metrics["human_angle_cost"] = {}
         self.metrics["robot_angle_cost"] = {}
         self.metrics["condition"] = {}
-        # self.metrics["repetition"] = {}
+        self.metrics["repetition"] = {}
 
         # RMS
         rms_angle_error = []
@@ -84,38 +84,38 @@ class Analysis():
         repetitions = []
         conditions = []
         participant = []
-        periods = []
+        settings = []
 
         for i in range(self.participants):
             for j in range(self.trials):
-                for k in range(self.periods):
-                    # Find repetition
-                    cond = self.filtered_data[i, j, k]["condition"]
-                    condition = cond[10]  # Not very nicely done this
-                    conditions.append(condition)
-                    rep = self.filtered_data[i, j, k]["repetition"]
-                    repetition = rep[10]  # Not very nicely done this
-                    repetitions.append(repetition)
-                    participant.append(i)
-                    per = self.filtered_data[i, j, k]["period"]
-                    period = per[10]  # Not very nicely done this
-                    periods.append(period)
 
-                    # RMSE
-                    angle_error = self.filtered_data[i, j, k]["angle_error"]
-                    rate_error = self.filtered_data[i, j, k]["rate_error"]
-                    rms_angle_error.append(np.sqrt(1 / (len(angle_error)) * np.inner(angle_error, angle_error)))
-                    rms_rate_error.append(np.sqrt(1 / (len(rate_error)) * np.inner(rate_error, rate_error)))
+                # Find repetition
+                cond = self.filtered_data[i, j]["condition"]
+                condition = cond[10]  # Not very nicely done this
+                conditions.append(condition)
+                rep = self.filtered_data[i, j]["repetition"]
+                repetition = rep[10]  # Not very nicely done this
+                repetitions.append(repetition)
+                participant.append(i)
+                set = self.filtered_data[i, j]["setting"]
+                setting = set[10]  # Not very nicely done this
+                settings.append(setting)
 
-                    # RMSU
-                    human_torque = self.filtered_data[i, j, k]["estimated_human_input"]
-                    robot_torque = self.filtered_data[i, j, k]["torque"]
-                    rms_human_torque.append(np.sqrt(1 / (len(rate_error)) * np.inner(human_torque, human_torque)))
-                    rms_robot_torque.append(np.sqrt(1 / (len(rate_error)) * np.inner(robot_torque, robot_torque)))
+                # RMSE
+                angle_error = self.filtered_data[i, j]["angle_error"]
+                rate_error = self.filtered_data[i, j]["rate_error"]
+                rms_angle_error.append(np.sqrt(1 / (len(angle_error)) * np.inner(angle_error, angle_error)))
+                rms_rate_error.append(np.sqrt(1 / (len(rate_error)) * np.inner(rate_error, rate_error)))
 
-                    # Average cost functions
-                    human_angle_cost.append(np.mean(self.filtered_data[i, j, k]["estimated_human_cost_1"]))
-                    robot_angle_cost.append(np.mean(self.filtered_data[i, j, k]["robot_cost_pos"]))
+                # RMSU
+                human_torque = self.filtered_data[i, j]["estimated_human_input"]
+                robot_torque = self.filtered_data[i, j]["torque"]
+                rms_human_torque.append(np.sqrt(1 / (len(rate_error)) * np.inner(human_torque, human_torque)))
+                rms_robot_torque.append(np.sqrt(1 / (len(rate_error)) * np.inner(robot_torque, robot_torque)))
+
+                # Average cost functions
+                human_angle_cost.append(np.mean(self.filtered_data[i, j]["estimated_human_cost_1"]))
+                robot_angle_cost.append(np.mean(self.filtered_data[i, j]["robot_cost_pos"]))
 
         # Save to metrics dictionary
         self.metrics["rms_angle_error"] = rms_angle_error
@@ -125,7 +125,7 @@ class Analysis():
         self.metrics["human_angle_cost"] = human_angle_cost
         self.metrics["robot_angle_cost"] = robot_angle_cost
         self.metrics["repetition"] = repetitions
-        self.metrics["period"] = periods
+        self.metrics["settings"] = settings
         self.metrics["condition"] = conditions
         self.metrics["participant"] = participant
         # print(self.metrics)
@@ -133,21 +133,12 @@ class Analysis():
 
     def cut_data(self, participant, trial):
         # Cut data
-        for period in range(self.periods):
-            periods = np.array(self.raw_data[participant, trial]['period'])
-            indices = periods == period
-            # print(indices)
+        filtered_data = {}
+        for key in self.raw_data[participant, trial].keys():
+            data = self.raw_data[participant, trial][key]
+            filtered_data[key] = data
 
-            # Cut the data from the trial
-            filtered_data = {}
-            for key in self.raw_data[participant, trial].keys():
-                data = self.raw_data[participant, trial][key]
-                data_arr = np.asarray(data)#, dtype=object)
-                filtered_data[key] = data_arr[indices]
-
-            self.filtered_data[participant, trial, period] = filtered_data
-            # print(self.filtered_data[participant, trial, period])
-
+        self.filtered_data[participant, trial] = filtered_data
 
 
 

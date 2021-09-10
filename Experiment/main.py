@@ -43,28 +43,30 @@ if __name__ == "__main__":
 
     # Dynamics
     Jw = 0.05480475491037145
-    Bw = 0.4  # Max = 0.5
+    Bw = 0.3  # Max = 0.5
     Kw = 0.0  # Max = 2.5
     A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
     B = np.array([[0], [1 / Jw]])
 
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 2
-    K = alpha * np.array([[5, 0], [0, 0.25]])
+    alpha = 8
+    K = alpha * np.array([[5, 0], [0, 0]])
     kappa = 1
-    C = np.array([[30.0, 0.0], [0.0, 2.0]])
+    C = np.array([[20.0, 0.0], [0.0, 1.0]])
 
     # Experiment data
     t_warmup = 5
     t_cooldown = 5
-    t_period = 20
-    sigma = [0.01, 0.05, 0.01, 0.05]
-    periods = len(sigma)
+    t_period = 30
+    sigma = [0.01, 0.05]
+    periods = 1
     t_exp = periods * t_period
     t_prev = 1.2
     repetitions = 2
-    conditions = repetitions * 4
+    visual_conditions = 2
+    haptic_conditions = 2
+    conditions = repetitions * visual_conditions * haptic_conditions
     duration = t_warmup + t_cooldown + t_exp
 
     # Visual stuff
@@ -120,6 +122,7 @@ if __name__ == "__main__":
         "sharing_rule": C,
         "periods": periods,
         "repetitions": repetitions,
+        "visual_conditions": visual_conditions,
         "sigma": sigma,
     }
 

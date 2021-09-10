@@ -32,6 +32,7 @@ class Experiment:
         self.sharing_rule = input["sharing_rule"]
         self.preview_time = input["preview_time"]
         self.repetitions = input["repetitions"]
+        self.visual_conditions = input["visual_conditions"]
         self.repetition = 0
         self.sigma = input["sigma"]
         self.duration = self.t_warmup + self.t_exp + self.t_cooldown
@@ -40,6 +41,7 @@ class Experiment:
         self.t0 = 0
         self.time = 0
         self.cond = 0
+        self.visual_setting = 0
         self.reference = input["reference"]
         self.store = False
         self.start_measurements = False
@@ -97,7 +99,15 @@ class Experiment:
 
         # First x trials are manual control
         self.repetition = condition % self.repetitions
-        if condition < self.repetitions:
+        self.visual_setting = ((condition - self.repetition)/self.repetitions) % self.visual_conditions
+        sigma_h = self.sigma[int(self.visual_setting)]
+
+        if self.visual_setting == 0:
+            setting = "Good Visuals"
+        else:
+            setting = "Bad Visuals"
+
+        if condition < (self.repetitions * self.visual_conditions):
             cond = "Manual Control"
             self.send_dict["manual"] = True
         else:
@@ -147,15 +157,6 @@ class Experiment:
             self.t_last = self.t_now
             self.time = (self.t_last - self.t0) * 1e-9
             self.time_exp = self.time - self.t_warmup
-
-            # Compute conditions
-            c = math.floor(self.time_exp/self.t_period)
-            if c < 0:
-                sigma_h = self.sigma[0]
-            elif c >= self.periods:
-                sigma_h = self.sigma[-1]
-            else:
-                sigma_h = self.sigma[c]
 
             # Compute reference
             ref = self.reference.generate_reference(self.time, sigma=0, player="robot", ref_sign=self.repetition)
@@ -238,7 +239,7 @@ class Experiment:
                     "repetition": self.repetition,
                     "condition": cond,
                     "human_noise": sigma_h,
-                    "period": c,
+                    "setting": setting,
                 }
                 try:
                     output['torque'] = self.states["torque"][0, 0]

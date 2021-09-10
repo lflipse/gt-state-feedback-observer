@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 class Reference:
     def __init__(self, duration):
-        bw = 4.5
+        bw = 4
         period = np.array([5, 8, 11, 17, 29, 43, 57, 73, 97, 121])
         self.duration = (period[7] * 2 * np.pi) / bw
         frequencies = 2 * np.pi * period / self.duration

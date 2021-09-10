@@ -62,7 +62,7 @@ class Visualize:
 
     def show_player(self, x):
         # x is the center, need to move
-        self.screen.blit(self.player, (x - 0.5*self.img_size, self.y_player))
+        self.screen.blit(self.player, (x - 0.5*self.img_size, self.y_player + 0.5*self.img_size))
 
     def show_text(self, text, dark):
         if dark:
