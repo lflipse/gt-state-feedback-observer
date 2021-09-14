@@ -239,9 +239,9 @@ if __name__ == "__main__":
     # Retrieve data
     try:
         virtual_data = load_data_set("data_virtual_human.csv")
-        # real_data = load_data_set("data_real_human.csv")
         # virtual_data = load_data_set("data_virtual_human_final.csv")
-        real_data = load_data_set("data_real_human_final.csv")
+        real_data = load_data_set("data_real_human.csv")
+        # real_data = load_data_set("data_real_human_final.csv")
     except:
         exit("Missing datasets, first create these")
     # print(virtual_data)
