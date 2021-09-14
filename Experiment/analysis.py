@@ -49,8 +49,8 @@ class Analysis():
                 self.cut_data(i, j)
 
         self.build_metrics()
-        self.plot_stuff.plot_trial(self.raw_data[13, 0])
-        self.plot_stuff.plot_trial(self.raw_data[13, 2])
+        self.plot_stuff.plot_trial(self.raw_data[0, 3])
+        self.plot_stuff.plot_trial(self.raw_data[1, 3])
 
         # General experiment data
         self.plot_stuff.plot_experiment(self.metrics, False)

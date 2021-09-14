@@ -1,27 +1,29 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import pandas as pd
 
 class Reference:
     def __init__(self, duration):
-        bw = 5
-        period = np.array([5, 8, 11, 17, 26, 37, 49, 57, 73, 97])
-        self.duration = (period[7] * 2 * np.pi) / bw
-        frequencies = 2 * np.pi * period / self.duration
-        phases = [5.79893804, 0.2467642, -1.362783088, 2.56145111, -1.92977185, -1.1689079, -0.61034581,
-                  -0.75180265, -0.03232366, 3.2509144]
+        bw = 2.5
+        self.amp = 0.25
+        self.load_data()
+        self.duration = (self.periods[10] * 2 * np.pi) / bw
+        frequencies = 2 * np.pi * self.periods / self.duration
         print("duration = ", self.duration)
         print("frequencies = ", frequencies)
-        self.amp = 0.1
-        amplitude = self.amp * np.array([1, 1, 1, 1, 1, 1, 1, 0.1, 0.1, 0.1])
         self.forcing_function = {
-            'period': period,
-            'phases': phases,
-            'amplitude': amplitude,
+            'periods': self.periods,
+            'phases': self.phases,
+            'amplitudes': self.amp * self.amplitudes,
         }
 
-        csfont = {'fontname': 'Georgia'}
-        hfont = {'fontname': 'Georgia'}
+        self.lw = 4
+        self.title_size = 24
+        self.label_size = 22
+        self.legend_size = 13
+        self.csfont = {'fontname': 'Georgia', 'size': self.title_size}
+        self.hfont = {'fontname': 'Georgia', 'size': self.label_size}
 
         # Colors
         tud_blue = "#0066A2"
@@ -32,17 +34,18 @@ class Reference:
         tud_yellow = "#F1BE3E"
 
         plt.figure()
-        for i in range(len(period)):
-            plt.plot(frequencies[i], amplitude[i], color=tud_blue, marker='o')
-            plt.plot([frequencies[i], frequencies[i]], [0, amplitude[i]], tud_blue, alpha=0.7, linewidth=2.5)
+        for i in range(len(self.periods)):
+            plt.plot(frequencies[i], self.amplitudes[i], color=tud_blue, linewidth=self.lw, marker='o')
+            plt.plot([frequencies[i], frequencies[i]], [0, self.amplitudes[i]], tud_blue, linewidth=self.lw, alpha=0.7)
 
-        plt.title("Reference trajectory in frequency domain", **csfont)
-        plt.xlabel("Frequency (rad/s)", **hfont)
-        plt.ylabel("Amplitude (-)", **hfont)
+        plt.title("Frequency domain reference", **self.csfont)
+        plt.xlabel("Frequency (rad/s)", **self.hfont)
+        plt.ylabel("Amplitude (-)", **self.hfont)
         plt.xlim(frequencies[0] - 0.1, frequencies[-1] + 10)
-        plt.ylim(0.01, amplitude[0] + 0.1)
+        plt.ylim(0.01, self.amplitudes[0] + 0.1)
         plt.yscale("log")
         plt.xscale("log")
+        plt.tight_layout(pad=1)
 
         # Show forcing function:
         fs = 100
@@ -50,21 +53,31 @@ class Reference:
         t = np.array(range(n)) / fs
         r = np.zeros(n)
         for i in range(n):
-            ref = self.generate_reference(t[i]+5, 0, "else", 0)
+            ref = self.generate_reference(t[i], sigma=0, player=None, ref_sign=1)
             r[i] = ref[0]
 
         plt.figure()
-        plt.plot(t, r, tud_blue, linewidth=2.5)
-        plt.title("Reference trajectory in time domain", **csfont)
-        plt.xlabel("Time (s)", **hfont)
-        plt.ylabel("Amplitude (-)", **hfont)
+        plt.plot(t, r, tud_blue, linewidth=self.lw)
+        plt.title("Time domain reference", **self.csfont)
+        plt.xlabel("Time (s)", **self.hfont)
+        plt.ylabel("Amplitude (-)", **self.hfont)
         plt.xlim(0, 10)
+        plt.tight_layout(pad=1)
 
+    def load_data(self):
+        try:
+            df_data = pd.read_csv("..\\Steering_Wheel_Dynamics\\ID_phases.csv", index_col=0)
+            data = df_data.to_dict(orient='list')
+            self.phases = np.array(data['phases'])
+            self.periods = np.array(data['periods'])
+            self.amplitudes = np.array(data['amplitudes'])
+        except:
+            exit("Missing data")
 
     def generate_reference(self, t, sigma, player, ref_sign):
-        period = self.forcing_function["period"]
+        period = self.forcing_function["periods"]
         phases = self.forcing_function["phases"]
-        amplitude = self.forcing_function["amplitude"]
+        amplitude = self.forcing_function["amplitudes"]
         reference_position = 0
         reference_position_noise = 0
         reference_velocity = 0
@@ -87,11 +100,13 @@ class Reference:
         else:
             exit("error in reference signal")
 
-        for i in range(10):
+        for i in range(len(period)):
             wt = (period[i] / self.duration) * (2 * np.pi)
             reference_position += mag * amplitude[i] * math.sin(fac * wt * t + phases[i])
-            reference_position_noise += sigma * 1 * amplitude[i] * wt * math.sin(-0.7 * wt * t + phases[i] + 0.1)
             reference_velocity += fac * mag * amplitude[i] * wt * math.cos(fac * wt * t + phases[i])
+
+            reference_position_noise += sigma * 1 * amplitude[i] * wt * math.sin(-0.7 * wt * t + phases[i] + 0.1)
+
 
 
         if player == "robot":
