@@ -87,19 +87,33 @@ class GreyBox:
 
         # Forcing function
         bw = 15
-        period = np.array([5, 8, 11, 17, 26, 43, 71, 131, 233, 431])
-        self.duration = (period[7] * 2 * np.pi) / bw
+        # period = np.array([3, 7, 11, 17, 29, 47, 71, 107, 179, 269])
+        period = np.array([3, 7, 11, 17, 29, 47, 61, 89, 107, 131, 179, 223, 277, 311, 379])
+        self.duration = (period[10] * 2 * np.pi) / bw #  Run for 2 times the
         frequencies = 2 * np.pi * period / self.duration
-        phases_ID = [1.79893804,  1.00694642, -1.40575088,  0.56145111, -1.92977185, -1.1689079, -0.61034581,
-                      -0.75180265, -0.71232366, -0.2509144]
-        phases_ver = [-1.82153521, -1.03968042,  0.17035112, -0.90442899, -0.27152334, -1.05591208, -1.88837196,
-                      -0.8715442, -0.3636802, 1.20421911]
+        # phases_ID = [ 1.62434536, -0.61175641, -0.52817175, -1.07296862,  0.86540763, -2.3015387,
+        #               1.74481176, -0.7612069,   0.3190391,  -0.24937038]
+        #
+        phases_ID = [ 1.62434536, -0.61175641, -0.52817175, -1.07296862,  0.86540763, -2.3015387,
+                      1.74481176, -0.7612069,   0.3190391,  -0.24937038,  1.46210794, -2.06014071,
+                     -0.3224172,  -0.38405435,  1.13376944]
+        #
+        #
+        # phases_ver = [ 1.62434536, -0.61175641, -0.52817175, -1.07296862,  0.86540763, -2.3015387,
+        #                 1.74481176, -0.7612069,   0.3190391,  -0.24937038]
+        #
+        phases_ver = [ 1.62434536, -0.61175641, -0.52817175, -1.07296862,  0.86540763, -2.3015387,
+                       1.74481176, -0.7612069,   0.3190391,  -0.24937038,  1.46210794, -2.06014071
+                       -0.3224172,  -0.38405435,  1.13376944]
+
+
         print("duration = ", self.duration)
-        print("frequencies = ",frequencies)
+        print("frequencies = ", frequencies)
 
         # print(phases)
-        amp = 0.3
-        amplitude = amp * np.array([1, 1, 1, 1, 1, 1, 1, 0.1, 0.1, 0.1])
+        amp = 0.2
+        amplitude = amp * np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.1, 0.1, 0.1, 0.1, 0.1])
+        # amplitude = amp * np.array([1, 1, 1, 1, 1, 1, 1, 0.1, 0.1, 0.1, ])
         self.forcing_function = {
             'period': period,
             'phases_ID': phases_ID,
@@ -145,7 +159,7 @@ class GreyBox:
             else:
                 self.generate_data_set(validation=True)
         self.load_data_set()
-        self.optimize(False)
+        self.optimize(reoptimize=True)  # Set to true if re-optimizing
         self.compute_metrics()
         self.plot_data()
 
@@ -153,10 +167,10 @@ class GreyBox:
     def generate_data_set(self, validation):
         if validation is False:
             # Identification set
-            b = [0.3, 0.5, 0.7, 0.9]
+            b = [0.1, 0.3]
         else:
             # Validation set
-            b = [0.2, 0.45, 0.65, 0.95]
+            b = [0.05, 0.2]
 
         time.sleep(1.0)
         t_start = time.time()
@@ -171,7 +185,7 @@ class GreyBox:
             t0 = time.time()
             t_last = t0
 
-            while t_last - t0 < 0.5 * self.duration:
+            while t_last - t0 < self.duration:
                 self.send_dict["torque"] = self.compute_torque(t_last - t_start, validation)
                 self.send_dict["exit"] = False
                 self.send_dict["stiffness"] = self.Kw
@@ -232,17 +246,17 @@ class GreyBox:
 
     def optimize(self, reoptimize):
         # Initial guess
-        J = 0.01
-        m = 0.4
+        J = 0.06
+        m = 0.5
         dh = 0.0
         dl = 0.0
-        vt = 0.8
-        tau_f = -0.05
-        tau_d = -0.05
+        vt = 0.3
+        tau_f = 0.00
+        tau_d = 0.00
 
         p0 = np.array([J, m, dh, dl, vt, tau_f, tau_d])
         bounds_vec = np.array([(0.001, 0.1), (0.2, 1.0), (-0.15, 0.15), (-0.15, 0.15), (0.05, 3),
-                               (-0.4, 0.0), (-0.5, 0.0)])
+                               (-0.2, 0.2), (-0.2, 0.2)])
 
         self.simulate_experiment(p0, linear=False, data_set=self.data_set_ver)
         self.phi_sim_init = self.saved_states["steering_angle"]
@@ -271,8 +285,6 @@ class GreyBox:
             names = ["J", "m", "dy", "dx", "vt", "tau_f", "tau_d"]
             param_dict = {"params": p_opt, "names": names}
             self.to_csv(param_dict, "params.csv")
-
-
 
         self.show_nonlins(p_opt[1], p_opt[2], p_opt[3], p_opt[5], p_opt[6], p_opt[4], False)
         p_lin = p_opt
@@ -315,7 +327,7 @@ class GreyBox:
         dphi = np.array(phi) - np.array(phi_sim)
         dphidot = np.array(phidot) - np.array(phidot_sim)
         N = len(phi)
-        cost = 1/N * (5*np.inner(dphi, dphi) + 2*np.inner(dphidot, dphidot))
+        cost = 1/N * (5*np.inner(dphi, dphi) + 10*np.inner(dphidot, dphidot))
         return cost
 
     def compute_metrics(self):
@@ -589,7 +601,7 @@ class GreyBox:
         plt.title("Steering angle comparison", **self.csfont)
         plt.xlabel("Time (s)", **self.hfont)
         plt.ylabel("Steering angle (rad)", **self.hfont)
-        plt.xlim(t[0], 20)
+        plt.xlim(t[0], 30)
         plt.legend(prop={"size": self.legend_size}, loc='upper right')
         plt.tight_layout(pad=1)
 
@@ -600,7 +612,7 @@ class GreyBox:
         plt.title("Steering rate comparison", **self.csfont)
         plt.xlabel("Time (s)", **self.hfont)
         plt.ylabel("Steering rate (rad/s)", **self.hfont)
-        plt.xlim(t[0], 20)
+        plt.xlim(t[0], 30)
         plt.legend(prop={"size": self.legend_size}, loc='upper right')
         plt.tight_layout(pad=1)
 

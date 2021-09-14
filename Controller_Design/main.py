@@ -154,13 +154,13 @@ if __name__ == "__main__":
     Qh2 = np.array([[12.0, 0.0], [0.0, 0.5]])
 
     vhg = np.zeros((6, 2))
-    vhg[0, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)[1]
+    # vhg[0, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)[1]
     vhg[2, :] = compute_virtual_gain(Qh1, C-Qh1, A, B)[1]
     Lr, vhg[4, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)
     vhg[4, :] = -vhg[4, :]
     virtual_human_gain = vhg
     Qh = np.zeros((6, 2))
-    Qh[0, :] = np.array([Qh2[0, 0], Qh2[1, 1]])
+    # Qh[0, :] = np.array([Qh2[0, 0], Qh2[1, 1]])
     Qh[2, :] = np.array([Qh1[0, 0], Qh1[1, 1]])
     Qh3 = compute_virtual_cost(vhg[4, :], C, A, B)
     Qh[4, :] = Qh3.transpose()

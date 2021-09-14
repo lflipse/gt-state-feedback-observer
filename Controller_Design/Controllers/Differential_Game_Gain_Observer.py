@@ -43,7 +43,8 @@ class ControllerDGObs:
         uhhat = np.matmul(-Lh_hat, xi)
 
         # Observer equations
-        x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat + self.nonlinear_term(x)) - np.matmul(self.Gamma, x_tilde)
+        # x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat + self.nonlinear_term(x)) - np.matmul(self.Gamma, x_tilde)
+        x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat) - np.matmul(self.Gamma, x_tilde)
         xi_tilde_dot = x_hat_dot - x_dot
 
         # Update law for human gain
@@ -52,8 +53,10 @@ class ControllerDGObs:
         m_squared = 1 + self.kappa * np.matmul(xi.transpose(), xi)
         Lhhat_dot = uh_tilde / m_squared * np.matmul(xi.transpose(), self.K)
 
+        ur_comp = ur - self.nonlinear_term(x)
+
         output = {
-            "torque": ur,
+            "torque": ur_comp,
             "estimated_human_torque": uhhat,
             "state_estimate_derivative": x_hat_dot,
             "estimated_human_gain_derivative": Lhhat_dot,
