@@ -137,7 +137,7 @@ if __name__ == "__main__":
     screen_height = 1080
 
     # Dynamics
-    Jw = 0.05480475491037145
+    Jw = 0.04914830792783059
     Bw = 0.5
     Kw = 0.0
     A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
     alpha = 8
-    K = alpha * np.array([[5, 0], [0, 1]])
+    K = alpha * np.array([[10, 0], [0, 1]])
     kappa = 1
     C = np.array([[50.0, 0.0], [0.0, 2.0]])
 

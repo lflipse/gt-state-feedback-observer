@@ -43,7 +43,6 @@ class ControllerDGObs:
         uhhat = np.matmul(-Lh_hat, xi)
 
         # Observer equations
-        # x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat + self.nonlinear_term(x)) - np.matmul(self.Gamma, x_tilde)
         x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat) - np.matmul(self.Gamma, x_tilde)
         xi_tilde_dot = x_hat_dot - x_dot
 
@@ -56,6 +55,7 @@ class ControllerDGObs:
         ur_comp = ur - self.nonlinear_term(x)
 
         output = {
+            "nonlins": self.nonlinear_term(x),
             "torque": ur_comp,
             "estimated_human_torque": uhhat,
             "state_estimate_derivative": x_hat_dot,
@@ -70,13 +70,13 @@ class ControllerDGObs:
 
     def nonlinear_term(self, x):
         g = 9.81
-        m = 0.406
-        dh = 0.0628
-        dl = 0.00901
-        vt = 0.522
+        m = 0.47426441550449755
+        dh = 0.04856599995887999
+        dl = 0.007921400008340136
+        vt = 0.2850153620588755
         vsp = 2 * vt
-        tau_d = -0.086
-        tau_fric = -0.0
+        tau_d = -0.09551579889787694
+        tau_fric = 0.02622587046565122
 
         # Gravity
         tau_g = - m * g * dh * np.sin(x[0, 0]) - m * g * dl * np.cos(x[0, 0])

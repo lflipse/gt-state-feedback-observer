@@ -87,50 +87,33 @@ class GreyBox:
 
         # Forcing function
         bw = 15
-        # period = np.array([3, 7, 11, 17, 29, 47, 71, 107, 179, 269])
-        period = np.array([3, 7, 11, 17, 29, 47, 61, 89, 107, 131, 179, 223, 277, 311, 379])
-        self.duration = (period[10] * 2 * np.pi) / bw #  Run for 2 times the
-        frequencies = 2 * np.pi * period / self.duration
-        # phases_ID = [ 1.62434536, -0.61175641, -0.52817175, -1.07296862,  0.86540763, -2.3015387,
-        #               1.74481176, -0.7612069,   0.3190391,  -0.24937038]
-        #
-        phases_ID = [ 1.62434536, -0.61175641, -0.52817175, -1.07296862,  0.86540763, -2.3015387,
-                      1.74481176, -0.7612069,   0.3190391,  -0.24937038,  1.46210794, -2.06014071,
-                     -0.3224172,  -0.38405435,  1.13376944]
-        #
-        #
-        # phases_ver = [ 1.62434536, -0.61175641, -0.52817175, -1.07296862,  0.86540763, -2.3015387,
-        #                 1.74481176, -0.7612069,   0.3190391,  -0.24937038]
-        #
-        phases_ver = [ 1.62434536, -0.61175641, -0.52817175, -1.07296862,  0.86540763, -2.3015387,
-                       1.74481176, -0.7612069,   0.3190391,  -0.24937038,  1.46210794, -2.06014071
-                       -0.3224172,  -0.38405435,  1.13376944]
-
-
+        self.amp = 0.2
+        self.load_data_reference()
+        self.duration = (self.periods[10] * 2 * np.pi) / bw
+        print(self.duration)
+        frequencies = 2 * np.pi * self.periods / self.duration
         print("duration = ", self.duration)
         print("frequencies = ", frequencies)
 
-        # print(phases)
-        amp = 0.2
-        amplitude = amp * np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.1, 0.1, 0.1, 0.1, 0.1])
-        # amplitude = amp * np.array([1, 1, 1, 1, 1, 1, 1, 0.1, 0.1, 0.1, ])
+        # ID set
         self.forcing_function = {
-            'period': period,
-            'phases_ID': phases_ID,
-            'phases_ver': phases_ver,
-            'amplitude': amplitude,
+            'periods': self.periods,
+            'phases_ID': self.phases_id,
+            'phases_ver': self.phases_ver,
+            'amplitudes': self.amp * self.amplitudes,
         }
 
-        fig = plt.figure()
-        for i in range(len(period)):
-            plt.plot(frequencies[i], amplitude[i], linewidth=self.lw, color=tud_blue, marker='o')
-            plt.plot([frequencies[i], frequencies[i]],  [0, amplitude[i]], tud_blue, linewidth=self.lw, alpha=0.7)
 
-        plt.title("Forcing function in frequency domain", **self.csfont)
+        plt.figure()
+        for i in range(len(self.periods)):
+            plt.plot(frequencies[i], self.amplitudes[i], color=tud_blue, linewidth=self.lw, marker='o')
+            plt.plot([frequencies[i], frequencies[i]], [0, self.amplitudes[i]], tud_blue, linewidth=self.lw, alpha=0.7)
+
+        plt.title("Frequency domain reference", **self.csfont)
         plt.xlabel("Frequency (rad/s)", **self.hfont)
         plt.ylabel("Amplitude (-)", **self.hfont)
-        plt.xlim(0.5, frequencies[-1] + 10)
-        plt.ylim(0.01, amplitude[0]+0.1)
+        plt.xlim(frequencies[0] - 0.1, frequencies[-1] + 10)
+        plt.ylim(0.01, self.amplitudes[0] + 0.1)
         plt.yscale("log")
         plt.xscale("log")
         plt.tight_layout(pad=1)
@@ -139,16 +122,16 @@ class GreyBox:
         fs = 100
         n = int(fs * self.duration)
         t = np.array(range(n)) / fs
-        u = np.zeros(n)
+        r = np.zeros(n)
         for i in range(n):
-            u[i] = self.compute_torque(t[i], True)
+            r[i] = self.compute_torque(t[i], True)
 
         plt.figure()
-        plt.plot(t, u, tud_blue, linewidth=self.lw,)
-        plt.title("Forcing function in time domain", **self.csfont)
+        plt.plot(t, r, tud_blue, linewidth=self.lw)
+        plt.title("Time domain reference", **self.csfont)
         plt.xlabel("Time (s)", **self.hfont)
         plt.ylabel("Amplitude (-)", **self.hfont)
-        plt.xlim(t[0], self.duration*0.2)
+        plt.xlim(0, 10)
         plt.tight_layout(pad=1)
 
     def do(self):
@@ -159,10 +142,9 @@ class GreyBox:
             else:
                 self.generate_data_set(validation=True)
         self.load_data_set()
-        self.optimize(reoptimize=True)  # Set to true if re-optimizing
+        self.optimize(reoptimize=False)  # Set to true if re-optimizing
         self.compute_metrics()
         self.plot_data()
-
 
     def generate_data_set(self, validation):
         if validation is False:
@@ -231,6 +213,23 @@ class GreyBox:
             self.to_csv(self.saved, file=self.file_csv_ID)
         else:
             self.to_csv(self.saved, file=self.file_csv_ver)
+
+    def load_data_reference(self):
+        try:
+            df_data = pd.read_csv("ID_phases.csv", index_col=0)
+            data = df_data.to_dict(orient='list')
+            self.phases_id = np.array(data['phases'])
+            self.periods = np.array(data['periods'])
+            self.amplitudes = np.array(data['amplitudes'])
+        except:
+            exit("Missing data")
+
+        try:
+            df_data = pd.read_csv("Validation_phases.csv", index_col=0)
+            data = df_data.to_dict(orient='list')
+            self.phases_ver = np.array(data['phases'])
+        except:
+            exit("Missing data")
 
     def load_data_set(self):
         try:
@@ -305,10 +304,10 @@ class GreyBox:
         df.to_csv(file)
 
     def compute_torque(self, t, verificate):
-        period = self.forcing_function["period"]
+        period = self.forcing_function["periods"]
         phases_ID = self.forcing_function["phases_ID"]
         phases_ver = self.forcing_function["phases_ver"]
-        amplitude = self.forcing_function["amplitude"]
+        amplitude = self.forcing_function["amplitudes"]
         torque = 0
         for i in range(10):
             wt = (2*period[i] / self.duration) * (2 * np.pi)
@@ -327,7 +326,7 @@ class GreyBox:
         dphi = np.array(phi) - np.array(phi_sim)
         dphidot = np.array(phidot) - np.array(phidot_sim)
         N = len(phi)
-        cost = 1/N * (5*np.inner(dphi, dphi) + 10*np.inner(dphidot, dphidot))
+        cost = 1/N * (5*np.inner(dphi, dphi) + 30*np.inner(dphidot, dphidot))
         return cost
 
     def compute_metrics(self):

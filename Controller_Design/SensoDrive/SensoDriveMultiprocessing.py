@@ -20,8 +20,8 @@ class SensoDriveModule(mp.Process):
         self.frequency = 500  # Hz
         self.time_step = 1 / self.frequency
         self._time_step_in_ns = self.time_step * 1e9
-        self._bq_filter_velocity = LowPassFilterBiquad(fc=50, fs=self.frequency)
-        self._bq_filter_acc = LowPassFilterBiquad(fc=6, fs=self.frequency)
+        self._bq_filter_velocity = LowPassFilterBiquad(fc=40, fs=self.frequency)
+        self._bq_filter_acc = LowPassFilterBiquad(fc=14, fs=self.frequency)
         self.controller = senso_dict["controller"]
         self.controller_type = senso_dict["controller_type"]
         self.now = 0
@@ -423,6 +423,7 @@ class SensoDriveModule(mp.Process):
                 self.states["estimated_human_gain"] = np.array([0, 0])
                 self.states["estimated_human_cost"] = np.array([[0, 0], [0, 0]])
                 self.states["state_estimate"] = self.states["state"]
+                self.states["estimated_human_gain_derivative"] = np.array([0, 0])
             self.states["state_estimate_derivative"] = output["state_estimate_derivative"]
             self.states["estimated_human_gain_derivative"] = output["estimated_human_gain_derivative"]
             self.states["estimated_human_torque"] = output["estimated_human_torque"]

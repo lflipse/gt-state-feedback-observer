@@ -5,8 +5,9 @@ import pandas as pd
 
 class Reference:
     def __init__(self, duration):
-        bw = 5
-        self.amp = 0.3
+        bw = 2.5
+        self.amp = 0.25
+        self.load_data()
         self.duration = (self.periods[10] * 2 * np.pi) / bw
         frequencies = 2 * np.pi * self.periods / self.duration
         print("duration = ", self.duration)
@@ -14,7 +15,7 @@ class Reference:
         self.forcing_function = {
             'periods': self.periods,
             'phases': self.phases,
-            'amplitude': self.amp * self.amplitudes,
+            'amplitudes': self.amp * self.amplitudes,
         }
 
         self.lw = 4
@@ -79,11 +80,11 @@ class Reference:
 
     def load_data(self):
         try:
-            df_data = pd.read_csv("ID_phases.csv", index_col=0)
+            df_data = pd.read_csv("..\\Steering_Wheel_Dynamics\\ID_phases.csv", index_col=0)
             data = df_data.to_dict(orient='list')
-            self.phases = data['phases']
-            self.periods = data['periods']
-            self.amplitudes = data['amplitudes']
+            self.phases = np.array(data['phases'])
+            self.periods = np.array(data['periods'])
+            self.amplitudes = np.array(data['amplitudes'])
         except:
             exit("Missing data")
 

@@ -363,7 +363,7 @@ class PlotStuff:
                  label="Estimated (human) $\hat{L}_{h,1}(t)$")
         plt.plot(t_vir, Lh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
                  label="Virtual (human) $L_{h,1,vir}(t)$")
-        self.stepinfo(t_vir, Lhhat_pos_vir, Lh_pos_vir)
+        # self.stepinfo(t_vir, Lhhat_pos_vir, Lh_pos_vir)
         plt.title('Steering angle gain', **self.csfont)
         plt.xlabel('Time (s)', **self.hfont)
         plt.ylabel('Gain value (Nm/rad)', **self.hfont)
@@ -379,7 +379,7 @@ class PlotStuff:
                  label="Estimated (human) $\hat{L}_{h,2}(t)$")
         plt.plot(t_vir, Lh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
                  label="Virtual (human) $L_{h,2,vir}(t)$")
-        self.stepinfo(t_vir, Lhhat_vel_vir, Lh_vel_vir)
+        # self.stepinfo(t_vir, Lhhat_vel_vir, Lh_vel_vir)
         plt.title('Steering rate gain', **self.csfont)
         plt.xlabel('Time (s)', **self.hfont)
         plt.ylabel('Gain value (Nms/rad)', **self.hfont)
@@ -401,7 +401,10 @@ class PlotStuff:
         rise_start = int(min(np.argwhere(dL[0:end_index] > 0.1)))
         rise_end = int(min(np.argwhere(dL[0:end_index] > 0.9)))
         if len(np.argwhere(dL[0:end_index] > 1.05)) > 0:
-            settling_time = int(max(max(np.argwhere(0.95 > dL[0:end_index])), max(np.argwhere(1.05 < dL[0:end_index]))))
+            try:
+                settling_time = int(max(max(np.argwhere(0.95 > dL[0:end_index])), max(np.argwhere(1.05 < dL[0:end_index]))))
+            except:
+                settling_time = 15
         else:
             settling_time = int(max(np.argwhere(0.95 > dL[0:end_index])))
         print("settling time: ", t[settling_time])

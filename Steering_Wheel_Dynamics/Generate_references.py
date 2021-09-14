@@ -156,7 +156,7 @@ def show_forcing_function(bandwidth, periods, amplitudes, phases):
 
 # Example figure
 bw = 1
-periods = np.array([3, 7, 11, 17, 29, 47, 61, 89, 107, 131, 179, 223, 277, 311, 379])
+periods = np.array([2, 3, 5, 7, 13, 19, 29, 37, 47, 61, 79, 101, 127, 163, 211])
 amplitudes = low_pass_filter(bw, periods)
 
 # amplitudes fixen als een filter
