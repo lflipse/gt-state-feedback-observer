@@ -5,12 +5,12 @@ import pandas as pd
 
 class Reference:
     def __init__(self, duration):
-        bw = 2.5
+        bw = 2.2
         self.amp = 0.25
         self.load_data()
         self.duration = (self.periods[10] * 2 * np.pi) / bw
         frequencies = 2 * np.pi * self.periods / self.duration
-        print("duration = ", self.duration)
+        print("duration should be: ", self.duration)
         print("frequencies = ", frequencies)
         self.forcing_function = {
             'periods': self.periods,
@@ -79,7 +79,6 @@ class Reference:
         phases = self.forcing_function["phases"]
         amplitude = self.forcing_function["amplitudes"]
         reference_position = 0
-        reference_position_noise = 0
         reference_velocity = 0
 
         v = np.random.normal(0, sigma)
@@ -104,10 +103,6 @@ class Reference:
             wt = (period[i] / self.duration) * (2 * np.pi)
             reference_position += mag * amplitude[i] * math.sin(fac * wt * t + phases[i])
             reference_velocity += fac * mag * amplitude[i] * wt * math.cos(fac * wt * t + phases[i])
-
-            reference_position_noise += sigma * 1 * amplitude[i] * wt * math.sin(-0.7 * wt * t + phases[i] + 0.1)
-
-
 
         if player == "robot":
             ref = np.array([reference_position, reference_velocity])

@@ -42,7 +42,7 @@ if __name__ == "__main__":
     reference = Reference(duration=None)
 
     # Dynamics
-    Jw = 0.05480475491037145
+    Jw = 0.04914830792783059
     Bw = 0.3  # Max = 0.5
     Kw = 0.0  # Max = 2.5
     A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
@@ -50,24 +50,24 @@ if __name__ == "__main__":
 
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 7
+    alpha = 2.5
     K = alpha * np.array([[10.0, 0], [0, 0.0]])
     kappa = 1
-    C = np.array([[30.0, 0.0], [0.0, 1.0]])
-
+    C = np.array([[15.0, 0.0], [0.0, 1.0]])
 
     # Experiment data
     t_warmup = 5
     t_cooldown = 5
-    t_period = 30
-    sigma = [0.01, 0.05]
+    t_period = 45
+    sigma = [0.01, 0.04]
     periods = 1
     t_exp = periods * t_period
     t_prev = 1.2
-    repetitions = 2
+    repetitions = 4
     visual_conditions = 2
-    haptic_conditions = 1
-    conditions = repetitions * visual_conditions * haptic_conditions
+    haptic_conditions = 2
+    robot_conditions = 1
+    conditions = repetitions * visual_conditions * haptic_conditions + robot_conditions
     duration = t_warmup + t_cooldown + t_exp
 
     # Visual stuff
@@ -152,8 +152,8 @@ if __name__ == "__main__":
 
         if platform.system() == 'Windows':
             with wres.set_resolution(10000):
-                # Do trial
-                experiment_data = experiment_handler.experiment(condition=i)
+                # Do trial (trial -1 is the robot only run)
+                experiment_data = experiment_handler.experiment(condition=i-1)
 
                 # Save data
                 string = "data\\" + str(participant) + "\\trial_" + str(i) + ".csv"

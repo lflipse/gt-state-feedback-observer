@@ -5,7 +5,7 @@ import pandas as pd
 
 class Reference:
     def __init__(self, duration):
-        bw = 2.5
+        bw = 2.2
         self.amp = 0.25
         self.load_data()
         self.duration = (self.periods[10] * 2 * np.pi) / bw

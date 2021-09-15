@@ -144,14 +144,14 @@ if __name__ == "__main__":
     B = np.array([[0], [1 / Jw]])
 
     # TODO: verify values
-    Gamma = 4 * np.array([[2, 0], [0, 2]])
+    Gamma = 4 * np.array([[1, 0], [0, 2]])
     alpha = 8
     K = alpha * np.array([[10, 0], [0, 1]])
     kappa = 1
-    C = np.array([[50.0, 0.0], [0.0, 2.0]])
+    C = np.array([[25.0, 0.0], [0.0, 1.0]])
 
-    Qh1 = np.array([[25.0, 0.0], [0.0, 1.0]])
-    Qh2 = np.array([[12.0, 0.0], [0.0, 0.5]])
+    Qh1 = np.array([[12.5, 0.0], [0.0, 0.5]])
+    Qh2 = np.array([[10.0, 0.0], [0.0, 0.2]])
 
     vhg = np.zeros((6, 2))
     # vhg[0, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)[1]

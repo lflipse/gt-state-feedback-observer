@@ -20,8 +20,8 @@ class SensoDriveModule(mp.Process):
         self.frequency = 500  # Hz
         self.time_step = 1 / self.frequency
         self._time_step_in_ns = self.time_step * 1e9
-        self._bq_filter_velocity = LowPassFilterBiquad(fc=40, fs=self.frequency)
-        self._bq_filter_acc = LowPassFilterBiquad(fc=14, fs=self.frequency)
+        self._bq_filter_velocity = LowPassFilterBiquad(fc=60, fs=self.frequency)
+        self._bq_filter_acc = LowPassFilterBiquad(fc=15, fs=self.frequency)
         self.controller = senso_dict["controller"]
         self.controller_type = senso_dict["controller_type"]
         self.now = 0

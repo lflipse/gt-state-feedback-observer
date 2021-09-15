@@ -30,7 +30,8 @@ class Visualize:
         self.bg_color_dark = (0, 0, 0)
         # self.bg_color = (0, 0, 0) # Black background
         self.line_color = (100, 100, 100)
-        self.preview_color = (155, 135, 12)
+        self.preview_color = (255, 140, 0)
+        # ff8c00 hex color
         self.bg_color = (0, 0, 0)
         pygame.font.init()
         # print("available fonts: ", pygame.font.get_fonts())

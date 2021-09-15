@@ -34,10 +34,13 @@ class PlotStuff:
         self.fig5 = plt.figure()
 
 
-    def plot_experiment(self, data, compare):
+    def plot_experiment(self, data, averaged_data, compare):
         pd_metric = pd.DataFrame.from_dict(data)
+        pd_averaged = pd.DataFrame.from_dict(averaged_data)
 
+        print(pd_averaged)
         print(pd_metric)
+
         if compare:
             # plot box-plots for all metrics
             Y = ["rmse", "rmsu", "cost"]
@@ -66,11 +69,18 @@ class PlotStuff:
             metric = pd_metric
 
             plt.figure()
-            sns.swarmplot(linewidth=2.5, data=metric, x="condition", y=y, hue=hue, alpha=0.7)
+            sns.swarmplot(linewidth=2.5, data=metric, x="condition", y=y, hue='participant', alpha=0.7)
             ax = sns.boxplot(linewidth=2.5, data=metric, x="condition", y=y, hue=hue, width=0.7)
             ax.set_xlabel("Condition", **self.csfont)
             ax.set_ylabel(unit[i], **self.csfont)
             ax.set_title(title, **self.csfont)
+
+        plt.figure()
+        sns.swarmplot(linewidth=2.5, data=pd_averaged, x="conditions", y="rms_angle_error", hue='participants', alpha=0.7)
+        ax = sns.boxplot(linewidth=2.5, data=pd_averaged, x="conditions", y="rms_angle_error", hue='participants', width=0.7)
+        ax.set_xlabel("Condition", **self.csfont)
+        ax.set_ylabel("Root-mean-squared error", **self.csfont)
+        ax.set_title("Performance", **self.csfont)
 
     def plot_trial(self, data):
         # UNPACK DATA
@@ -192,8 +202,6 @@ class PlotStuff:
         # plt.show()
 
         # self.save_all_figures()
-
-
 
     def limit_y(self, var1, var2):
         test = 1

@@ -41,6 +41,8 @@ class Experiment:
         self.t0 = 0
         self.time = 0
         self.cond = 0
+        self.computed = False
+        self.RMSE = 0
         self.visual_setting = 0
         self.reference = input["reference"]
         self.store = False
@@ -67,6 +69,7 @@ class Experiment:
         self.virtual_human = input["virtual_human"]
         self.damp = 0
         self.stiff = 0
+        self.factor = 0
         self.new_states = {"steering_angle": 0, "measured_torque": 0}
         self.quit = False
         self.preview_positions = np.array([0.0])
@@ -97,29 +100,41 @@ class Experiment:
         self.cond = 0
         self.variables = dict()
 
-        # First x trials are manual control
-        self.repetition = condition % self.repetitions
-        self.visual_setting = ((condition - self.repetition)/self.repetitions) % self.visual_conditions
-        sigma_h = self.sigma[int(self.visual_setting)]
-
-        if self.visual_setting == 0:
-            setting = "Good Visuals"
-        else:
-            setting = "Bad Visuals"
-
-        # if condition < (self.repetitions * self.visual_conditions):
-        if condition >= (self.repetitions * self.visual_conditions):
-            cond = "Manual Control"
-            self.send_dict["manual"] = True
-        else:
-            cond = "Shared Control"
+        # Trial -1 is a robot only run
+        if condition < 0:
+            cond = "Robot only"
             self.send_dict["manual"] = False
             sharing_rule = self.sharing_rule
-
-        if condition < self.repetitions:
-            self.send_dict["sharing_rule"] = self.estimated_human_cost
-        else:
             self.send_dict["sharing_rule"] = self.sharing_rule
+            self.repetition = 0
+            self.visual_setting = 0
+            setting = "Robot vision"
+            sigma_h = self.sigma[int(self.visual_setting)]
+
+        else:
+            # First x trials are manual control
+            self.repetition = condition % self.repetitions
+            self.visual_setting = ((condition - self.repetition)/self.repetitions) % self.visual_conditions
+            sigma_h = self.sigma[int(self.visual_setting)]
+
+            if self.visual_setting == 0:
+                setting = "Good Visuals"
+            else:
+                setting = "Bad Visuals"
+
+            if condition < (self.repetitions * self.visual_conditions):
+            # if condition >= (self.repetitions * self.visual_conditions):
+                cond = "Manual Control"
+                self.send_dict["manual"] = True
+            else:
+                cond = "Shared Control"
+                self.send_dict["manual"] = False
+                sharing_rule = self.sharing_rule
+
+            if condition < self.repetitions:
+                self.send_dict["sharing_rule"] = self.estimated_human_cost
+            else:
+                self.send_dict["sharing_rule"] = self.sharing_rule
 
         print(cond)
 
@@ -129,7 +144,7 @@ class Experiment:
                 self.quit = self.visualize.check_quit()
                 if self.quit:
                     self.send_dict["exit"] = True
-                self.send_dict["factor"] = 0
+                self.factor = 0
                 self.send_dict["reset"] = True
                 self.send_dict["experiment"] = False
                 self.send_dict["ref"] = np.array([0.0, 0.0])
@@ -137,6 +152,7 @@ class Experiment:
                 self.send_dict["sharing_rule"] = self.sharing_rule
                 self.parent_conn.send(self.send_dict)  # Child is for sending
                 new_states = self.parent_conn.recv()  # Receive from child
+                self.computed = False
             else:
                 print("sensodrive process was killed")
                 return -1
@@ -152,6 +168,7 @@ class Experiment:
         self.time = 0
         self.cond = 0
         self.time = 0
+        self.factor = 0.25
 
         # Loop over 1 trial
         while self.time < self.duration:
@@ -178,39 +195,49 @@ class Experiment:
             if self.time < self.t_warmup:
                 # 3 second start screen
                 self.store = False
-                self.send_dict["factor"] = 1 / (1 + np.exp(-2 * self.time)) - 1 / (1 + np.exp(2 * self.time))
-                self.send_dict["ref"] = ref * self.send_dict["factor"]
+                self.factor = math.tanh(self.time)
+                self.send_dict["factor"] = self.factor
+                self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = False
 
 
                 # Text to display
                 dt = self.t_warmup - self.time
                 top_text = ""
-                if dt > 3:
-                    text = "Trial starts in:"
+                if cond != "Robot only":
+                    if dt > 3:
+                        text = "Trial starts in:"
+                    else:
+                        text = str(round(dt, 1))
                 else:
-                    text = str(round(dt, 1))
+                    text = "This is a robot only run!"
 
             # EXPERIMENT
             elif self.t_warmup <= self.time < (self.t_warmup + self.t_exp):
                 self.store = True
-                self.send_dict["factor"] = 1
+                self.factor = 1
+                self.send_dict["factor"] = self.factor
                 self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = True
+                if self.time > (self.t_warmup + 0.5 * self.t_exp):
+                    if cond == "Robot only":
+                        # Switch to bad condition halfway
+                        sigma_h = self.sigma[int(self.visual_setting) + 1]
 
                 # Determine condition
                 text = ""
-                top_text = "Time = " + str(round(self.time - self.t_warmup, 1))
+                # top_text = "Time = " + str(round(self.time - self.t_warmup, 1))
 
             # COOLDOWN
             else:
+                self.compute_error()
                 self.store = False
-                self.send_dict["factor"] = 1 / (1 + np.exp(-2 * (self.time - self.t_warmup - self.t_exp))) - 1 / \
-                                           (1 + np.exp(2 * (self.time - self.t_warmup - self.t_exp)))
+                self.factor = -math.tanh(self.time - self.duration)
+                self.send_dict["factor"] = self.factor
                 self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = False
                 text = "Finished trial"
-                top_text = ""
+                top_text = "RMSE = " + str(round(self.RMSE, 4))
 
             # Send data to the child
             if self.senso_process.is_alive():
@@ -289,6 +316,13 @@ class Experiment:
     def store_variables(self, output):
         for key in output.keys():
             self.variables.setdefault(key, []).append(output[key])
+
+    def compute_error(self):
+        if not self.computed:
+            e = self.variables["angle_error"]
+            self.RMSE = np.sqrt(1/len(e) * np.inner(e, e))
+            self.computed = True
+
 
     def reference_preview(self, t_now, h, sigma_h):
         steps = 250
