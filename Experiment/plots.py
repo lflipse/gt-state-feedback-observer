@@ -76,8 +76,8 @@ class PlotStuff:
             ax.set_title(title, **self.csfont)
 
         plt.figure()
-        sns.swarmplot(linewidth=2.5, data=pd_averaged, x="conditions", y="rms_angle_error", hue='participants', alpha=0.7)
-        ax = sns.boxplot(linewidth=2.5, data=pd_averaged, x="conditions", y="rms_angle_error", hue='participants', width=0.7)
+        sns.swarmplot(linewidth=2.5, data=pd_averaged, x="condition", y="rms_angle_error", hue='participant', alpha=0.7)
+        ax = sns.boxplot(linewidth=2.5, data=pd_averaged, x="condition", y="rms_angle_error", hue='participant', width=0.7)
         ax.set_xlabel("Condition", **self.csfont)
         ax.set_ylabel("Root-mean-squared error", **self.csfont)
         ax.set_title("Performance", **self.csfont)
@@ -207,7 +207,7 @@ class PlotStuff:
         test = 1
 
     def save_all_figures(self):
-        pp = PdfPages('figures\\experiment.pdf')
+        pp = PdfPages('figures\\experiment_prelim.pdf')
         figs = None
         if figs is None:
             figs = [plt.figure(n) for n in plt.get_fignums()]

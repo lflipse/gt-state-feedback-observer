@@ -145,13 +145,13 @@ if __name__ == "__main__":
 
     # TODO: verify values
     Gamma = 4 * np.array([[1, 0], [0, 2]])
-    alpha = 8
+    alpha = 2
     K = alpha * np.array([[10, 0], [0, 1]])
     kappa = 1
-    C = np.array([[25.0, 0.0], [0.0, 1.0]])
+    C = np.array([[10.0, 0.0], [0.0, 1.0]])
 
-    Qh1 = np.array([[12.5, 0.0], [0.0, 0.5]])
-    Qh2 = np.array([[10.0, 0.0], [0.0, 0.2]])
+    Qh1 = np.array([[2.5, 0.0], [0.0, 0.5]])
+    Qh2 = np.array([[0.0, 0.0], [0.0, 0.2]])
 
     vhg = np.zeros((6, 2))
     # vhg[0, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)[1]

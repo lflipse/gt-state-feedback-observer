@@ -54,11 +54,12 @@ class Analysis():
 
         self.build_metrics()
         self.build_individual_metrics()
-        # self.plot_stuff.plot_trial(self.raw_data[0, 0])
-        # self.plot_stuff.plot_trial(self.raw_data[0, 4])
+        self.plot_stuff.plot_trial(self.raw_data[0, 0])
+        self.plot_stuff.plot_trial(self.raw_data[0, 7])
 
         # General experiment data
-        self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, False)
+        self.plot_stuff.plot_experiment(self.metrics, self.metrics, False)
+        self.plot_stuff. save_all_figures()
         plt.show()
 
     def build_metrics(self):

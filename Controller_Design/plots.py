@@ -306,6 +306,8 @@ class PlotStuff:
         plt.figure()
         plt.plot(t_h, Lhhat_pos_h, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
                  label="Estimated (human) $\hat{L}_{h}(t)$")
+        plt.plot(t_h, Lr_pos_h, self.tud_blue, linewidth=self.lw, linestyle="--", alpha=1,
+                 label="Robot gain $L_{r}(t)$")
         plt.plot(t_vir, Lh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
                  label="Virtual (human) $L_{h,vir}(t)$")
         plt.annotate("Weak steering", (7.5, Lh_pos_vir[int(n / 12)]), xytext=(10, Lh_pos_vir[int(n / 12)] + 1),
@@ -334,6 +336,8 @@ class PlotStuff:
 
         plt.plot(t_vir, Lh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
                  label="Virtual (human) $L_{h,vir}(t)$")
+        plt.plot(t_h, Lr_vel_h, self.tud_blue, linewidth=self.lw, linestyle="--", alpha=1,
+                 label="Robot gain $L_{r}(t)$")
         plt.annotate("Weak steering", (5, Lh_vel_vir[int(n / 12)]), xytext=(7.5, Lh_vel_vir[int(n / 12)] + 0.25),
                      arrowprops=options)
         plt.annotate("No steering", (22.5, Lh_vel_vir[int(3 * n / 12)]),
