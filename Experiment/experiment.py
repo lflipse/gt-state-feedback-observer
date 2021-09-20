@@ -104,6 +104,7 @@ class Experiment:
         if condition < 0:
             cond = "Robot only"
             self.send_dict["manual"] = False
+            self.send_dict["static"] = False
             sharing_rule = self.sharing_rule
             self.send_dict["sharing_rule"] = self.sharing_rule
             self.repetition = 0
@@ -123,12 +124,18 @@ class Experiment:
                 setting = "Bad Visuals"
 
             if condition < (self.repetitions * self.visual_conditions):
-            # if condition >= (self.repetitions * self.visual_conditions):
                 cond = "Manual Control"
                 self.send_dict["manual"] = True
-            else:
-                cond = "Shared Control"
+                self.send_dict["static"] = False
+            elif (self.repetitions * self.visual_conditions) <= condition < 2 * (self.repetitions * self.visual_conditions):
+                cond = "Static Shared Control"
                 self.send_dict["manual"] = False
+                self.send_dict["static"] = True
+                sharing_rule = self.sharing_rule
+            else:
+                cond = "Adaptive Shared Control"
+                self.send_dict["manual"] = False
+                self.send_dict["static"] = False
                 sharing_rule = self.sharing_rule
 
             if condition < self.repetitions:
@@ -189,6 +196,10 @@ class Experiment:
             self.reference_preview(self.time, h, sigma_h=sigma_h)
             if cond == "Manual Control":
                 sharing_rule = self.estimated_human_cost
+            if cond == "Static Shared Control":
+                self.controller_type = cond
+
+
             self.send_dict["sharing_rule"] = sharing_rule
 
             # WARM_UP
@@ -219,10 +230,15 @@ class Experiment:
                 self.send_dict["factor"] = self.factor
                 self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = True
+                estimated_gain_pos = self.states["estimated_human_gain"].flatten()[0]
+                robot_gain_pos = self.states["robot_gain"][0, 0]
+                top_text = "Gains; H:" + str(round(estimated_gain_pos, 2)) + " R: " + str(round(robot_gain_pos, 2))
                 if self.time > (self.t_warmup + 0.5 * self.t_exp):
                     if cond == "Robot only":
                         # Switch to bad condition halfway
                         sigma_h = self.sigma[int(self.visual_setting) + 1]
+
+
 
                 # Determine condition
                 text = ""
@@ -279,30 +295,30 @@ class Experiment:
                     output['torque'] = self.states["torque"][0, 0]
                 except:
                     output["torque"] = 0
-                if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
-                    output["estimated_human_gain_pos"] = self.states["estimated_human_gain"].flatten()[0]
-                    output["estimated_human_gain_vel"] = self.states["estimated_human_gain"].flatten()[1]
 
-                    # print(self.states["robot_gain"])
-                    output["robot_gain_pos"] = self.states["robot_gain"][0, 0]
-                    output["robot_gain_vel"] = self.states["robot_gain"][0, 1]
+                output["estimated_human_gain_pos"] = self.states["estimated_human_gain"].flatten()[0]
+                output["estimated_human_gain_vel"] = self.states["estimated_human_gain"].flatten()[1]
 
-                    output["state_estimate_pos"] = self.states["state_estimate"][0][0]
-                    output["state_estimate_vel"] = self.states["state_estimate"][1][0]
-                    output["input_estimation_error"] = self.states["input_estimation_error"]
-                    output["state_estimate_derivative"] = self.states["state_estimate_derivative"][1][0]
+                # print(self.states["robot_gain"])
+                output["robot_gain_pos"] = self.states["robot_gain"][0, 0]
+                output["robot_gain_vel"] = self.states["robot_gain"][0, 1]
 
-                    try:
-                        output["estimated_human_input"] = self.states["estimated_human_torque"][0, 0]
-                    except:
-                        output["estimated_human_input"] = self.states["estimated_human_torque"][0]
+                output["state_estimate_pos"] = self.states["state_estimate"][0][0]
+                output["state_estimate_vel"] = self.states["state_estimate"][1][0]
+                output["input_estimation_error"] = self.states["input_estimation_error"]
+                output["state_estimate_derivative"] = self.states["state_estimate_derivative"][1][0]
+
+                try:
+                    output["estimated_human_input"] = self.states["estimated_human_torque"][0, 0]
+                except:
+                    output["estimated_human_input"] = self.states["estimated_human_torque"][0]
 
 
-                    output["robot_cost_pos"] = self.states["robot_cost_calc"][0, 0]
-                    output["robot_cost_vel"] = self.states["robot_cost_calc"][1, 1]
-                    if self.controller_type == "Cost_observer":
-                        output["estimated_human_cost_1"] = self.states["estimated_human_cost"][0, 0]
-                        output["estimated_human_cost_2"] = self.states["estimated_human_cost"][1, 1]
+                output["robot_cost_pos"] = self.states["robot_cost_calc"][0, 0]
+                output["robot_cost_vel"] = self.states["robot_cost_calc"][1, 1]
+
+                output["estimated_human_cost_1"] = self.states["estimated_human_cost"][0, 0]
+                output["estimated_human_cost_2"] = self.states["estimated_human_cost"][1, 1]
 
                 # print(output)
                 self.store_variables(output)

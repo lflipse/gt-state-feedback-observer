@@ -38,6 +38,7 @@ class SensoDriveModule(mp.Process):
             'mp_damping': senso_dict["damping"],
             'mp_spring_stiffness': senso_dict["stiffness"],
             'manual': True,
+            'static': False,
         }
 
         # Cost parameters
@@ -269,11 +270,10 @@ class SensoDriveModule(mp.Process):
         new_estimated_gain = old_estimated_gain + gain_derivative * delta
         self.states["estimated_human_gain"] = new_estimated_gain
 
-
         self.states["state_derivative"] = np.array([[self.states["steering_rate"]],
                                                     [self.states["steering_acc"]]])
-        if self.controller_type == "Cost_observer":
-            self.states["estimated_human_cost"] = self.compute_cost()
+
+        self.states["estimated_human_cost"] = self.compute_cost()
 
         if not self.states["experiment"]:
             self.states["estimated_human_gain"] = np.array([0.0, 0.0])
@@ -286,8 +286,6 @@ class SensoDriveModule(mp.Process):
         except:
             self.states["estimated_human_gain"][1] = max(-0.5, min(2, self.states["estimated_human_gain"][1]))
             self.states["estimated_human_gain"][0] = max(-4, min(8, self.states["estimated_human_gain"][0]))
-
-
 
     def compute_cost(self):
         Lr = self.states["robot_gain"][0]
@@ -368,7 +366,7 @@ class SensoDriveModule(mp.Process):
         """
 
         # Compute the control input
-        output = self.controller.compute_control_input(self.states, self.settings["manual"])
+        output = self.controller.compute_control_input(self.states, self.settings["manual"], self.settings["static"])
         self.update_controller_states(output)
         if self.settings["manual"]:
             self.states["torque"] = 0

@@ -9,7 +9,7 @@ class ControllerDGObs:
         self.K = K
         self.kappa = kappa
 
-    def compute_control_input(self, states, manual):
+    def compute_control_input(self, states, manual, static):
         xi = states["error_state"]
         x = states["state"]
         x_hat = states["state_estimate"]
@@ -17,6 +17,7 @@ class ControllerDGObs:
 
         x_dot = states["state_derivative"]
         Lh_hat = states["estimated_human_gain"]
+        Lr_old = states["robot_gain"]
         Qh = states["estimated_human_cost"]
         C = states["sharing_rule"]
 
@@ -26,18 +27,22 @@ class ControllerDGObs:
             Lr = np.array([[0, 0]])
             ur = 0
         else:
-            Qr = C - Qh
-            if np.linalg.det(Qr) < 0:
-                Qr = np.array([[0, 0], [0, 0]])
-                Pr = np.array([[0, 0], [0, 0]])
-                Lr = np.array([[0, 0]])
-                print("Qr too low here")
-
-            # Compute Controller gain
-            else:
-                Acl = self.A - self.B * Lh_hat
-                Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
+            if static:
+                Qr = C
+                Pr = cp.solve_continuous_are(self.A, self.B, Qr, 1)
                 Lr = np.matmul(self.B.transpose(), Pr)
+            else:
+                Qr = C - Qh
+                if np.linalg.det(Qr) < 0:
+                    Pr = np.array([[0, 0], [0, 0]])
+                    Lr = Lr_old
+                    print("Qr too low here")
+
+                # Compute Controller gain
+                else:
+                    Acl = self.A - self.B * Lh_hat
+                    Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
+                    Lr = np.matmul(self.B.transpose(), Pr)
 
             ur = np.matmul(-Lr, xi)
         uhhat = np.matmul(-Lh_hat, xi)
