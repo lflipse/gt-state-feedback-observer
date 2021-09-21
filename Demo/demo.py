@@ -32,6 +32,32 @@ def load_data_set(file):
 
     return data_set
 
+def choose_condition():
+    print("Choose a controller type")
+    a = int(input("0: Manual, 1: Haptic static, 2: Haptic adaptive.  Your answer = "))
+    print("Choose a visual condition")
+    b = int(input("0: Good, 1: Bad, 2: Mixed.  Your answer = "))
+    if b == 0 or b == 1:
+        condition = a * 2 + b
+    elif b == 2:
+        if a == 2:
+            condition = -1
+        else:
+            exit("No option")
+    else:
+        exit("No option")
+
+    c = int(input("Warmstart? 0: No, Yes: 1.  Your answer = "))
+    if c == 0:
+        initial_human = np.array([0, 0])
+    elif c == 1:
+        initial_human = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, C, 1))[0]
+        print(initial_human)
+    else:
+        exit("No option")
+
+    return condition, initial_human * 0.75
+
 
 # This statement is necessary to allow for multiprocessing
 if __name__ == "__main__":
@@ -70,6 +96,9 @@ if __name__ == "__main__":
     conditions = repetitions * visual_conditions * haptic_conditions + robot_conditions
     duration = t_warmup + t_cooldown + t_exp
 
+    # Choose a condition
+    condition, initial_human = choose_condition()
+
     # Visual stuff
     screen_width = 1920
     screen_height = 1080
@@ -89,7 +118,8 @@ if __name__ == "__main__":
         "controller": controller,
         "controller_type": controller_type,
         "parent_conn": parent_conn,
-        "child_conn": child_conn
+        "child_conn": child_conn,
+        "initial_human": initial_human,
     }
     senso_drive_process = SensoDriveModule(senso_dict)
 
@@ -147,12 +177,13 @@ if __name__ == "__main__":
     visualize = Visualize(screen_width, screen_height, full_screen)
     experiment_handler = Experiment(experiment_input, visualize)
 
-    # Loop over the conditions
+    conditions = 1
+
     for i in range(conditions):
         if platform.system() == 'Windows':
             with wres.set_resolution(10000):
                 # Do trial (trial -1 is the robot only run)
-                experiment_data = experiment_handler.experiment(condition=i-4)
+                experiment_data = experiment_handler.experiment(condition=condition)
 
                 # Save data
                 string = "data\\" + str(participant) + "\\trial_" + str(i) + ".csv"
@@ -161,5 +192,9 @@ if __name__ == "__main__":
     visualize.quit()
     senso_drive_process.join(timeout=0)
     # live_plotter_process.join(timeout=0)
+
+    analysis = Analysis()
+    analysis.initialize()
+    analysis.analyse()
 
 

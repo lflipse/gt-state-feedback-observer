@@ -179,15 +179,18 @@ class Analysis():
     def cut_data(self, participant, trial):
         # Cut data
         filtered_data = {}
-        for key in self.raw_data[participant, trial].keys():
-            data = self.raw_data[participant, trial][key]
-            time = np.array(self.raw_data[participant, trial]['time'])
-            start_time = 0.2 * time[-1]
-            end_time = 0.8 * time[-1]
-            # Find index where to cut the data
-            # print(start_time, end_time)
-            start_index = np.argmax(time > start_time)
-            end_index = np.argmax(time > end_time)
-            filtered_data[key] = data[start_index:end_index]
+        try:
+            for key in self.raw_data[participant, trial].keys():
+                data = self.raw_data[participant, trial][key]
+                time = np.array(self.raw_data[participant, trial]['time'])
+                start_time = 0.2 * time[-1]
+                end_time = 0.8 * time[-1]
+                # Find index where to cut the data
+                # print(start_time, end_time)
+                start_index = np.argmax(time > start_time)
+                end_index = np.argmax(time > end_time)
+                filtered_data[key] = data[start_index:end_index]
+        except:
+            print("no data found")
 
         self.filtered_data[participant, trial] = filtered_data

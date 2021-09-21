@@ -104,11 +104,12 @@ class Experiment:
 
         # Trial -1 is a robot only run
         if condition < 0:
-            cond = "Robot only"
+            # cond = "Robot only"
+            cond = "Adaptive Shared Control"
             self.send_dict["manual"] = False
             self.send_dict["static"] = False
             sharing_rule = self.sharing_rule
-            self.send_dict["sharing_rule"] = self.sharing_rule
+            self.send_dict["sharing_rule"] = sharing_rule
             self.repetition = 0
             self.visual_setting = 0
             setting = "Robot vision"
@@ -157,8 +158,8 @@ class Experiment:
                 self.send_dict["reset"] = True
                 self.send_dict["experiment"] = False
                 self.send_dict["ref"] = np.array([0.0, 0.0])
-                self.send_dict["robot_cost"] = self.Qr_start
-                self.send_dict["sharing_rule"] = self.sharing_rule
+                # self.send_dict["robot_cost"] = self.Qr_start
+                # self.send_dict["sharing_rule"] = self.sharing_rule
                 self.parent_conn.send(self.send_dict)  # Child is for sending
                 new_states = self.parent_conn.recv()  # Receive from child
                 self.computed = False
@@ -329,8 +330,8 @@ class Experiment:
                 self.store_variables(output)
 
         # Time to close off
-        # self.send_dict["exit"] = True
-        # self.parent_conn.send(self.send_dict)
+        self.send_dict["exit"] = True
+        self.parent_conn.send(self.send_dict)
 
         return self.variables
 

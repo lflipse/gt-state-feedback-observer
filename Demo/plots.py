@@ -81,9 +81,9 @@ class PlotStuff:
         ax.set_title("Performance", **self.csfont)
 
     def plot_data(self, raw_data, trials, participant):
-
-        for i in range(trials-1):
-            data = raw_data[participant, i+1]
+        trials = 1
+        for i in range(trials):
+            data = raw_data[participant, i]
             condition = data["condition"][0]
             setting = data["setting"][0]
 
@@ -105,46 +105,71 @@ class PlotStuff:
             uhtilde = data["input_estimation_error"]
 
             # Conditions
-
-
             q_h_1 = data["estimated_human_cost_1"]
             q_h_2 = data["estimated_human_cost_2"]
             q_r_1 = data["robot_cost_pos"]
             q_r_2 = data["robot_cost_vel"]
 
             if condition == "Manual Control":
-                ls = '-.'
+                # ls = '-.'
                 label_human = 'Manual control estimated $\hat{L}_h(t)$'
             elif condition == "Static Shared Control":
-                ls = '--'
+                # ls = '--'
                 label_robot = 'Static controller gain $L_r(t)$'
                 label_human = 'Static controller estimated $\hat{L}_h(t)$'
             else:
-                ls = '-'
+                # ls = '-'
                 label_robot = 'Adaptive controller gain $L_r(t)$'
                 label_human = 'Adaptive controller estimated $\hat{L}_h(t)$'
 
-            if setting == "Good Visuals":
-                plt.figure(self.fig1)
-                plt.title("Steering error gain for Good Visuals", **self.csfont)
-            else:
-                plt.figure(self.fig2)
-                plt.title("Steering error gain for Bad Visuals", **self.csfont)
+            ls = '-'
 
+            # if setting == "Good Visuals":
+            #     plt.figure(self.fig1)
+            #     plt.title("Steering error gain for Good Visuals", **self.csfont)
+            # else:
+            #     plt.figure(self.fig2)
+            #     plt.title("Steering error gain for Bad Visuals", **self.csfont)
+
+            plt.figure(self.fig1)
+            plt.title("Steering error gain", **self.csfont)
 
             if condition != "Manual Control":
-                plt.plot(t, Lr_pos, self.tud_blue, linestyle=ls, linewidth=3, label=label_robot)
-            plt.plot(t, Lhhat_pos, self.tud_red, linestyle=ls, linewidth=3, label=label_human)
+                plt.plot(t, Lr_pos, self.tud_blue, linestyle=ls, linewidth=4, label=label_robot)
+            plt.plot(t, Lhhat_pos, self.tud_red, linestyle=ls, linewidth=4, label=label_human)
             # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
             self.limit_y(Lr_pos, Lhhat_pos)
             plt.xlabel('Time (s)', **self.hfont)
             plt.ylabel('Gain (Nm)', **self.hfont)
-            plt.legend(prop={"size": 8}, loc='upper right')
+            plt.legend(prop={"size": 14}, loc='upper right')
             plt.xlim(0, t[-1])
             plt.tight_layout(pad=1)
 
+            # Control authority
+            Lh = np.array(Lhhat_pos)
+            Lr = np.array(Lr_pos)
+            C = (Lr - Lh) / (Lh + Lr)
 
+            options = {"arrowstyle": '->', }
 
+            plt.figure(self.fig2)
+            plt.title("Control authority", **self.csfont)
+
+            plt.plot(t, C, self.tud_blue, linestyle=ls, linewidth=4, label="Control authority")
+            plt.plot([0, t[-1]], [1, 1], self.tud_blue, alpha=0.7, linestyle='--')
+            plt.plot([0, t[-1]], [-1, -1], self.tud_blue, alpha=0.7, linestyle='--')
+
+            plt.annotate("Robot has control authority", (10, 1.05), arrowprops=options)
+            plt.annotate("Human has control authority", (10, -0.95), arrowprops=options)
+            plt.annotate("Human in competition", (20, 1.8), arrowprops=options)
+            plt.annotate("Robot in competition", (20, -1.8), arrowprops=options)
+
+            plt.xlabel('Time (s)', **self.hfont)
+            plt.ylabel('Authority (-)', **self.hfont)
+            plt.legend(prop={"size": 8}, loc='upper right')
+            plt.xlim(0, t[-1])
+            plt.ylim(-2, 2)
+            plt.tight_layout(pad=1)
 
         # plt.show()
 

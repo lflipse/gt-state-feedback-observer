@@ -149,7 +149,6 @@ if __name__ == "__main__":
 
     # Loop over the conditions
     for i in range(conditions):
-
         if platform.system() == 'Windows':
             with wres.set_resolution(10000):
                 # Do trial (trial -1 is the robot only run)

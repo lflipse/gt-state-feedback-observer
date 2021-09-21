@@ -47,6 +47,13 @@ class SensoDriveModule(mp.Process):
         self.alpha_2 = senso_dict["alpha_2"]
         self.reset_states = False
 
+        try:
+            self.initial_human = senso_dict["initial_human"]
+        except:
+            senso_dict["initial_human"] = np.array([0, 0])
+
+        print(self.initial_human)
+
         # States
         self.states = {
             "ref": np.array([0, 0]),
@@ -65,11 +72,11 @@ class SensoDriveModule(mp.Process):
             "estimated_human_torque": 0,
             "cost": 0,
             "measured_input": 0,
-            "estimated_human_gain": np.array([0, 0]),
+            "estimated_human_gain": self.initial_human,
             "estimated_human_gain_derivative": np.array([0, 0]),
             "virtual_human_gain": np.array([0.0, 0.0]),
             "virtual_human_torque": 0,
-            "robot_gain": np.array([0, 0]),
+            "robot_gain": np.array([[0, 0]]),
             "input_estimation_error": 0,
             "xi_gamma": np.array([0, 0]),
             "experiment": False,
@@ -230,11 +237,11 @@ class SensoDriveModule(mp.Process):
             "estimated_human_torque": 0,
             "cost": 0,
             "measured_input": 0,
-            "estimated_human_gain": np.array([[0, 0]]),
+            "estimated_human_gain": self.initial_human,
             "estimated_human_gain_derivative": np.array([0, 0]),
             "virtual_human_gain": np.array([0.0, 0.0]),
             "virtual_human_torque": 0,
-            "robot_gain": np.array([0, 0]),
+            "robot_gain": np.array([[0, 0]]),
             "input_estimation_error": 0,
             "xi_gamma": np.array([0, 0]),
             "experiment": False,
@@ -245,6 +252,7 @@ class SensoDriveModule(mp.Process):
             "sharing_rule": np.array([[0, 0], [0, 0]]),
             "robot_cost_calc": np.array([[0, 0], [0, 0]]),
         }
+
 
     def update_states(self, sensor_data, delta):
         steering_angle = sensor_data["steering_angle"]
@@ -277,7 +285,7 @@ class SensoDriveModule(mp.Process):
         self.states["estimated_human_cost"] = self.compute_cost()
 
         if not self.states["experiment"]:
-            self.states["estimated_human_gain"] = np.array([0.0, 0.0])
+            self.states["estimated_human_gain"] = self.initial_human
             self.states["estimated_human_cost"] = np.array([[0.0, 0.0], [0.0, 0.0]])
 
         # Cap for safety reasons

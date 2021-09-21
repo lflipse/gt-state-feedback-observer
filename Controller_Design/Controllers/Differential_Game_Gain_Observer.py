@@ -36,9 +36,20 @@ class ControllerDGObs:
                 beta = 0
             else:
                 Qr = C - Qh
+                # print("eigenvalue: ", np.linalg.det(Qr))
+                # if np.linalg.det(Qr) < -0.2:
+                #     # Pr = np.array([[0, 0], [0, 0]])
+                #     # Lr = Lr_old
+                #     Acl = self.A - self.B * Lh_hat
+                #     Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
+                #     Lr = Lr_old
+                #     # Lr = max(0, Lr[0, 0])
+                #     # print(Lr)
+
                 Acl = self.A - self.B * Lh_hat
                 Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
                 Lr = np.matmul(self.B.transpose(), Pr)
+
 
             ur = np.matmul(-Lr, xi)
         uhhat = np.matmul(-Lh_hat, xi)
