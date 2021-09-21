@@ -29,9 +29,7 @@ class PlotStuff:
 
         self.fig1 = plt.figure()
         self.fig2 = plt.figure()
-        self.fig3 = plt.figure()
-        self.fig4 = plt.figure()
-        self.fig5 = plt.figure()
+
 
 
     def plot_experiment(self, data, averaged_data, compare):
@@ -82,97 +80,71 @@ class PlotStuff:
         ax.set_ylabel("Root-mean-squared error", **self.csfont)
         ax.set_title("Performance", **self.csfont)
 
-    def plot_trial(self, data):
-        # UNPACK DATA
-        t = data["time"]
-        ur = data["torque"]
-        x = data["steering_angle"]
-        r = data["reference_angle"]
-        xdot = data["steering_rate"]
-        rdot = data["reference_rate"]
-        t_ex = data["execution_time"]
+    def plot_data(self, raw_data, trials, participant):
 
-        x_hat = data["state_estimate_pos"]
-        Lhhat_pos = data["estimated_human_gain_pos"]
-        Lhhat_vel = data["estimated_human_gain_vel"]
-        Lr_pos = data["robot_gain_pos"]
-        Lr_vel = data["robot_gain_vel"]
-        uhhat = data["estimated_human_input"]
-        uhtilde = data["input_estimation_error"]
+        for i in range(trials-1):
+            data = raw_data[participant, i+1]
+            condition = data["condition"][0]
+            setting = data["setting"][0]
 
-        # Conditions
-        repetition = data["repetition"]
-        human_noise = data["human_noise"]
+            # UNPACK DATA
+            t = data["time"]
+            ur = data["torque"]
+            x = data["steering_angle"]
+            r = data["reference_angle"]
+            xdot = data["steering_rate"]
+            rdot = data["reference_rate"]
+            t_ex = data["execution_time"]
 
-        xddot = data["acceleration"]
-        xhatdot = data["state_estimate_vel"]
+            x_hat = data["state_estimate_pos"]
+            Lhhat_pos = data["estimated_human_gain_pos"]
+            Lhhat_vel = data["estimated_human_gain_vel"]
+            Lr_pos = data["robot_gain_pos"]
+            Lr_vel = data["robot_gain_vel"]
+            uhhat = data["estimated_human_input"]
+            uhtilde = data["input_estimation_error"]
 
-        q_h_1 = data["estimated_human_cost_1"]
-        q_h_2 = data["estimated_human_cost_2"]
-        q_r_1 = data["robot_cost_pos"]
-        q_r_2 = data["robot_cost_vel"]
-
-        # # Steering angle
-        # plt.figure(self.fig1)
-        # plt.title("Measured and estimated steering angle", **self.csfont)
-        # plt.plot(t, r, self.tud_black, linewidth=2.5, linestyle="-", alpha=0.7, label="Reference $\phi_r(t)$")
-        # plt.plot(t, x, self.tud_blue, linestyle="--", linewidth=2.5, label="Steering angle $\phi(t)$")
-        # plt.plot(t, x_hat, self.tud_red, linewidth=2.5, linestyle="--", label="Estimated $\hat{\phi}(t)$")
-        # plt.xlabel('Time (s)', **self.hfont)
-        # plt.ylabel('Steering angle (rad)', **self.hfont)
-        # plt.legend(prop={"size": 8}, loc='upper right')
-        # plt.xlim(0, t[-1])
-        # plt.tight_layout(pad=1)
-        #
-        # # Steering rate
-        # plt.figure(self.fig2)
-        # plt.title("Measured and estimated steering rate", **self.csfont)
-        # plt.plot(t, rdot, self.tud_black, linewidth=2.5, linestyle="-", alpha=0.7, label="Reference $\dot{\phi}_r(t)$")
-        # plt.plot(t, xdot, self.tud_blue, linestyle="--", linewidth=2.5, label="Steering rate $\dot{\phi}(t)$")
-        # plt.plot(t, xhatdot, self.tud_red, linewidth=2.5, linestyle="--", label="Estimated $\dot{\hat{\phi}}(t)$")
-        # plt.xlabel('Time (s)', **self.hfont)
-        # plt.ylabel('Steering rate (rad/s)', **self.hfont)
-        # plt.legend(prop={"size": 8}, loc='upper right')
-        # plt.xlim(0, t[-1])
-        # plt.tight_layout(pad=1)
+            # Conditions
 
 
-        plt.figure(self.fig3)
-        plt.title("Gains position", **self.csfont)
-        plt.plot(t, Lr_pos, self.tud_blue, linestyle="--", linewidth=3, label="Robot gain $L_r(t)$")
-        plt.plot(t, Lhhat_pos, self.tud_red, linestyle="--", linewidth=3, label="Estimated human gain $\hat{L}_h(t)$")
-        # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
-        self.limit_y(Lr_pos, Lhhat_pos)
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Gain (Nm)', **self.hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, t[-1])
-        plt.tight_layout(pad=1)
+            q_h_1 = data["estimated_human_cost_1"]
+            q_h_2 = data["estimated_human_cost_2"]
+            q_r_1 = data["robot_cost_pos"]
+            q_r_2 = data["robot_cost_vel"]
+
+            if condition == "Manual Control":
+                ls = '-.'
+                label_human = 'Manual control estimated $\hat{L}_h(t)$'
+            elif condition == "Static Shared Control":
+                ls = '--'
+                label_robot = 'Static controller gain $L_r(t)$'
+                label_human = 'Static controller estimated $\hat{L}_h(t)$'
+            else:
+                ls = '-'
+                label_robot = 'Adaptive controller gain $L_r(t)$'
+                label_human = 'Adaptive controller estimated $\hat{L}_h(t)$'
+
+            if setting == "Good Visuals":
+                plt.figure(self.fig1)
+                plt.title("Steering error gain for Good Visuals", **self.csfont)
+            else:
+                plt.figure(self.fig2)
+                plt.title("Steering error gain for Bad Visuals", **self.csfont)
 
 
-        plt.figure(self.fig4)
-        plt.title("Cost function weights", **self.csfont)
-        plt.plot(t, q_r_1, self.tud_blue, linestyle="--", linewidth=3, label="Robot cost $Q_{r,1}(t)$")
-        plt.plot(t, q_h_1, self.tud_red, linestyle="--", linewidth=3, label="Estimated human cost $\hat{Q}_{h,1}(t)$")
-        # self.draw_regions(t, conditions, q_r_1, q_h_1)
-        self.limit_y(q_r_1, q_h_1)
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Gain (Nm)', **self.hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, t[-1])
-        plt.tight_layout(pad=1)
+            if condition != "Manual Control":
+                plt.plot(t, Lr_pos, self.tud_blue, linestyle=ls, linewidth=3, label=label_robot)
+            plt.plot(t, Lhhat_pos, self.tud_red, linestyle=ls, linewidth=3, label=label_human)
+            # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
+            self.limit_y(Lr_pos, Lhhat_pos)
+            plt.xlabel('Time (s)', **self.hfont)
+            plt.ylabel('Gain (Nm)', **self.hfont)
+            plt.legend(prop={"size": 8}, loc='upper right')
+            plt.xlim(0, t[-1])
+            plt.tight_layout(pad=1)
 
-        plt.figure(self.fig5)
-        plt.title("Cost function weights", **self.csfont)
-        plt.plot(t, q_r_2, self.tud_blue, linestyle="--", linewidth=3, label="Robot cost $Q_{r,2}(t)$")
-        plt.plot(t, q_h_2, self.tud_red, linestyle="--", linewidth=3, label="Estimated human cost $\hat{Q}_{h,2}(t)$")
-        # self.draw_regions(t, conditions, q_r_2, q_h_2)
-        self.limit_y(q_r_2, q_h_2)
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Gain (Nm)', **self.hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, t[-1])
-        plt.tight_layout(pad=1)
+
+
 
         # plt.show()
 

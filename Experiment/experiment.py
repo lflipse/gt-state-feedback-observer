@@ -54,6 +54,8 @@ class Experiment:
             "exit": False,
             "robot_cost": None,
             "experiment": False,
+            'Manual': True,
+            'Static': False,
         }
         self.visualize_dict = {
             "time_stamp": 0,
@@ -199,7 +201,6 @@ class Experiment:
             if cond == "Static Shared Control":
                 self.controller_type = cond
 
-
             self.send_dict["sharing_rule"] = sharing_rule
 
             # WARM_UP
@@ -215,7 +216,8 @@ class Experiment:
                 # Text to display
                 dt = self.t_warmup - self.time
                 top_text = ""
-                if cond != "Robot only":
+                # if cond != "Robot only":
+                if cond != False:
                     if dt > 3:
                         text = "Trial starts in:"
                     else:
@@ -231,14 +233,17 @@ class Experiment:
                 self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = True
                 estimated_gain_pos = self.states["estimated_human_gain"].flatten()[0]
+                estimated_cost_pos = self.states["estimated_human_cost"][0, 0]
+                robot_cost_pos = self.states["robot_cost_calc"][0, 0]
                 robot_gain_pos = self.states["robot_gain"][0, 0]
+                estimation_error = self.states["steering_angle"] - self.states["state_estimate"][0][0]
                 top_text = "Gains; H:" + str(round(estimated_gain_pos, 2)) + " R: " + str(round(robot_gain_pos, 2))
+                           # + " HC: " + str(round(estimated_cost_pos, 2)) + " HC: " + str(round(robot_cost_pos, 2)) \
+                           # + " EE: " + str(round(estimation_error, 2)) + " UT: " + str(round(self.states["input_estimation_error"], 2))
                 if self.time > (self.t_warmup + 0.5 * self.t_exp):
                     if cond == "Robot only":
                         # Switch to bad condition halfway
                         sigma_h = self.sigma[int(self.visual_setting) + 1]
-
-
 
                 # Determine condition
                 text = ""

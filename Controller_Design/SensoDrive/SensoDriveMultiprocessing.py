@@ -158,6 +158,7 @@ class SensoDriveModule(mp.Process):
 
                 self.settings["factor"] = msg["factor"]
                 self.settings["manual"] = msg["manual"]
+                self.settings["static"] = msg["static"]
                 self.states["experiment"] = msg["experiment"]
                 self.exit = msg["exit"]
                 self.reset_states = msg["reset"]

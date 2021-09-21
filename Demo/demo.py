@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 2
+    alpha = 1.5
     K = alpha * np.array([[10.0, 0], [0, 0.0]])
     kappa = 1
     C = np.array([[7.5, 0.0], [0.0, 0.2]])
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     # Experiment data
     t_warmup = 5
     t_cooldown = 5
-    t_period = 25
+    t_period = 60
     sigma = [0.005, 0.035]
     periods = 1
     t_exp = periods * t_period
@@ -149,11 +149,10 @@ if __name__ == "__main__":
 
     # Loop over the conditions
     for i in range(conditions):
-
         if platform.system() == 'Windows':
             with wres.set_resolution(10000):
                 # Do trial (trial -1 is the robot only run)
-                experiment_data = experiment_handler.experiment(condition=i-1)
+                experiment_data = experiment_handler.experiment(condition=i-4)
 
                 # Save data
                 string = "data\\" + str(participant) + "\\trial_" + str(i) + ".csv"

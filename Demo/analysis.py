@@ -54,12 +54,12 @@ class Analysis():
 
         self.build_metrics()
         self.build_individual_metrics()
-        self.plot_stuff.plot_trial(self.raw_data[self.participants-1, 0])
-        self.plot_stuff.plot_trial(self.raw_data[self.participants-1, 3])
-        self.plot_stuff.plot_trial(self.raw_data[self.participants-1, 4])
 
-        # General experiment data
-        self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, False)
+        # Plot individual data
+        self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants-1)
+
+        # Plot metrics
+        # self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, False)
         plt.show()
 
     def build_metrics(self):
@@ -175,7 +175,6 @@ class Analysis():
         self.metrics_individuals["rms_rate_error"] = [item for sublist in rms_rate_error for item in sublist]
         self.metrics_individuals["human_angle_cost"] = [item for sublist in human_angle_cost for item in sublist]
         self.metrics_individuals["robot_angle_cost"] = [item for sublist in robot_angle_cost for item in sublist]
-
 
     def cut_data(self, participant, trial):
         # Cut data

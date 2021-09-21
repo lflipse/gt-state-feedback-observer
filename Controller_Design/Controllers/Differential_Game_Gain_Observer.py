@@ -21,28 +21,24 @@ class ControllerDGObs:
         Qh = states["estimated_human_cost"]
         C = states["sharing_rule"]
 
+
         if manual:
             Qr = np.array([[0, 0], [0, 0]])
             Pr = Qr
             Lr = np.array([[0, 0]])
             ur = 0
+            beta = 0
         else:
             if static:
                 Qr = C
                 Pr = cp.solve_continuous_are(self.A, self.B, Qr, 1)
                 Lr = np.matmul(self.B.transpose(), Pr)
+                beta = 0
             else:
                 Qr = C - Qh
-                if np.linalg.det(Qr) < 0:
-                    Pr = np.array([[0, 0], [0, 0]])
-                    Lr = Lr_old
-                    print("Qr too low here")
-
-                # Compute Controller gain
-                else:
-                    Acl = self.A - self.B * Lh_hat
-                    Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
-                    Lr = np.matmul(self.B.transpose(), Pr)
+                Acl = self.A - self.B * Lh_hat
+                Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
+                Lr = np.matmul(self.B.transpose(), Pr)
 
             ur = np.matmul(-Lr, xi)
         uhhat = np.matmul(-Lh_hat, xi)
@@ -51,11 +47,23 @@ class ControllerDGObs:
         x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat) - np.matmul(self.Gamma, x_tilde)
         xi_tilde_dot = x_hat_dot - x_dot
 
+        # Forgetting factor
+        try:
+            Lh_pos = Lh_hat[0][0]
+        except:
+            Lh_pos = Lh_hat[0]
+        if Lh_pos < 0:
+            beta = 0.04
+        else:
+            beta = 0.00
+        forget_factor = beta * np.array([[1, 1]])
+
         # Update law for human gain
         pseudo_B = 1 / np.matmul(self.B.transpose(), self.B) * self.B.transpose()
         uh_tilde = np.matmul(pseudo_B,  xi_tilde_dot - np.matmul(self.A - self.Gamma, x_tilde))
         m_squared = 1 + self.kappa * np.matmul(xi.transpose(), xi)
-        Lhhat_dot = uh_tilde / m_squared * np.matmul(xi.transpose(), self.K)
+        Lhhat_dot = np.matmul(uh_tilde / m_squared * xi.transpose() + forget_factor, self.K)
+        # print(Lhhat_dot, forget_factor, Lhhat_dot + forget_factor)
 
         ur_comp = ur - self.nonlinear_term(x)
 
