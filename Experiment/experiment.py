@@ -112,7 +112,7 @@ class Experiment:
             self.send_dict["sharing_rule"] = sharing_rule
             self.repetition = 0
             self.visual_setting = 0
-            setting = "Robot vision"
+            setting = "Robot Vision"
             sigma_h = self.sigma[int(self.visual_setting)]
 
         else:
@@ -242,7 +242,7 @@ class Experiment:
                            # + " HC: " + str(round(estimated_cost_pos, 2)) + " HC: " + str(round(robot_cost_pos, 2)) \
                            # + " EE: " + str(round(estimation_error, 2)) + " UT: " + str(round(self.states["input_estimation_error"], 2))
                 if self.time > (self.t_warmup + 0.5 * self.t_exp):
-                    if cond == "Robot only":
+                    if setting == "Robot Vision":
                         # Switch to bad condition halfway
                         sigma_h = self.sigma[int(self.visual_setting) + 1]
 

@@ -35,20 +35,16 @@ class ControllerDGObs:
                 Lr = np.matmul(self.B.transpose(), Pr)
                 beta = 0
             else:
-                Qr = C - Qh
-                # print("eigenvalue: ", np.linalg.det(Qr))
-                # if np.linalg.det(Qr) < -0.2:
-                #     # Pr = np.array([[0, 0], [0, 0]])
-                #     # Lr = Lr_old
-                #     Acl = self.A - self.B * Lh_hat
-                #     Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
-                #     Lr = Lr_old
-                #     # Lr = max(0, Lr[0, 0])
-                #     # print(Lr)
-
+                alpha = 0.2
+                gamma = 0.8
+                Qr = alpha * C + np.abs(Qh * gamma)
                 Acl = self.A - self.B * Lh_hat
-                Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
-                Lr = np.matmul(self.B.transpose(), Pr)
+                try:
+                    Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
+                    Lr = np.matmul(self.B.transpose(), Pr)
+                except:
+                    Pr = np.array([[0, 0], [0, 0]])
+                    Lr = np.array([0, 0])
 
 
             ur = np.matmul(-Lr, xi)
@@ -64,7 +60,7 @@ class ControllerDGObs:
         except:
             Lh_pos = Lh_hat[0]
         if Lh_pos < 0:
-            beta = 0.04
+            beta = 0.02
         else:
             beta = 0.00
         forget_factor = beta * np.array([[1, 1]])

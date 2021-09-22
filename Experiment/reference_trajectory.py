@@ -33,19 +33,19 @@ class Reference:
         tud_green = "#00A390"
         tud_yellow = "#F1BE3E"
 
-        plt.figure()
-        for i in range(len(self.periods)):
-            plt.plot(frequencies[i], self.amplitudes[i], color=tud_blue, linewidth=self.lw, marker='o')
-            plt.plot([frequencies[i], frequencies[i]], [0, self.amplitudes[i]], tud_blue, linewidth=self.lw, alpha=0.7)
-
-        plt.title("Frequency domain reference", **self.csfont)
-        plt.xlabel("Frequency (rad/s)", **self.hfont)
-        plt.ylabel("Amplitude (-)", **self.hfont)
-        plt.xlim(frequencies[0] - 0.1, frequencies[-1] + 10)
-        plt.ylim(0.01, self.amplitudes[0] + 0.1)
-        plt.yscale("log")
-        plt.xscale("log")
-        plt.tight_layout(pad=1)
+        # plt.figure()
+        # for i in range(len(self.periods)):
+        #     plt.plot(frequencies[i], self.amplitudes[i], color=tud_blue, linewidth=self.lw, marker='o')
+        #     plt.plot([frequencies[i], frequencies[i]], [0, self.amplitudes[i]], tud_blue, linewidth=self.lw, alpha=0.7)
+        #
+        # plt.title("Frequency domain reference", **self.csfont)
+        # plt.xlabel("Frequency (rad/s)", **self.hfont)
+        # plt.ylabel("Amplitude (-)", **self.hfont)
+        # plt.xlim(frequencies[0] - 0.1, frequencies[-1] + 10)
+        # plt.ylim(0.01, self.amplitudes[0] + 0.1)
+        # plt.yscale("log")
+        # plt.xscale("log")
+        # plt.tight_layout(pad=1)
 
         # Show forcing function:
         fs = 100
@@ -56,13 +56,13 @@ class Reference:
             ref = self.generate_reference(t[i], sigma=0, player=None, ref_sign=1)
             r[i] = ref[0]
 
-        plt.figure()
-        plt.plot(t, r, tud_blue, linewidth=self.lw)
-        plt.title("Time domain reference", **self.csfont)
-        plt.xlabel("Time (s)", **self.hfont)
-        plt.ylabel("Amplitude (-)", **self.hfont)
-        plt.xlim(0, 10)
-        plt.tight_layout(pad=1)
+        # plt.figure()
+        # plt.plot(t, r, tud_blue, linewidth=self.lw)
+        # plt.title("Time domain reference", **self.csfont)
+        # plt.xlabel("Time (s)", **self.hfont)
+        # plt.ylabel("Amplitude (-)", **self.hfont)
+        # plt.xlim(0, 10)
+        # plt.tight_layout(pad=1)
 
     def load_data(self):
         try:

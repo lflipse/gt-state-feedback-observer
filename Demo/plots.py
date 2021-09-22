@@ -146,9 +146,8 @@ class PlotStuff:
             plt.tight_layout(pad=1)
 
             # Control authority
-            Lh = np.array(Lhhat_pos)
-            Lr = np.array(Lr_pos)
-            C = (Lr - Lh) / (Lh + Lr)
+
+            C = self.compute_authority(Lr_pos, Lhhat_pos)
 
             options = {"arrowstyle": '->', }
 
@@ -177,6 +176,13 @@ class PlotStuff:
 
     def limit_y(self, var1, var2):
         test = 1
+
+    def compute_authority(self, Lr, Lh):
+        n = len(Lh)
+        C = np.zeros(n)
+        for i in range(n):
+            C[i] = min(max((Lr[i] - Lh[i])/(Lr[i] + Lh[i]), -2), 2)
+        return C
 
     def save_all_figures(self):
         pp = PdfPages('figures\\experiment.pdf')
