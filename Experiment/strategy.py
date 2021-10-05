@@ -41,7 +41,7 @@ tud_orange = "#EB7245"
 tud_lightblue = "#00B7D3"
 
 # Compute possible costs from -100 to 100
-q1h = np.linspace(0, 100, num=n)
+q1h = np.linspace(0, 40, num=n)
 Qh = np.zeros((n, 2, 2))
 Qr1 = np.zeros((n, 2, 2))
 Qr2 = np.zeros((n, 2, 2))
@@ -58,7 +58,7 @@ C2 = np.zeros(n)
 C3 = np.zeros(n)
 Qh[:, 0, 0] = q1h
 
-C = np.array([[12.5, 0], [0, 0.1]])
+C = np.array([[30.0, 0], [0, 0.2]])
 
 # Dynamics
 Jw = 0.04914830792783059
@@ -69,9 +69,12 @@ B = np.array([[0], [1 / Jw]])
 
 for i in range(n):
     if Qh[i, 0, 0] < 1 * C[0, 0]:
-        Qr1[i, :, :] = 0.5 * C - 0.5 * Qh[i, :, :]
-    Qr2[i, :, :] = 0.5 * C
-    Qr3[i, :, :] = 0.5 * C + 0.8 * np.abs(Qh[i, :, :])
+        Qr1[i, :, :] = C - Qh[i, :, :]
+    Qr2[i, :, :] = 0.1 * C + 1.8 * np.abs(Qh[i, :, :])
+    if Qr1[i, 0, 0] > Qr2[i, 0, 0]:
+        Qr3[i, :, :] = Qr2[i, :, :]
+    else:
+        Qr3[i, :, :] = Qr1[i, :, :]
 
     C1[i], Lr1[i, :], Lh1[i, :] = compute_gains(Qr1[i, :, :], Qh[i, :, :], A, B)
     C2[i], Lr2[i, :], Lh2[i, :] = compute_gains(Qr2[i, :, :], Qh[i, :, :], A, B)
@@ -97,7 +100,7 @@ plt.tight_layout(pad=1)
 
 plt.figure()
 plt.plot(Qh[:, 0, 0], Qr3[:, 0, 0], linewidth=linewidth)
-plt.title("Positive reinforcement", csfont)
+plt.title("Mixed Reinforcement", csfont)
 plt.xlabel('Human cost weight (-)', hfont)
 plt.ylabel('Robot cost weight (-)', hfont)
 # plt.legend(prop={"size": 14}, loc='upper right')
@@ -124,7 +127,7 @@ plt.tight_layout(pad=1)
 
 plt.figure()
 plt.plot(Lh3[:, 0], Lr3[:, 0], linewidth=linewidth)
-plt.title("Positive reinforcement", csfont)
+plt.title("Mixed Reinforcement", csfont)
 plt.xlabel('Human gain (Nm)', hfont)
 plt.ylabel('Robot gain (Nm)', hfont)
 # plt.legend(prop={"size": 14}, loc='upper right')
@@ -133,8 +136,8 @@ plt.tight_layout(pad=1)
 
 plt.figure()
 plt.plot(Qh[:, 0, 0], Qr1[:, 0, 0], tud_blue, linewidth=linewidth, label="Negative Reinforcement")
-plt.plot(Qh[:, 0, 0], Qr2[:, 0, 0], tud_red, linewidth=linewidth, label="Constant Interaction Strategy")
-plt.plot(Qh[:, 0, 0], Qr3[:, 0, 0], tud_green, linewidth=linewidth, label="Positive Reinforcement")
+plt.plot(Qh[:, 0, 0], Qr2[:, 0, 0], tud_red, linewidth=linewidth, label="Positive Reinforcement")
+plt.plot(Qh[:, 0, 0], Qr3[:, 0, 0], tud_green, linestyle='--', linewidth=linewidth, label="Mixed Reinforcement")
 plt.title("Interaction strategies: Costs", csfont)
 plt.xlabel('Human cost weight (-)', hfont)
 plt.ylabel('Robot cost weight (-)', hfont)
@@ -149,8 +152,8 @@ plt.tight_layout(pad=1)
 
 plt.figure()
 plt.plot(Lh1[:, 0], Lr1[:, 0], tud_blue, linewidth=linewidth, label="Negative Reinforcement")
-plt.plot(Lh2[:, 0], Lr2[:, 0], tud_red, linewidth=linewidth, label="Constant Interaction Strategy")
-plt.plot(Lh3[:, 0], Lr3[:, 0], tud_green, linewidth=linewidth, label="Positive Reinforcement")
+plt.plot(Lh2[:, 0], Lr2[:, 0], tud_red, linewidth=linewidth, label="Positive Reinforcement")
+plt.plot(Lh3[:, 0], Lr3[:, 0], tud_green, linestyle='--', linewidth=linewidth, label="Mixed Reinforcement")
 plt.title("Interaction strategies: Gains", csfont)
 plt.xlabel('Human gain (Nm)', hfont)
 plt.ylabel('Robot gain (Nm)', hfont)
@@ -165,8 +168,8 @@ plt.tight_layout(pad=1)
 
 plt.figure()
 plt.plot(Lh1[:, 0], C1, tud_blue, linewidth=linewidth, label="Negative Reinforcement")
-plt.plot(Lh2[:, 0], C2, tud_red, linewidth=linewidth, label="Constant Interaction Strategy")
-plt.plot(Lh3[:, 0], C3, tud_green, linewidth=linewidth, label="Positive Reinforcement")
+plt.plot(Lh2[:, 0], C2, tud_red, linewidth=linewidth, label="Positive Reinforcement")
+plt.plot(Lh3[:, 0], C3, tud_green, linestyle='--', linewidth=linewidth, label="Mixed Reinforcement")
 plt.title("Interaction strategies: Authority", csfont)
 plt.xlabel('Human gain (Nm)', hfont)
 plt.ylabel('Robot gain (Nm)', hfont)
