@@ -35,16 +35,25 @@ class ControllerDGObs:
                 Lr = np.matmul(self.B.transpose(), Pr)
                 beta = 0
             else:
-                alpha = 0.2
-                gamma = 0.8
-                Qr = alpha * C + np.abs(Qh * gamma)
+                alpha = 2
+                gamma = 1.8
+                Qr = 2*C - Qh
                 Acl = self.A - self.B * Lh_hat
+                # Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
+                # Lr = np.matmul(self.B.transpose(), Pr)
                 try:
                     Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
                     Lr = np.matmul(self.B.transpose(), Pr)
                 except:
                     Pr = np.array([[0, 0], [0, 0]])
-                    Lr = np.array([0, 0])
+                    Lr = np.array([[0, 0]])
+                    print("Qr = ", Qr)
+                    print("Acl = ", Acl)
+                    exit()
+
+                #     Pr = np.array([[0, 0], [0, 0]])
+                #     Lr = np.array([[0, 0]])
+                #     print("Should not happen this")
 
 
             ur = np.matmul(-Lr, xi)

@@ -1,7 +1,17 @@
 import scipy.linalg as cp
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
+
+def save_all_figures():
+    pp = PdfPages('strategy.pdf')
+    figs = None
+    if figs is None:
+        figs = [plt.figure(n) for n in plt.get_fignums()]
+    for fig in figs:
+        fig.savefig(pp, format='pdf')
+    pp.close()
 
 def compute_gains(Qr, Qh, A, B):
     # Iterative procedure for calculating gains
@@ -57,7 +67,6 @@ Kw = 0.0  # Max = 2.5
 A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
 B = np.array([[0], [1 / Jw]])
 
-
 for i in range(n):
     if Qh[i, 0, 0] < 1 * C[0, 0]:
         Qr1[i, :, :] = 0.5 * C - 0.5 * Qh[i, :, :]
@@ -67,8 +76,6 @@ for i in range(n):
     C1[i], Lr1[i, :], Lh1[i, :] = compute_gains(Qr1[i, :, :], Qh[i, :, :], A, B)
     C2[i], Lr2[i, :], Lh2[i, :] = compute_gains(Qr2[i, :, :], Qh[i, :, :], A, B)
     C3[i], Lr3[i, :], Lh3[i, :] = compute_gains(Qr3[i, :, :], Qh[i, :, :], A, B)
-
-
 
 plt.figure()
 plt.plot(Qh[:, 0, 0], Qr1[:, 0, 0], linewidth=linewidth)
@@ -125,9 +132,9 @@ plt.xlim(Lh3[0, 0], Lh3[-1, 0])
 plt.tight_layout(pad=1)
 
 plt.figure()
-plt.plot(Qh[:, 0, 0], Qr1[:, 0, 0], tud_blue, linewidth=linewidth, label="Negative reinforcement")
-plt.plot(Qh[:, 0, 0], Qr2[:, 0, 0], tud_red, linewidth=linewidth, label="No reinforcement")
-plt.plot(Qh[:, 0, 0], Qr3[:, 0, 0], tud_green, linewidth=linewidth, label="Positive reinforcement")
+plt.plot(Qh[:, 0, 0], Qr1[:, 0, 0], tud_blue, linewidth=linewidth, label="Negative Reinforcement")
+plt.plot(Qh[:, 0, 0], Qr2[:, 0, 0], tud_red, linewidth=linewidth, label="Constant Interaction Strategy")
+plt.plot(Qh[:, 0, 0], Qr3[:, 0, 0], tud_green, linewidth=linewidth, label="Positive Reinforcement")
 plt.title("Interaction strategies: Costs", csfont)
 plt.xlabel('Human cost weight (-)', hfont)
 plt.ylabel('Robot cost weight (-)', hfont)
@@ -141,9 +148,9 @@ plt.ylim(ymin, ymax)
 plt.tight_layout(pad=1)
 
 plt.figure()
-plt.plot(Lh1[:, 0], Lr1[:, 0], tud_blue, linewidth=linewidth, label="Negative reinforcement")
-plt.plot(Lh2[:, 0], Lr2[:, 0], tud_red, linewidth=linewidth, label="No reinforcement")
-plt.plot(Lh3[:, 0], Lr3[:, 0], tud_green, linewidth=linewidth, label="Positive reinforcement")
+plt.plot(Lh1[:, 0], Lr1[:, 0], tud_blue, linewidth=linewidth, label="Negative Reinforcement")
+plt.plot(Lh2[:, 0], Lr2[:, 0], tud_red, linewidth=linewidth, label="Constant Interaction Strategy")
+plt.plot(Lh3[:, 0], Lr3[:, 0], tud_green, linewidth=linewidth, label="Positive Reinforcement")
 plt.title("Interaction strategies: Gains", csfont)
 plt.xlabel('Human gain (Nm)', hfont)
 plt.ylabel('Robot gain (Nm)', hfont)
@@ -157,9 +164,9 @@ plt.ylim(ymin, ymax)
 plt.tight_layout(pad=1)
 
 plt.figure()
-plt.plot(Lh1[:, 0], C1, tud_blue, linewidth=linewidth, label="Negative reinforcement")
-plt.plot(Lh2[:, 0], C2, tud_red, linewidth=linewidth, label="No reinforcement")
-plt.plot(Lh3[:, 0], C3, tud_green, linewidth=linewidth, label="Positive reinforcement")
+plt.plot(Lh1[:, 0], C1, tud_blue, linewidth=linewidth, label="Negative Reinforcement")
+plt.plot(Lh2[:, 0], C2, tud_red, linewidth=linewidth, label="Constant Interaction Strategy")
+plt.plot(Lh3[:, 0], C3, tud_green, linewidth=linewidth, label="Positive Reinforcement")
 plt.title("Interaction strategies: Authority", csfont)
 plt.xlabel('Human gain (Nm)', hfont)
 plt.ylabel('Robot gain (Nm)', hfont)
@@ -171,5 +178,7 @@ ymax = max(max(C1), max(C2), max(C3)) + 0.1
 plt.xlim(xmin, xmax)
 plt.ylim(ymin, ymax)
 plt.tight_layout(pad=1)
+
+save_all_figures()
 
 plt.show()

@@ -76,15 +76,15 @@ if __name__ == "__main__":
 
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 2.5
+    alpha = 4.0
     K = alpha * np.array([[10.0, 0], [0, 0.0]])
     kappa = 1
-    C = np.array([[10.0, 0.0], [0.0, 0.2]])
+    C = np.array([[10.0, 0.0], [0.0, 0.3]])
 
     # Experiment data
     t_warmup = 5
     t_cooldown = 5
-    t_period = 60
+    t_period = 90
     sigma = [0.005, 0.065]
     periods = 1
     t_exp = periods * t_period
