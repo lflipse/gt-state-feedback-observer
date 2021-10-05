@@ -29,6 +29,9 @@ class PlotStuff:
 
         self.fig1 = plt.figure()
         self.fig2 = plt.figure()
+        self.fig3 = plt.figure()
+        self.fig4 = plt.figure()
+        self.fig5 = plt.figure()
 
 
 
@@ -145,13 +148,64 @@ class PlotStuff:
             plt.xlim(0, t[-1])
             plt.tight_layout(pad=1)
 
+            plt.figure()
+            plt.title("Steering error gain", **self.csfont)
+
+            plt.scatter(Lhhat_pos, Lr_pos, c=t, linestyle=ls, linewidth=1)
+            # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
+            plt.xlabel('Human gain (Nm)', **self.hfont)
+            plt.ylabel('Robot Gain (Nm)', **self.hfont)
+            plt.legend(prop={"size": 14}, loc='upper right')
+            plt.xlim(0, t[-1])
+            plt.tight_layout(pad=1)
+
+            plt.figure(self.fig2)
+            plt.title("Velocity error gain", **self.csfont)
+
+            if condition != "Manual Control":
+                plt.plot(t, Lr_vel, self.tud_blue, linestyle=ls, linewidth=4, label=label_robot)
+            plt.plot(t, Lhhat_vel, self.tud_red, linestyle=ls, linewidth=4, label=label_human)
+            # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
+            self.limit_y(Lr_vel, Lhhat_vel)
+            plt.xlabel('Time (s)', **self.hfont)
+            plt.ylabel('Gain (Nm/s)', **self.hfont)
+            plt.legend(prop={"size": 14}, loc='upper right')
+            plt.xlim(0, t[-1])
+            plt.tight_layout(pad=1)
+
+            plt.figure(self.fig3)
+            plt.title("Steering error cost", **self.csfont)
+            if condition != "Manual Control":
+                plt.plot(t, q_r_1, self.tud_blue, linestyle=ls, linewidth=4, label=label_robot)
+            plt.plot(t, q_h_1, self.tud_red, linestyle=ls, linewidth=4, label=label_human)
+            # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
+            self.limit_y(Lr_pos, Lhhat_pos)
+            plt.xlabel('Time (s)', **self.hfont)
+            plt.ylabel('Gain (Nm)', **self.hfont)
+            plt.legend(prop={"size": 14}, loc='upper right')
+            plt.xlim(0, t[-1])
+            plt.tight_layout(pad=1)
+
+            plt.figure(self.fig4)
+            plt.title("Velocity error cost", **self.csfont)
+            if condition != "Manual Control":
+                plt.plot(t, q_r_2, self.tud_blue, linestyle=ls, linewidth=4, label=label_robot)
+            plt.plot(t, q_h_2, self.tud_red, linestyle=ls, linewidth=4, label=label_human)
+            # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
+            self.limit_y(Lr_vel, Lhhat_vel)
+            plt.xlabel('Time (s)', **self.hfont)
+            plt.ylabel('Gain (Nm/s)', **self.hfont)
+            plt.legend(prop={"size": 14}, loc='upper right')
+            plt.xlim(0, t[-1])
+            plt.tight_layout(pad=1)
+
             # Control authority
 
             C = self.compute_authority(Lr_pos, Lhhat_pos)
 
             options = {"arrowstyle": '->', }
 
-            plt.figure(self.fig2)
+            plt.figure(self.fig5)
             plt.title("Control authority", **self.csfont)
 
             plt.plot(t, C, self.tud_blue, linestyle=ls, linewidth=4, label="Control authority")

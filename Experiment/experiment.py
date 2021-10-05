@@ -54,8 +54,8 @@ class Experiment:
             "exit": False,
             "robot_cost": None,
             "experiment": False,
-            'Manual': True,
-            'Static': False,
+            'manual': True,
+            'condition': False,
         }
         self.visualize_dict = {
             "time_stamp": 0,
@@ -107,7 +107,7 @@ class Experiment:
             # cond = "Robot only"
             cond = "Adaptive Shared Control"
             self.send_dict["manual"] = False
-            self.send_dict["static"] = False
+            self.send_dict["condition"] = condition
             sharing_rule = self.sharing_rule
             self.send_dict["sharing_rule"] = sharing_rule
             self.repetition = 0

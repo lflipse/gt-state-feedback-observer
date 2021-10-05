@@ -38,7 +38,7 @@ class SensoDriveModule(mp.Process):
             'mp_damping': senso_dict["damping"],
             'mp_spring_stiffness': senso_dict["stiffness"],
             'manual': True,
-            'static': False,
+            'condition': 0,
         }
 
         # Cost parameters
@@ -375,7 +375,7 @@ class SensoDriveModule(mp.Process):
         """
 
         # Compute the control input
-        output = self.controller.compute_control_input(self.states, self.settings["manual"], self.settings["static"])
+        output = self.controller.compute_control_input(self.states, self.settings["manual"], self.settings["condition"])
         self.update_controller_states(output)
         if self.settings["manual"]:
             self.states["torque"] = 0

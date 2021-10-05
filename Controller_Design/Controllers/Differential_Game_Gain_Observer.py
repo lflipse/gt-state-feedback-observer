@@ -9,7 +9,7 @@ class ControllerDGObs:
         self.K = K
         self.kappa = kappa
 
-    def compute_control_input(self, states, manual, static):
+    def compute_control_input(self, states, manual, condition):
         xi = states["error_state"]
         x = states["state"]
         x_hat = states["state_estimate"]
@@ -29,31 +29,32 @@ class ControllerDGObs:
             ur = 0
             beta = 0
         else:
-            if static:
-                Qr = C
-                Pr = cp.solve_continuous_are(self.A, self.B, Qr, 1)
-                Lr = np.matmul(self.B.transpose(), Pr)
-                beta = 0
+            alpha = np.array([[0.4, 0], [0, 1.0]])
+            gamma = np.array([[2.0, 0], [0, -1.0]])
+            Qr1 = C - Qh
+            Qr2 = np.matmul(alpha, C) + np.matmul(gamma, Qh)
+            if condition == 0:
+                Qr = Qr1
+            elif condition == 1:
+                Qr = Qr2
             else:
-                alpha = 2
-                gamma = 1.8
-                Qr = 2*C - Qh
-                Acl = self.A - self.B * Lh_hat
-                # Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
-                # Lr = np.matmul(self.B.transpose(), Pr)
-                try:
-                    Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
-                    Lr = np.matmul(self.B.transpose(), Pr)
-                except:
-                    Pr = np.array([[0, 0], [0, 0]])
-                    Lr = np.array([[0, 0]])
-                    print("Qr = ", Qr)
-                    print("Acl = ", Acl)
-                    exit()
+                if Qr1[0, 0] > Qr2[0, 0]:
+                    Qr = Qr2
+                else:
+                    Qr = Qr1
 
-                #     Pr = np.array([[0, 0], [0, 0]])
-                #     Lr = np.array([[0, 0]])
-                #     print("Should not happen this")
+            Qr[0, 0] = max(Qr[0, 0], 0.1)
+            Acl = self.A - self.B * Lh_hat
+
+            try:
+                Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
+                Lr = np.matmul(self.B.transpose(), Pr)
+            except:
+                Pr = np.array([[0, 0], [0, 0]])
+                Lr = np.array([[0, 0]])
+                print("Qr = ", Qr)
+                print("Acl = ", Acl)
+                exit()
 
 
             ur = np.matmul(-Lr, xi)
@@ -69,7 +70,7 @@ class ControllerDGObs:
         except:
             Lh_pos = Lh_hat[0]
         if Lh_pos < 0:
-            beta = 0.02
+            beta = 0.01
         else:
             beta = 0.00
         forget_factor = beta * np.array([[1, 1]])

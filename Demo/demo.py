@@ -33,30 +33,9 @@ def load_data_set(file):
     return data_set
 
 def choose_condition():
-    print("Choose a controller type")
-    a = int(input("0: Manual, 1: Haptic static, 2: Haptic adaptive.  Your answer = "))
-    print("Choose a visual condition")
-    b = int(input("0: Good, 1: Bad, 2: Mixed.  Your answer = "))
-    if b == 0 or b == 1:
-        condition = a * 2 + b
-    elif b == 2:
-        if a == 2:
-            condition = -1
-        else:
-            exit("No option")
-    else:
-        exit("No option")
-
-    c = int(input("Warmstart? 0: No, Yes: 1.  Your answer = "))
-    if c == 0:
-        initial_human = np.array([0, 0])
-    elif c == 1:
-        initial_human = np.matmul(B.transpose(), cp.solve_continuous_are(A, B, C, 1))[0]
-        print(initial_human)
-    else:
-        exit("No option")
-
-    return condition, initial_human * 0.75
+    print("Choose an experimental condition")
+    condition = int(input("0: Manual, 1: Positive reinforcement, 2: Negative reinforcement, 3: Mixed reinforcement.  Your answer = "))
+    return condition
 
 
 # This statement is necessary to allow for multiprocessing
@@ -76,10 +55,10 @@ if __name__ == "__main__":
 
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 4.0
+    alpha = 10.0
     K = alpha * np.array([[10.0, 0], [0, 0.0]])
     kappa = 1
-    C = np.array([[10.0, 0.0], [0.0, 0.3]])
+    C = np.array([[60.0, 0.0], [0.0, 0.1]])
 
     # Experiment data
     t_warmup = 5
@@ -90,8 +69,8 @@ if __name__ == "__main__":
     t_exp = periods * t_period
     t_prev = 1.2
     repetitions = 1
-    visual_conditions = 2
-    haptic_conditions = 3
+    visual_conditions = 1
+    haptic_conditions = 4
     robot_conditions = 1
     conditions = repetitions * visual_conditions * haptic_conditions + robot_conditions
     duration = t_warmup + t_cooldown + t_exp
