@@ -110,7 +110,7 @@ class Experiment:
             self.send_dict["condition"] = condition
             sharing_rule = self.sharing_rule
             self.send_dict["sharing_rule"] = sharing_rule
-            self.repetition = 0
+            self.repetition = 1
             self.visual_setting = 0
             setting = "Robot Vision"
             sigma_h = self.sigma[int(self.visual_setting)]
@@ -118,30 +118,27 @@ class Experiment:
         else:
             # First x trials are manual control
             self.repetition = condition % self.repetitions
-            self.visual_setting = ((condition - self.repetition)/self.repetitions) % self.visual_conditions
+            self.visual_setting = 0
             sigma_h = self.sigma[int(self.visual_setting)]
+            setting = "Good Visuals"
 
-            if self.visual_setting == 0:
-                setting = "Good Visuals"
-            else:
-                setting = "Bad Visuals"
 
-            if condition < (self.repetitions * self.visual_conditions):
+            if condition == 0:
                 cond = "Manual Control"
                 self.send_dict["manual"] = True
-                self.send_dict["static"] = False
-            elif (self.repetitions * self.visual_conditions) <= condition < 2 * (self.repetitions * self.visual_conditions):
-                cond = "Static Shared Control"
-                self.send_dict["manual"] = False
-                self.send_dict["static"] = True
-                sharing_rule = self.sharing_rule
             else:
-                cond = "Adaptive Shared Control"
                 self.send_dict["manual"] = False
-                self.send_dict["static"] = False
                 sharing_rule = self.sharing_rule
 
-            if condition < self.repetitions:
+            self.send_dict["condition"] = condition
+            if condition == 1:
+                cond = "Positive Reinforcement"
+            elif condition == 2:
+                cond = "Negative Reinforcement"
+            elif condition == 3:
+                cond = "Mixed Reinforcement"
+
+            if condition == 0:
                 self.send_dict["sharing_rule"] = self.estimated_human_cost
             else:
                 self.send_dict["sharing_rule"] = self.sharing_rule
@@ -330,8 +327,8 @@ class Experiment:
                 self.store_variables(output)
 
         # Time to close off
-        self.send_dict["exit"] = True
-        self.parent_conn.send(self.send_dict)
+        # self.send_dict["exit"] = True
+        # self.parent_conn.send(self.send_dict)
 
         return self.variables
 

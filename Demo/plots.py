@@ -84,7 +84,7 @@ class PlotStuff:
         ax.set_title("Performance", **self.csfont)
 
     def plot_data(self, raw_data, trials, participant):
-        trials = 1
+        trials = 4
         for i in range(trials):
             data = raw_data[participant, i]
             condition = data["condition"][0]
@@ -113,19 +113,23 @@ class PlotStuff:
             q_r_1 = data["robot_cost_pos"]
             q_r_2 = data["robot_cost_vel"]
 
-            if condition == "Manual Control":
-                # ls = '-.'
-                label_human = 'Manual control estimated $\hat{L}_h(t)$'
-            elif condition == "Static Shared Control":
-                # ls = '--'
-                label_robot = 'Static controller gain $L_r(t)$'
-                label_human = 'Static controller estimated $\hat{L}_h(t)$'
-            else:
-                # ls = '-'
-                label_robot = 'Adaptive controller gain $L_r(t)$'
-                label_human = 'Adaptive controller estimated $\hat{L}_h(t)$'
+            label_robot = condition + " Robot"
+            label_human = condition + " Human"
 
-            ls = '-'
+            if condition == "Manual Control":
+                ls = '-.'
+                label_human = 'Manual control estimated $\hat{L}_h(t)$'
+                line_color = self.tud_orange
+            elif condition == "Positive Reinforcement":
+                ls = '-'
+                line_color = self.tud_red
+            elif condition == "Negative Reinforcement":
+                ls = '-'
+                line_color = self.tud_blue
+            else:
+                ls = '--'
+                line_color = self.tud_green
+
 
             # if setting == "Good Visuals":
             #     plt.figure(self.fig1)
@@ -136,10 +140,7 @@ class PlotStuff:
 
             plt.figure(self.fig1)
             plt.title("Steering error gain", **self.csfont)
-
-            if condition != "Manual Control":
-                plt.plot(t, Lr_pos, self.tud_blue, linestyle=ls, linewidth=4, label=label_robot)
-            plt.plot(t, Lhhat_pos, self.tud_red, linestyle=ls, linewidth=4, label=label_human)
+            plt.plot(t, Lhhat_pos, line_color, linestyle=ls, linewidth=4, label=label_human)
             # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
             self.limit_y(Lr_pos, Lhhat_pos)
             plt.xlabel('Time (s)', **self.hfont)
@@ -148,23 +149,19 @@ class PlotStuff:
             plt.xlim(0, t[-1])
             plt.tight_layout(pad=1)
 
-            plt.figure()
-            plt.title("Steering error gain", **self.csfont)
-
-            plt.scatter(Lhhat_pos, Lr_pos, c=t, linestyle=ls, linewidth=1)
-            # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
-            plt.xlabel('Human gain (Nm)', **self.hfont)
-            plt.ylabel('Robot Gain (Nm)', **self.hfont)
-            plt.legend(prop={"size": 14}, loc='upper right')
-            plt.xlim(0, t[-1])
-            plt.tight_layout(pad=1)
+            # plt.figure()
+            # plt.title("Steering error gain", **self.csfont)
+            # plt.scatter(Lhhat_pos, Lr_pos, c=t, linestyle=ls, linewidth=1)
+            # # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
+            # plt.xlabel('Human gain (Nm)', **self.hfont)
+            # plt.ylabel('Robot Gain (Nm)', **self.hfont)
+            # plt.legend(prop={"size": 14}, loc='upper right')
+            # plt.xlim(0, t[-1])
+            # plt.tight_layout(pad=1)
 
             plt.figure(self.fig2)
             plt.title("Velocity error gain", **self.csfont)
-
-            if condition != "Manual Control":
-                plt.plot(t, Lr_vel, self.tud_blue, linestyle=ls, linewidth=4, label=label_robot)
-            plt.plot(t, Lhhat_vel, self.tud_red, linestyle=ls, linewidth=4, label=label_human)
+            plt.plot(t, Lhhat_vel, line_color, linestyle=ls, linewidth=4, label=label_human)
             # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
             self.limit_y(Lr_vel, Lhhat_vel)
             plt.xlabel('Time (s)', **self.hfont)
@@ -175,9 +172,7 @@ class PlotStuff:
 
             plt.figure(self.fig3)
             plt.title("Steering error cost", **self.csfont)
-            if condition != "Manual Control":
-                plt.plot(t, q_r_1, self.tud_blue, linestyle=ls, linewidth=4, label=label_robot)
-            plt.plot(t, q_h_1, self.tud_red, linestyle=ls, linewidth=4, label=label_human)
+            plt.plot(t, q_h_1, line_color, linestyle=ls, linewidth=4, label=label_human)
             # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
             self.limit_y(Lr_pos, Lhhat_pos)
             plt.xlabel('Time (s)', **self.hfont)
@@ -188,9 +183,7 @@ class PlotStuff:
 
             plt.figure(self.fig4)
             plt.title("Velocity error cost", **self.csfont)
-            if condition != "Manual Control":
-                plt.plot(t, q_r_2, self.tud_blue, linestyle=ls, linewidth=4, label=label_robot)
-            plt.plot(t, q_h_2, self.tud_red, linestyle=ls, linewidth=4, label=label_human)
+            plt.plot(t, q_h_2, line_color, linestyle=ls, linewidth=4, label=label_human)
             # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
             self.limit_y(Lr_vel, Lhhat_vel)
             plt.xlabel('Time (s)', **self.hfont)
@@ -208,7 +201,7 @@ class PlotStuff:
             plt.figure(self.fig5)
             plt.title("Control authority", **self.csfont)
 
-            plt.plot(t, C, self.tud_blue, linestyle=ls, linewidth=4, label="Control authority")
+            plt.plot(t, C, line_color, linestyle=ls, linewidth=4, label=label_human)
             plt.plot([0, t[-1]], [1, 1], self.tud_blue, alpha=0.7, linestyle='--')
             plt.plot([0, t[-1]], [-1, -1], self.tud_blue, alpha=0.7, linestyle='--')
 
@@ -235,7 +228,10 @@ class PlotStuff:
         n = len(Lh)
         C = np.zeros(n)
         for i in range(n):
-            C[i] = min(max((Lr[i] - Lh[i])/(Lr[i] + Lh[i]), -2), 2)
+            try:
+                C[i] = min(max((Lr[i] - Lh[i])/(Lr[i] + Lh[i]), -2), 2)
+            except:
+                C[i] = min(max((Lr[i] - Lh[i]) / (Lr[i] + Lh[i] + 0.001), -2), 2)
         return C
 
     def save_all_figures(self):

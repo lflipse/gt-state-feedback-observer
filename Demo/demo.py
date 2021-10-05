@@ -34,7 +34,7 @@ def load_data_set(file):
 
 def choose_condition():
     print("Choose an experimental condition")
-    condition = int(input("0: Manual, 1: Positive reinforcement, 2: Negative reinforcement, 3: Mixed reinforcement.  Your answer = "))
+    condition = int(input("-1: Full experiment, 0: Manual, 1: Positive reinforcement, 2: Negative reinforcement, 3: Mixed reinforcement.  Your answer = "))
     return condition
 
 
@@ -58,12 +58,12 @@ if __name__ == "__main__":
     alpha = 10.0
     K = alpha * np.array([[10.0, 0], [0, 0.0]])
     kappa = 1
-    C = np.array([[60.0, 0.0], [0.0, 0.1]])
+    C = np.array([[40.0, 0.0], [0.0, 0.1]])
 
     # Experiment data
     t_warmup = 5
     t_cooldown = 5
-    t_period = 90
+    t_period = 80
     sigma = [0.005, 0.065]
     periods = 1
     t_exp = periods * t_period
@@ -73,10 +73,11 @@ if __name__ == "__main__":
     haptic_conditions = 4
     robot_conditions = 1
     conditions = repetitions * visual_conditions * haptic_conditions + robot_conditions
+    conditions = 4
     duration = t_warmup + t_cooldown + t_exp
 
     # Choose a condition
-    condition, initial_human = choose_condition()
+    condition = choose_condition()
 
     # Visual stuff
     screen_width = 1920
@@ -85,6 +86,7 @@ if __name__ == "__main__":
     # Insert controller
     controller = ControllerDGObs(A, B, K, Gamma, kappa)
     controller_type = "Cost_observer"
+    initial_human = np.array([0, 0])
 
     # Start the senso drive parallel process
     parent_conn, child_conn = mp.Pipe(True)
@@ -156,13 +158,20 @@ if __name__ == "__main__":
     visualize = Visualize(screen_width, screen_height, full_screen)
     experiment_handler = Experiment(experiment_input, visualize)
 
-    conditions = 1
+    # conditions = 3
+    if condition >= 0:
+        conditions = condition
 
     for i in range(conditions):
+        if condition < 0:
+            cond = i
+        else:
+            cond = condition
+
         if platform.system() == 'Windows':
             with wres.set_resolution(10000):
                 # Do trial (trial -1 is the robot only run)
-                experiment_data = experiment_handler.experiment(condition=condition)
+                experiment_data = experiment_handler.experiment(condition=cond)
 
                 # Save data
                 string = "data\\" + str(participant) + "\\trial_" + str(i) + ".csv"

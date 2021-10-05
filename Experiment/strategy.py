@@ -58,7 +58,7 @@ C2 = np.zeros(n)
 C3 = np.zeros(n)
 Qh[:, 0, 0] = q1h
 
-C = np.array([[30.0, 0], [0, 0.2]])
+C = np.array([[40.0, 0], [0, 0.2]])
 
 # Dynamics
 Jw = 0.04914830792783059
@@ -68,9 +68,13 @@ A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
 B = np.array([[0], [1 / Jw]])
 
 for i in range(n):
-    if Qh[i, 0, 0] < 1 * C[0, 0]:
-        Qr1[i, :, :] = C - Qh[i, :, :]
-    Qr2[i, :, :] = 0.1 * C + 1.8 * np.abs(Qh[i, :, :])
+    alpha = np.array([[0.05, 0], [0, 1.0]])
+    gamma = np.array([[2.0, 0], [0, -1.0]])
+    zeta = np.array([[1.5, 0], [0, 1.0]])
+
+    if Qh[i, 0, 0] < 1/zeta[0, 0] * C[0, 0]:
+        Qr1[i, :, :] = C - np.matmul(zeta, Qh[i, :, :])
+    Qr2[i, :, :] = np.matmul(alpha, C) + np.matmul(gamma, Qh[i, :, :])
     if Qr1[i, 0, 0] > Qr2[i, 0, 0]:
         Qr3[i, :, :] = Qr2[i, :, :]
     else:
