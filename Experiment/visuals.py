@@ -39,7 +39,7 @@ class Visualize:
         self.font_top = pygame.font.SysFont('georgia', 20)
         self.flicker = 0
 
-    def visualize_experiment(self, r, r_prev, angle, text, top_text, sigma):
+    def visualize_experiment(self, r, r_prev, angle, text, top_text, bottom_text, sigma):
         x = self.translate_to_position(angle)
         x_r = self.translate_to_position(r)
 
@@ -50,8 +50,8 @@ class Visualize:
             self.show_preview(r_prev, sigma)
         self.show_player(x)
         self.show_text(text, dark=dark)
-        self.show_lower_text(top_text, dark=dark)
-        # self.show_top_text(role, dark=dark)
+        self.show_lower_text(bottom_text, dark=dark)
+        self.show_top_text(top_text, dark=dark)
 
         pygame.display.update()
 
@@ -79,7 +79,7 @@ class Visualize:
         else:
             textsurface = self.font.render(text, False, (0, 0, 0))
         text_width, text_height = self.font_top.size(text)
-        self.screen.blit(textsurface, (0.5*(self.screen_width-text_width), 0.9*self.screen_height))
+        self.screen.blit(textsurface, (0.3*(self.screen_width-text_width), 0.9*self.screen_height))
 
     def show_top_text(self, text, dark):
         if dark:

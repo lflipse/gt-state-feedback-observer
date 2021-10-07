@@ -5,10 +5,13 @@ import pandas as pd
 
 class Reference:
     def __init__(self, duration):
-        bw = 2.2
+        bw = 3
         self.amp = 0.25
         self.load_data()
-        self.duration = (self.periods[10] * 2 * np.pi) / bw
+        if len(self.periods) == 15:
+            self.duration = (self.periods[10] * 2 * np.pi) / bw
+        else:
+            self.duration = (self.periods[7] * 2 * np.pi) / bw
         frequencies = 2 * np.pi * self.periods / self.duration
         print("duration should be: ", self.duration)
         print("frequencies = ", frequencies)
@@ -66,7 +69,7 @@ class Reference:
 
     def load_data(self):
         try:
-            df_data = pd.read_csv("..\\Steering_Wheel_Dynamics\\ID_phases.csv", index_col=0)
+            df_data = pd.read_csv("..\\Steering_Wheel_Dynamics\\Experiment_phases.csv", index_col=0)
             data = df_data.to_dict(orient='list')
             self.phases = np.array(data['phases'])
             self.periods = np.array(data['periods'])

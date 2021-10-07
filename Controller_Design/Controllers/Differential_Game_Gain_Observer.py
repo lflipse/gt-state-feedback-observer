@@ -21,22 +21,21 @@ class ControllerDGObs:
         Qh = states["estimated_human_cost"]
         C = states["sharing_rule"]
 
-
-        if condition == 0:
+        if condition == "Manual Control":
             Qr = np.array([[0, 0], [0, 0]])
             Pr = Qr
             Lr = np.array([[0, 0]])
             ur = 0
             beta = 0
         else:
-            alpha = np.array([[0.05, 0], [0, 1.0]])
+            alpha = np.array([[0.04, 0], [0, 1.0]])
             gamma = np.array([[2.0, 0], [0, -1.0]])
             zeta = np.array([[1.5, 0], [0, 1.0]])
             Qr1 = np.matmul(alpha, C) + np.matmul(gamma, Qh)
             Qr2 = C - np.matmul(zeta, Qh)
-            if condition == 1:
+            if condition == "Positive Reinforcement":
                 Qr = Qr1
-            elif condition == 2:
+            elif condition == "Negative Reinforcement":
                 Qr = Qr2
             else:
                 if Qr1[0, 0] > Qr2[0, 0]:
@@ -56,7 +55,6 @@ class ControllerDGObs:
                 print("Qr = ", Qr)
                 print("Acl = ", Acl)
                 exit()
-
 
             ur = np.matmul(-Lr, xi)
         uhhat = np.matmul(-Lh_hat, xi)

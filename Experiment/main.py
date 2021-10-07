@@ -12,8 +12,8 @@ from Experiment.reference_trajectory import Reference
 from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
 from Experiment.experiment import Experiment
 from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDGObs
-from Experiment.analysis import Analysis
 from Experiment.visuals import Visualize
+from Demo.analysis import Analysis
 
 def to_csv(to_be_saved, file):
     columns = []
@@ -31,6 +31,35 @@ def load_data_set(file):
         data_set = None
 
     return data_set
+
+def init_experiment():
+    dirlist = os.listdir("data")
+    new_list = [int(i) for i in dirlist]
+    try:
+        last_participant = max(new_list)
+    except:
+        last_participant = -1
+    print("last folder: ", last_participant)
+    print("folders: ", new_list)
+
+
+    print("Choose option:")
+    option = int(input("0: Do experiment, 1: Resume experiment.   "))
+    if option == 1:
+        participant = int(input("input participant number:  "))
+        trial_number = int(input("input trial number:  "))
+
+        if trial_number > trials:
+            exit("trial number exceeds possible trials")
+
+        if participant > last_participant:
+            exit("Participant number does not exist")
+
+    else:
+        participant = last_participant + 1
+        trial_number = -1
+
+    return participant, trial_number
 
 
 # This statement is necessary to allow for multiprocessing
@@ -50,25 +79,32 @@ if __name__ == "__main__":
 
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 3.5
+    alpha = 10.0
     K = alpha * np.array([[10.0, 0], [0, 0.0]])
     kappa = 1
-    C = np.array([[15.0, 0.0], [0.0, 1.0]])
+    C = np.array([[80.0, 0.0], [0.0, 0.1]])
 
     # Experiment data
     t_warmup = 5
     t_cooldown = 5
-    t_period = 45
-    sigma = [0.01, 0.04]
+    t_period = 67.5
+    sigma = [0.005, 0.065]
     periods = 1
     t_exp = periods * t_period
     t_prev = 1.2
     repetitions = 4
-    visual_conditions = 2
-    haptic_conditions = 2
-    robot_conditions = 1
-    conditions = repetitions * visual_conditions * haptic_conditions + robot_conditions
+    haptic_conditions = 4
+    trials = repetitions * haptic_conditions
     duration = t_warmup + t_cooldown + t_exp
+    latin_square = [["Manual Control", "Positive Reinforcement", "Negative Reinforcement", "Mixed Reinforcement"],
+                    ["Manual Control", "Positive Reinforcement", "Mixed Reinforcement", "Negative Reinforcement"],
+                    ["Manual Control", "Negative Reinforcement", "Positive Reinforcement", "Mixed Reinforcement"],
+                    ["Manual Control", "Negative Reinforcement", "Mixed Reinforcement", "Positive Reinforcement"],
+                    ["Manual Control", "Mixed Reinforcement", "Positive Reinforcement", "Negative Reinforcement"],
+                    ["Manual Control", "Mixed Reinforcement", "Negative Reinforcement", "Postive Reinforcement"]]
+
+    # Choose a condition
+    participant, trial_number = init_experiment()
 
     # Visual stuff
     screen_width = 1920
@@ -77,6 +113,7 @@ if __name__ == "__main__":
     # Insert controller
     controller = ControllerDGObs(A, B, K, Gamma, kappa)
     controller_type = "Cost_observer"
+    initial_human = np.array([0, 0])
 
     # Start the senso drive parallel process
     parent_conn, child_conn = mp.Pipe(True)
@@ -89,7 +126,8 @@ if __name__ == "__main__":
         "controller": controller,
         "controller_type": controller_type,
         "parent_conn": parent_conn,
-        "child_conn": child_conn
+        "child_conn": child_conn,
+        "initial_human": initial_human,
     }
     senso_drive_process = SensoDriveModule(senso_dict)
 
@@ -97,6 +135,17 @@ if __name__ == "__main__":
     full_screen = True
     preview = True
     do_exp = True
+
+    order_nr = participant % 6
+    order = latin_square[order_nr]
+    print(participant, order_nr, order)
+
+    print("now making folder for participant: ", participant)
+    folder_name = "data\\" + str(participant)
+
+    # Check if folder already exists
+    if not os.path.isdir(folder_name):
+        os.mkdir(folder_name)
 
     experiment_input = {
         "damping": Bw,
@@ -123,43 +172,53 @@ if __name__ == "__main__":
         "sharing_rule": C,
         "periods": periods,
         "repetitions": repetitions,
-        "visual_conditions": visual_conditions,
+        "trials": trials,
         "sigma": sigma,
     }
 
-    # Make folder for the participant
-    try:
-        dirlist = os.listdir("data")
-        new_list = [int(i) for i in dirlist]
-        print("last folder: ", max(new_list))
-        print("folders: ", new_list)
-        participant = max(new_list) + 1
-    except:
-        participant = 0
 
-    print("now making folder for participant: ", participant)
-    folder_name = "data\\" + str(participant)
-    os.mkdir(folder_name)
     senso_drive_process.start()
     print("process started!")
 
     # Initialize pygame visualization
     visualize = Visualize(screen_width, screen_height, full_screen)
     experiment_handler = Experiment(experiment_input, visualize)
+    condition_range = range(trial_number, trials)
+    if trial_number == -1:
+        ready = False
 
-    # Loop over the conditions
-    for i in range(conditions):
+    for i in condition_range:
+        # When not ready, do another practice trial
+        if i == -1:
+            condition = "Practice"
+            repetition = random.randint(0, 3)
+            condition_number = -1
+        else:
+            repetition = i % repetitions
+            condition_number = int((i - repetition) / haptic_conditions)
+            condition = order[condition_number]
+        print("Trial: ", i, " Repetition: ", repetition, " Condition nr.: ", condition_number)
+
         if platform.system() == 'Windows':
             with wres.set_resolution(10000):
                 # Do trial (trial -1 is the robot only run)
-                experiment_data = experiment_handler.experiment(condition=i-1)
+                if i == -1:
+                    while not ready:
+                        ready, experiment_data = experiment_handler.experiment(condition=condition,
+                                                                               repetition=repetition, trial=i)
+                else:
+                    ready, experiment_data = experiment_handler.experiment(condition=condition, repetition=repetition,
+                                                                           trial=i)
 
-                # Save data
-                string = "data\\" + str(participant) + "\\trial_" + str(i) + ".csv"
-                to_csv(experiment_data, string)
+                    # Save data
+                    string = "data\\" + str(participant) + "\\trial_" + str(i) + ".csv"
+                    to_csv(experiment_data, string)
 
     visualize.quit()
     senso_drive_process.join(timeout=0)
-    # live_plotter_process.join(timeout=0)
+
+    # analysis = Analysis()
+    # analysis.initialize()
+    # analysis.analyse()
 
 

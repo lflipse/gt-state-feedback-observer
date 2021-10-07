@@ -16,7 +16,7 @@ class Analysis():
         self.metrics = {}
         self.metrics_individuals = {}
         self.plot_stuff = None
-        self.trials = 0
+        self.trials = 4
         self.participants = 0
         self.periods = 4
         self.conditions = 4
@@ -56,10 +56,11 @@ class Analysis():
         self.build_individual_metrics()
 
         # Plot individual data
-        self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants-1)
+        # self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 1)
+        self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 1)
 
         # Plot metrics
-        # self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, False)
+        self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, False)
         plt.show()
 
     def build_metrics(self):
@@ -73,6 +74,9 @@ class Analysis():
         self.metrics["rms_robot_torque"] = {}
         self.metrics["human_angle_cost"] = {}
         self.metrics["robot_angle_cost"] = {}
+        self.metrics["human_angle_gain"] = {}
+        self.metrics["robot_angle_gain"] = {}
+        self.metrics["authority"] = {}
         self.metrics["condition"] = {}
         self.metrics["repetition"] = {}
 
@@ -85,6 +89,11 @@ class Analysis():
         # Costs
         human_angle_cost = []
         robot_angle_cost = []
+
+        # Gains
+        human_angle_gain = []
+        robot_angle_gain = []
+        authority = []
 
         # Info
         repetitions = []
@@ -123,6 +132,13 @@ class Analysis():
                 human_angle_cost.append(np.mean(self.filtered_data[i, j]["estimated_human_cost_1"]))
                 robot_angle_cost.append(np.mean(self.filtered_data[i, j]["robot_cost_pos"]))
 
+                # Average gains
+                avg_human_gain = np.mean(self.filtered_data[i, j]["estimated_human_gain_pos"])
+                avg_robot_gain = np.mean(self.filtered_data[i, j]["robot_gain_pos"])
+                human_angle_gain.append(avg_human_gain)
+                robot_angle_gain.append(avg_robot_gain)
+                C = (avg_robot_gain - avg_human_gain) / (avg_robot_gain + avg_human_gain)
+                authority.append(C)
 
         # Save to metrics dictionary
         self.metrics["rms_angle_error"] = rms_angle_error
@@ -131,6 +147,9 @@ class Analysis():
         self.metrics["rms_robot_torque"] = rms_robot_torque
         self.metrics["human_angle_cost"] = human_angle_cost
         self.metrics["robot_angle_cost"] = robot_angle_cost
+        self.metrics["human_angle_gain"] = human_angle_gain
+        self.metrics["robot_angle_gain"] = robot_angle_gain
+        self.metrics["authority"] = authority
         self.metrics["repetition"] = repetitions
         self.metrics["settings"] = settings
         self.metrics["condition"] = conditions

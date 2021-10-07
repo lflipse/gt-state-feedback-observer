@@ -26,7 +26,10 @@ def generate_reference(amplitudes, frequencies, phases, t):
 
 def low_pass_filter(bandwidth, periods):
     amplitudes = []
-    duration = (periods[10] * 2 * np.pi) / bandwidth  # Run for 2 times the
+    if len(periods) == 15:
+        duration = (periods[10] * 2 * np.pi) / bandwidth
+    elif len(periods) == 10:
+        duration = (periods[7] * 2 * np.pi) / bandwidth
     frequencies = 2 * np.pi * periods / duration
     for i in range(len(periods)):
         mag = 1 / np.sqrt(1 + (frequencies[i]/bandwidth)**2)
@@ -36,14 +39,18 @@ def low_pass_filter(bandwidth, periods):
 
 def crest_phases(n, bandwidth, periods, amplitudes):
     # pre-allocate vectors
-    phases = np.zeros((n, 15))
+    phases = np.zeros((n, len(periods)))
     CF = np.zeros(n)
-    duration = (periods[10] * 2 * np.pi) / bandwidth  # Run for 2 times the
+    if len(periods) == 15:
+        duration = (periods[10] * 2 * np.pi) / bandwidth  # Run for 2 times the
+    elif len(periods) == 10:
+        duration = (periods[7] * 2 * np.pi) / bandwidth  # Run for 2 times the
+    print(duration)
     frequencies = 2 * np.pi * periods / duration
 
     # Loop over n instances
     for i in range(n):
-        phases[i, :] = randn(15)
+        phases[i, :] = randn(len(periods))
 
         # Compute crest factor
         fs = 30
@@ -93,7 +100,10 @@ def show_forcing_function_freq(bandwidth, periods, amplitudes):
     csfont = {'fontname': 'Georgia', 'size': title_size}
     hfont = {'fontname': 'Georgia', 'size': label_size}
 
-    duration = (periods[10] * 2 * np.pi) / bandwidth  # Run for 2 times the
+    if len(periods) == 15:
+        duration = (periods[10] * 2 * np.pi) / bandwidth  # Run for 2 times the
+    elif len(periods) == 10:
+        duration = (periods[7] * 2 * np.pi) / bandwidth  # Run for 2 times the
     frequencies = 2 * np.pi * periods / duration
 
     plt.figure()
@@ -133,8 +143,13 @@ def show_forcing_function(bandwidth, periods, amplitudes, phases):
     csfont = {'fontname': 'Georgia', 'size': title_size}
     hfont = {'fontname': 'Georgia', 'size': label_size}
 
-    duration = (periods[10] * 2 * np.pi) / bandwidth  # Run for 2 times the
+    if len(periods) == 15:
+        duration = (periods[10] * 2 * np.pi) / bandwidth  # Run for 2 times the
+    elif len(periods) == 10:
+        duration = (periods[7] * 2 * np.pi) / bandwidth
     frequencies = 2 * np.pi * periods / duration
+
+    print(duration)
 
     # Show forcing function:
     fs = 100
@@ -156,20 +171,27 @@ def show_forcing_function(bandwidth, periods, amplitudes, phases):
 
 # Example figure
 bw = 1
+bw2 = 3
 periods = np.array([2, 3, 5, 7, 13, 19, 29, 37, 47, 61, 79, 101, 127, 163, 211])
+periods2 = np.array([2, 3, 5, 7, 13, 19, 29, 37, 47, 61])
 amplitudes = low_pass_filter(bw, periods)
+amplitudes2 = low_pass_filter(bw2, periods2)
 
 # amplitudes fixen als een filter
 # amplitudes = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.707, 0.1, 0.1, 0.1, 0.1])
 
 n = 1000
 
-phase1, phase2, phasemax = crest_phases(n, bw, periods, amplitudes)
+phase1b, phase2b, phasemax2 = crest_phases(n, bw2, periods2, amplitudes2)
+# phase1, phase2, phasemax = crest_phases(n, bw, periods, amplitudes)
 
-to_csv(phase1, periods, amplitudes, "ID_phases.csv")
-to_csv(phase2, periods, amplitudes, "Validation_phases.csv")
 
-show_forcing_function_freq(bw, periods, amplitudes)
-show_forcing_function(bw, periods, amplitudes, phase1)
-show_forcing_function(bw, periods, amplitudes, phasemax)
+# to_csv(phase1, periods, amplitudes, "ID_phases.csv")
+# to_csv(phase2, periods, amplitudes, "Validation_phases.csv")
+to_csv(phase2b, periods2, amplitudes2, "Experiment_phases.csv")
+
+# show_forcing_function_freq(bw, periods, amplitudes)
+show_forcing_function_freq(bw2, periods2, amplitudes2)
+show_forcing_function(bw2, periods2, amplitudes2, phase1b)
+show_forcing_function(bw2, periods2, amplitudes2, phasemax2)
 plt.show()

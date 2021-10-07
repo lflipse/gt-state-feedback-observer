@@ -64,6 +64,8 @@ class Reference:
         plt.xlim(0, 10)
         plt.tight_layout(pad=1)
 
+        plt.show()
+
 
     def generate_reference(self, t):
         period = self.forcing_function["periods"]

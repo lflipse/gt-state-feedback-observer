@@ -32,7 +32,7 @@ class Experiment:
         self.sharing_rule = input["sharing_rule"]
         self.preview_time = input["preview_time"]
         self.repetitions = input["repetitions"]
-        self.visual_conditions = input["visual_conditions"]
+        self.trials = input["trials"]
         self.repetition = 0
         self.sigma = input["sigma"]
         self.duration = self.t_warmup + self.t_exp + self.t_cooldown
@@ -85,12 +85,12 @@ class Experiment:
         self.variables = dict()
 
         print("sleeping for 2 seconds to see if motor is active")
-        self.visualize.visualize_experiment(0, [], 0, text="Initializing", top_text="", sigma=0)
+        self.visualize.visualize_experiment(0, [], 0, text="Initializing", top_text="", bottom_text="", sigma=0)
         time.sleep(1.5)
 
         print("init complete!")
 
-    def experiment(self, condition):
+    def experiment(self, condition, repetition, trial):
         # reset values
         ready = False
         self.send_dict["exit"] = False
@@ -101,51 +101,29 @@ class Experiment:
         self.time = 0
         self.cond = 0
         self.variables = dict()
+        self.repetition = repetition
 
-        # Trial -1 is a robot only run
-        if condition < 0:
-            # cond = "Robot only"
-            cond = "Adaptive Shared Control"
-            self.send_dict["manual"] = False
-            self.send_dict["condition"] = condition
-            sharing_rule = self.sharing_rule
-            self.send_dict["sharing_rule"] = sharing_rule
-            self.repetition = 1
-            self.visual_setting = 0
-            setting = "Robot Vision"
-            sigma_h = self.sigma[int(self.visual_setting)]
+        # First x trials are manual control
+        sigma_h = self.sigma[int(self.visual_setting)]
+        setting = "Good Visuals"
 
+        self.send_dict["condition"] = condition
+        if condition == "Manual Control":
+            self.send_dict["manual"] = True
+            self.send_dict["sharing_rule"] = self.estimated_human_cost
+        elif condition == "Practice":
+            self.send_dict["condition"] = "Manual Control"
+            self.send_dict["manual"] = True
+            self.send_dict["sharing_rule"] = self.estimated_human_cost
         else:
-            # First x trials are manual control
-            self.repetition = condition % self.repetitions
-            self.visual_setting = 0
-            sigma_h = self.sigma[int(self.visual_setting)]
-            setting = "Good Visuals"
+            self.send_dict["manual"] = False
+            self.send_dict["sharing_rule"] = self.sharing_rule
 
-
-            if condition == 0:
-                cond = "Manual Control"
-                self.send_dict["manual"] = True
-            else:
-                self.send_dict["manual"] = False
-                sharing_rule = self.sharing_rule
-
-            self.send_dict["condition"] = condition
-            if condition == 1:
-                cond = "Positive Reinforcement"
-            elif condition == 2:
-                cond = "Negative Reinforcement"
-            elif condition == 3:
-                cond = "Mixed Reinforcement"
-
-            if condition == 0:
-                self.send_dict["sharing_rule"] = self.estimated_human_cost
-            else:
-                self.send_dict["sharing_rule"] = self.sharing_rule
-
-        print(cond)
+        print(condition)
 
         # Press spacebar to start trial
+        trial_nr = trial + 1
+        top_text = "Trial " + str(trial_nr) + "/" + str(self.trials)
         while not ready:
             if self.senso_process.is_alive():
                 self.quit = self.visualize.check_quit()
@@ -155,8 +133,6 @@ class Experiment:
                 self.send_dict["reset"] = True
                 self.send_dict["experiment"] = False
                 self.send_dict["ref"] = np.array([0.0, 0.0])
-                # self.send_dict["robot_cost"] = self.Qr_start
-                # self.send_dict["sharing_rule"] = self.sharing_rule
                 self.parent_conn.send(self.send_dict)  # Child is for sending
                 new_states = self.parent_conn.recv()  # Receive from child
                 self.computed = False
@@ -167,7 +143,7 @@ class Experiment:
             if keyboard.is_pressed(' '):
                 break
             self.visualize.visualize_experiment(0, [], new_states["steering_angle"],
-                                                text="Press spacebar to start the trial", top_text="", sigma=0, )
+                                                text="Press spacebar to start the trial", top_text=top_text, bottom_text="", sigma=0, )
 
         self.t0 = time.perf_counter_ns()
         self.t_last = time.perf_counter_ns()
@@ -176,6 +152,7 @@ class Experiment:
         self.cond = 0
         self.time = 0
         self.factor = 0.25
+        top_text = ""
 
         # Loop over 1 trial
         while self.time < self.duration:
@@ -183,6 +160,10 @@ class Experiment:
             self.quit = self.visualize.check_quit()
             if self.quit:
                 self.send_dict["exit"] = True
+
+            if condition == "Practice":
+                if self.time > 0.5 * self.duration:
+                    break
 
             # Calculate timings
             self.t_now = time.perf_counter_ns()
@@ -194,12 +175,6 @@ class Experiment:
             # Compute reference
             ref = self.reference.generate_reference(self.time, sigma=0, player="robot", ref_sign=self.repetition)
             self.reference_preview(self.time, h, sigma_h=sigma_h)
-            if cond == "Manual Control":
-                sharing_rule = self.estimated_human_cost
-            if cond == "Static Shared Control":
-                self.controller_type = cond
-
-            self.send_dict["sharing_rule"] = sharing_rule
 
             # WARM_UP
             if self.time < self.t_warmup:
@@ -210,18 +185,14 @@ class Experiment:
                 self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = False
 
-
                 # Text to display
                 dt = self.t_warmup - self.time
                 top_text = ""
-                # if cond != "Robot only":
-                if cond != False:
-                    if dt > 3:
-                        text = "Trial starts in:"
-                    else:
-                        text = str(round(dt, 1))
+                bottom_text = ""
+                if dt > 3:
+                    text = "Trial starts in:"
                 else:
-                    text = "This is a robot only run!"
+                    text = str(round(dt, 1))
 
             # EXPERIMENT
             elif self.t_warmup <= self.time < (self.t_warmup + self.t_exp):
@@ -231,20 +202,13 @@ class Experiment:
                 self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = True
                 estimated_gain_pos = self.states["estimated_human_gain"].flatten()[0]
-                estimated_cost_pos = self.states["estimated_human_cost"][0, 0]
-                robot_cost_pos = self.states["robot_cost_calc"][0, 0]
                 robot_gain_pos = self.states["robot_gain"][0, 0]
-                estimation_error = self.states["steering_angle"] - self.states["state_estimate"][0][0]
-                top_text = "Gains; H:" + str(round(estimated_gain_pos, 2)) + " R: " + str(round(robot_gain_pos, 2))
-                           # + " HC: " + str(round(estimated_cost_pos, 2)) + " HC: " + str(round(robot_cost_pos, 2)) \
-                           # + " EE: " + str(round(estimation_error, 2)) + " UT: " + str(round(self.states["input_estimation_error"], 2))
-                if self.time > (self.t_warmup + 0.5 * self.t_exp):
-                    if setting == "Robot Vision":
-                        # Switch to bad condition halfway
-                        sigma_h = self.sigma[int(self.visual_setting) + 1]
+                bottom_text = "Gains; H:" + str(round(estimated_gain_pos, 2)) + " R: " + str(round(robot_gain_pos, 2))
 
                 # Determine condition
                 text = ""
+                top_text = ""
+                bottom_text = ""
                 # top_text = "Time = " + str(round(self.time - self.t_warmup, 1))
 
             # COOLDOWN
@@ -256,7 +220,7 @@ class Experiment:
                 self.send_dict["ref"] = ref
                 self.send_dict["experiment"] = False
                 text = "Finished trial"
-                top_text = "RMSE = " + str(round(self.RMSE, 4))
+                bottom_text = "Performance Score (RMSE) = " + str(round(self.RMSE, 4))
 
             # Send data to the child
             if self.senso_process.is_alive():
@@ -275,7 +239,8 @@ class Experiment:
 
             # Visualize experiment
             self.visualize.visualize_experiment(self.send_dict["ref"][0], angle=self.states["steering_angle"],
-                                                r_prev=self.preview_positions, text=text, top_text=top_text, sigma=sigma_h)
+                                                r_prev=self.preview_positions, text=text, top_text=top_text,
+                                                bottom_text=bottom_text, sigma=sigma_h)
 
             if self.store:
                 output = {
@@ -290,7 +255,7 @@ class Experiment:
                     "measured_input": self.states["measured_input"],
                     "execution_time": h,
                     "repetition": self.repetition,
-                    "condition": cond,
+                    "condition": condition,
                     "human_noise": sigma_h,
                     "setting": setting,
                 }
@@ -326,11 +291,46 @@ class Experiment:
                 # print(output)
                 self.store_variables(output)
 
+        ready = False
+
+        if condition == "Practice":
+            # Press spacebar to start trial
+            while not ready:
+                if self.senso_process.is_alive():
+                    self.quit = self.visualize.check_quit()
+                    if self.quit:
+                        self.send_dict["exit"] = True
+                    self.factor = 0
+                    self.send_dict["reset"] = True
+                    self.send_dict["experiment"] = False
+                    self.send_dict["ref"] = np.array([0.0, 0.0])
+                    self.parent_conn.send(self.send_dict)  # Child is for sending
+                    new_states = self.parent_conn.recv()  # Receive from child
+                    self.computed = False
+                else:
+                    print("sensodrive process was killed")
+                    return -1
+                time.sleep(0.005)
+                if keyboard.is_pressed('S'):
+                    ready_for_experiment = True
+                    break
+                if keyboard.is_pressed('P'):
+                    ready_for_experiment = False
+                    break
+                self.visualize.visualize_experiment(0, [], new_states["steering_angle"],
+                                                    text="To do an extra practice run press P, To start experiment press S",
+                                                    top_text="", bottom_text="", sigma=0, )
+
+        else:
+            ready_for_experiment = True
+
+
+
         # Time to close off
         # self.send_dict["exit"] = True
         # self.parent_conn.send(self.send_dict)
 
-        return self.variables
+        return ready_for_experiment, self.variables
 
     def store_variables(self, output):
         for key in output.keys():
@@ -341,7 +341,6 @@ class Experiment:
             e = self.variables["angle_error"]
             self.RMSE = np.sqrt(1/len(e) * np.inner(e, e))
             self.computed = True
-
 
     def reference_preview(self, t_now, h, sigma_h):
         steps = 250
@@ -371,7 +370,6 @@ class Experiment:
             self.preview_positions = np.append(self.preview_positions, ref[0])
             self.preview_speed = np.append(self.preview_speed, ref[1])
             N = len(self.preview_positions)
-
 
         # Move points according to their velocity
         self.preview_positions += h * np.array(self.preview_speed)

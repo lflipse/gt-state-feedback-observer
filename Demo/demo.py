@@ -55,15 +55,15 @@ if __name__ == "__main__":
 
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 10.0
+    alpha = 8.0
     K = alpha * np.array([[10.0, 0], [0, 0.0]])
     kappa = 1
-    C = np.array([[40.0, 0.0], [0.0, 0.1]])
+    C = np.array([[50.0, 0.0], [0.0, 0.1]])
 
     # Experiment data
     t_warmup = 5
     t_cooldown = 5
-    t_period = 80
+    t_period = 67.5
     sigma = [0.005, 0.065]
     periods = 1
     t_exp = periods * t_period
@@ -78,6 +78,10 @@ if __name__ == "__main__":
 
     # Choose a condition
     condition = choose_condition()
+    if condition < 0:
+        trials = conditions
+    else:
+        trials = 1
 
     # Visual stuff
     screen_width = 1920
@@ -133,6 +137,7 @@ if __name__ == "__main__":
         "final_robot_cost": None,
         "sharing_rule": C,
         "periods": periods,
+        "trials": trials,
         "repetitions": repetitions,
         "visual_conditions": visual_conditions,
         "sigma": sigma,
@@ -160,18 +165,21 @@ if __name__ == "__main__":
 
     # conditions = 3
     if condition >= 0:
-        conditions = condition
+        conditions = 1
+
+    condits = ["Manual Control", "Positive Reinforcement", "Negative Reinforcement", "Mixed Reinforcement"]
 
     for i in range(conditions):
         if condition < 0:
-            cond = i
+            cond = condits[i]
         else:
-            cond = condition
+            cond = condits[condition]
+
 
         if platform.system() == 'Windows':
             with wres.set_resolution(10000):
                 # Do trial (trial -1 is the robot only run)
-                experiment_data = experiment_handler.experiment(condition=cond)
+                ready, experiment_data = experiment_handler.experiment(condition=cond, repetition=0, trial=i)
 
                 # Save data
                 string = "data\\" + str(participant) + "\\trial_" + str(i) + ".csv"
