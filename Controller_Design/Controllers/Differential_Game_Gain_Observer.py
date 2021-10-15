@@ -28,9 +28,9 @@ class ControllerDGObs:
             ur = 0
             beta = 0
         else:
-            alpha = np.array([[0.04, 0], [0, 1.0]])
-            gamma = np.array([[2.0, 0], [0, -1.0]])
-            zeta = np.array([[1.5, 0], [0, 1.0]])
+            alpha = np.array([[0.1, 0], [0, 1.0]])
+            gamma = np.array([[1.5, 0], [0, -1.0]])
+            zeta = np.array([[1.0, 0], [0, 1.0]])
             Qr1 = np.matmul(alpha, C) + np.matmul(gamma, Qh)
             Qr2 = C - np.matmul(zeta, Qh)
             if condition == "Positive Reinforcement":

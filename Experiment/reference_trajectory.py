@@ -81,8 +81,8 @@ class Reference:
         period = self.forcing_function["periods"]
         phases = self.forcing_function["phases"]
         amplitude = self.forcing_function["amplitudes"]
-        reference_position = 0
-        reference_velocity = 0
+        ref_position = 0
+        ref_velocity = 0
 
         v = np.random.normal(0, sigma)
         w = np.random.normal(0, 1.5*sigma)
@@ -104,8 +104,11 @@ class Reference:
 
         for i in range(len(period)):
             wt = (period[i] / self.duration) * (2 * np.pi)
-            reference_position += mag * amplitude[i] * math.sin(fac * wt * t + phases[i])
-            reference_velocity += fac * mag * amplitude[i] * wt * math.cos(fac * wt * t + phases[i])
+            ref_position += mag * amplitude[i] * math.sin(fac * wt * t + phases[i])
+            ref_velocity += fac * mag * amplitude[i] * wt * math.cos(fac * wt * t + phases[i])
+
+        reference_position = ref_position * math.tanh(0.5 * t)
+        reference_velocity = ref_velocity * math.tanh(0.5 * t)
 
         if player == "robot":
             ref = np.array([reference_position, reference_velocity])

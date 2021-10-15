@@ -1,6 +1,8 @@
 import pygame
 import numpy as np
 from pygame.locals import *
+from pygame import mixer
+import time
 
 class Visualize:
     def __init__(self, screen_width, screen_height, full_screen):
@@ -31,6 +33,7 @@ class Visualize:
         # self.bg_color = (0, 0, 0) # Black background
         self.line_color = (100, 100, 100)
         self.preview_color = (255, 140, 0)
+        self.player_color = (255, 165, 0)
         # ff8c00 hex color
         self.bg_color = (0, 0, 0)
         pygame.font.init()
@@ -38,6 +41,13 @@ class Visualize:
         self.font = pygame.font.SysFont('georgia', 60)
         self.font_top = pygame.font.SysFont('georgia', 20)
         self.flicker = 0
+
+        mixer.init()
+        mixer.music.load("../Controller_Design/images/background.mp3")
+        mixer.music.play(-1, 0.0)
+        # time.sleep(2)
+        # mixer.music.stop()
+        # pygame.event.wait()
 
     def visualize_experiment(self, r, r_prev, angle, text, top_text, bottom_text, sigma):
         x = self.translate_to_position(angle)
@@ -64,6 +74,7 @@ class Visualize:
     def show_player(self, x):
         # x is the center, need to move
         self.screen.blit(self.player, (x - 0.5*self.img_size, self.y_player + 0.5*self.img_size))
+        pygame.draw.circle(self.screen, self.player_color, (x, self.y_player + 0.57*self.img_size), 6)
 
     def show_text(self, text, dark):
         if dark:

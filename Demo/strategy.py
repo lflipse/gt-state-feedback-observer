@@ -40,7 +40,8 @@ tud_yellow = "#F1BE3E"
 tud_orange = "#EB7245"
 tud_lightblue = "#00B7D3"
 
-# Compute possible costs from -100 to 100
+
+# Compute possible costs from 0 to 40
 q1h = np.linspace(0, 40, num=n)
 Qh = np.zeros((n, 2, 2))
 Qr1 = np.zeros((n, 2, 2))
@@ -58,7 +59,7 @@ C2 = np.zeros(n)
 C3 = np.zeros(n)
 Qh[:, 0, 0] = q1h
 
-C = np.array([[50.0, 0], [0, 0.1]])
+C = np.array([[25.0, 0], [0, 0.1]])
 
 # Dynamics
 Jw = 0.04914830792783059
@@ -68,9 +69,9 @@ A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
 B = np.array([[0], [1 / Jw]])
 
 for i in range(n):
-    alpha = np.array([[0.04, 0], [0, 1.0]])
-    gamma = np.array([[2.0, 0], [0, -1.0]])
-    zeta = np.array([[1.5, 0], [0, 1.0]])
+    alpha = np.array([[0.1, 0], [0, 1.0]])
+    gamma = np.array([[1.5, 0], [0, -1.0]])
+    zeta = np.array([[1.0, 0], [0, 1.0]])
 
     if Qh[i, 0, 0] < 1/zeta[0, 0] * C[0, 0]:
         Qr1[i, :, :] = C - np.matmul(zeta, Qh[i, :, :])
@@ -111,30 +112,33 @@ plt.ylabel('Robot cost weight (-)', hfont)
 plt.xlim(Qh[0, 0, 0], Qh[-1, 0, 0])
 plt.tight_layout(pad=1)
 
+labels = ['Human Gain', 'Robot Gain']
+colors = [tud_red, tud_blue]
+
 plt.figure()
-plt.plot(Lh1[:, 0], Lr1[:, 0], linewidth=linewidth)
+plt.stackplot(Lh1[:, 0], Lh1[:, 0], Lr1[:, 0], labels=labels, colors=colors)
 plt.title("Negative reinforcement", csfont)
 plt.xlabel('Human gain (Nm)', hfont)
 plt.ylabel('Robot gain (Nm)', hfont)
-# plt.legend(prop={"size": 14}, loc='upper right')
+plt.legend(prop={"size": 14}, loc='upper right')
 plt.xlim(Lh1[0, 0], Lh1[-1, 0])
 plt.tight_layout(pad=1)
 
 plt.figure()
-plt.plot(Lh2[:, 0], Lr2[:, 0], linewidth=linewidth)
-plt.title("No reinforcement", csfont)
+plt.stackplot(Lh2[:, 0], Lh2[:, 0], Lr2[:, 0], labels=labels, colors=colors)
+plt.title("Positive reinforcement", csfont)
 plt.xlabel('Human gain (Nm)', hfont)
 plt.ylabel('Robot gain (Nm)', hfont)
-# plt.legend(prop={"size": 14}, loc='upper right')
+plt.legend(prop={"size": 14}, loc='upper right')
 plt.xlim(Lh2[0, 0], Lh2[-1, 0])
 plt.tight_layout(pad=1)
 
 plt.figure()
-plt.plot(Lh3[:, 0], Lr3[:, 0], linewidth=linewidth)
+plt.stackplot(Lh3[:, 0], Lh3[:, 0], Lr3[:, 0], labels=labels, colors=colors)
 plt.title("Mixed Reinforcement", csfont)
 plt.xlabel('Human gain (Nm)', hfont)
 plt.ylabel('Robot gain (Nm)', hfont)
-# plt.legend(prop={"size": 14}, loc='upper right')
+plt.legend(prop={"size": 14}, loc='upper right')
 plt.xlim(Lh3[0, 0], Lh3[-1, 0])
 plt.tight_layout(pad=1)
 

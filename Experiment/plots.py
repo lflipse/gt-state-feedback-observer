@@ -11,8 +11,10 @@ import seaborn as sns
 class PlotStuff:
     def __init__(self):
         print("About to be plotting stuff")
-        self.csfont = {'fontname': 'Georgia'}
-        self.hfont = {'fontname': 'Georgia'}
+        title_size = 14
+        label_size = 10
+        self.csfont = {'fontname': 'Georgia', 'size': title_size}
+        self.hfont = {'fontname': 'Georgia', 'size': label_size}
 
         # Colors
         self.tud_black = "#000000"
@@ -22,192 +24,150 @@ class PlotStuff:
         self.tud_yellow = "#F1BE3E"
         self.tud_orange = "#EB7245"
         self.tud_lightblue = "#00B7D3"
+        self.colors= {"Manual Control": self.tud_orange, "Positive Reinforcement": self.tud_red,
+               "Negative Reinforcement": self.tud_blue, "Mixed Reinforcement": self.tud_green}
 
-        colors = [self.tud_blue, self.tud_red, self.tud_green, self.tud_yellow, self.tud_orange, self.tud_lightblue]
+        self.gains = {"human_gain": [],
+                      "robot_gain": [],
+                      "Condition": []}
+
         sns.set(style="whitegrid")
-        sns.set_palette(sns.color_palette(colors))
-
-        self.fig1 = plt.figure()
-        self.fig2 = plt.figure()
-        self.fig3 = plt.figure()
-        self.fig4 = plt.figure()
-        self.fig5 = plt.figure()
 
 
     def plot_experiment(self, data, averaged_data, compare):
-        pd_metric = pd.DataFrame.from_dict(data)
-        pd_averaged = pd.DataFrame.from_dict(averaged_data)
+        a=1
 
-        print(pd_averaged)
-        print(pd_metric)
 
-        if compare:
-            # plot box-plots for all metrics
-            Y = ["rmse", "rmsu", "cost"]
-            T = ["rmse", "rmsu", "cost"]
-        else:
-            Y = ["rms_angle_error", "rms_rate_error", "rms_human_torque",
-                 "rms_robot_torque", "human_angle_cost", "robot_angle_cost"]
-            T = ["Controller Performance (Steering angle)", "Controller Performance (Steering rate)", "Control Effort (Estimated human)",
-                 "Control Effort (Robot)", "Cost Function Weight (Estimated Human)", "Cost Function Weight (Robot)"]
-            unit = ["Root-mean-square steering angle error (rad)", "Root-mean-square steering rate error (rad/s)",
-                    "Root-mean-square steering torque (Nm)", "Root-mean-square steering torque (Nm)",
-                    "Steering angle cost function weight (-)", "Steering angle cost function weight (-)",]
-        for i in range(len(Y)):
-            y = Y[i]
-            title = T[i]
-            if compare:
-                hue = y + "_index"
+    def plot_data(self, raw_data, trials, participant):
+        figb, axs = plt.subplots(4, 3)
+        figc, axsb = plt.subplots(4, 3)
+
+        for i in range(trials):
+            # plt.figure()
+            fig, (ax2, ax1, ax3) = plt.subplots(3)
+
+
+            data = raw_data[participant, i]
+            condition = data["condition"][0]
+            repetition = data["repetition"][0]
+
+            # UNPACK DATA
+            t = data["time"]
+            ur = data["torque"]
+            uhhat = data["estimated_human_input"]
+            x = data["steering_angle"]
+            r = data["reference_angle"]
+            xdot = data["steering_rate"]
+            rdot = data["reference_rate"]
+            t_ex = data["execution_time"]
+            error = np.array(x) - np.array(r)
+
+            x_hat = data["state_estimate_pos"]
+            Lhhat_pos = data["estimated_human_gain_pos"]
+            Lhhat_vel = data["estimated_human_gain_vel"]
+            Lr_pos = data["robot_gain_pos"]
+            Lr_vel = data["robot_gain_vel"]
+
+            uhtilde = data["input_estimation_error"]
+            uh_rec = np.array(uhhat) - np.array(uhtilde)
+
+            Pr = np.array(ur) * np.array(xdot)
+            Ph = np.array(uh_rec) * np.array(xdot)
+            auth = 1 - np.abs(Ph)/(np.abs(Pr) + np.abs(Ph) + 0.001)
+
+
+            # Conditions
+            q_h_1 = data["estimated_human_cost_1"]
+            q_h_2 = data["estimated_human_cost_2"]
+            q_r_1 = data["robot_cost_pos"]
+            q_r_2 = data["robot_cost_vel"]
+
+            label_robot = "Robot"
+            label_human = "Estimated Human"
+
+            if condition == "Manual Control":
+                ls = '-'
+                label_human = 'Manual control'
+                line_color = self.tud_orange
+                c = 0
+            elif condition == "Positive Reinforcement":
+                ls = '-'
+                line_color = self.tud_red
+                c = 1
+            elif condition == "Negative Reinforcement":
+                ls = '-'
+                line_color = self.tud_blue
+                c=2
+            elif condition == "Mixed Reinforcement":
+                ls = '-'
+                line_color = self.tud_green
+                c=3
             else:
-                hue = 'settings'
-            # print(y)
-            # if y == "rms_human_torque" or y == "human_angle_cost" or y == "robot_angle_cost":
-            #     metric = pd_metric_no_solo
-            # else:
-            #     metric = pd_metric
+                ls = '.'
+                line_color = self.tud_yellow
 
-            metric = pd_metric
+            labels = [label_human, label_robot]
+            colors = [self.tud_red, self.tud_blue]
 
-            plt.figure()
-            sns.swarmplot(linewidth=2.5, data=metric, x="condition", y=y, hue='participant', alpha=0.7)
-            ax = sns.boxplot(linewidth=2.5, data=metric, x="condition", y=y, hue=hue, width=0.7)
-            ax.set_xlabel("Condition", **self.csfont)
-            ax.set_ylabel(unit[i], **self.csfont)
-            ax.set_title(title, **self.csfont)
+            # if repetition == 0:
+            #     plt.figure(fig1)
+            # elif repetition == 1:
+            #     plt.figure(fig2)
+            # if repetition == 2:
+            #     plt.figure(fig3)
+            # elif repetition == 3:
+            #     plt.figure(fig4)
 
-        plt.figure()
-        sns.swarmplot(linewidth=2.5, data=pd_averaged, x="condition", y="rms_angle_error", hue='participant', alpha=0.7)
-        ax = sns.boxplot(linewidth=2.5, data=pd_averaged, x="condition", y="rms_angle_error", hue='participant', width=0.7)
-        ax.set_xlabel("Condition", **self.csfont)
-        ax.set_ylabel("Root-mean-squared error", **self.csfont)
-        ax.set_title("Performance", **self.csfont)
+            t_start = 0
+            t_end = t[-1]
 
-    def plot_trial(self, data):
-        # UNPACK DATA
-        t = data["time"]
-        ur = data["torque"]
-        x = data["steering_angle"]
-        r = data["reference_angle"]
-        xdot = data["steering_rate"]
-        rdot = data["reference_rate"]
-        t_ex = data["execution_time"]
+            fig.suptitle(condition, **self.csfont)
+            ax1.stackplot(t, Lhhat_pos, Lr_pos, colors=colors, labels=labels)
+            ax1.set_ylabel('Gain (Nm/rad)', **self.hfont)
+            ax1.legend(prop={"size": 12}, loc='upper left')
+            ax1.set_xticks([])
+            ax1.set_xlim(t_start, t_end)
+            # plt.ylim(-3, 6)
 
-        x_hat = data["state_estimate_pos"]
-        Lhhat_pos = data["estimated_human_gain_pos"]
-        Lhhat_vel = data["estimated_human_gain_vel"]
-        Lr_pos = data["robot_gain_pos"]
-        Lr_vel = data["robot_gain_vel"]
-        uhhat = data["estimated_human_input"]
-        uhtilde = data["input_estimation_error"]
+            ax2.plot(t, error, self.tud_blue)
+            ax2.set_ylabel('Error (rad)', **self.hfont)
+            ax2.set_xticks([])
+            ax2.set_xlim(t_start, t_end)
 
-        # Conditions
-        repetition = data["repetition"]
-        human_noise = data["human_noise"]
+            ax3.stackplot(t, uhhat, -np.array(uhtilde), ur, colors=[self.tud_red, self.tud_orange, self.tud_blue], labels=['Estimated Human', 'Estimation Error', 'Robot'])
+            ax3.set_xticks([])
+            ax3.set_ylabel('Input torque (Nm)', **self.hfont)
+            ax3.legend(prop={"size": 12}, loc='upper left')
+            ax3.set_xlim(t_start, t_end)
 
-        xddot = data["acceleration"]
-        xhatdot = data["state_estimate_vel"]
+            auth_est = (np.array(Lr_pos) - np.array(Lhhat_pos)) / (np.array(Lr_pos) + np.array(Lhhat_pos) + 0.001)
+            auth = (ur - uh_rec) / (ur + uh_rec + 0.001)
 
-        q_h_1 = data["estimated_human_cost_1"]
-        q_h_2 = data["estimated_human_cost_2"]
-        q_r_1 = data["robot_cost_pos"]
-        q_r_2 = data["robot_cost_vel"]
+            figb.suptitle("Estimated Control Authority", **self.csfont)
+            if c > 0:
+                axs[repetition, c-1].plot(t, auth_est)
+                axs[repetition, c - 1].plot(t, auth, alpha=0.3)
+                axs[repetition, c-1].set_ylim(-1.5, 1.5)
+                if repetition == 0:
+                    axs[repetition, c - 1].set_title(condition)
+                elif repetition == 3:
+                    axs[repetition, c - 1].set_xlabel('Time (s)')
+                else:
+                    axs[repetition, c - 1].set_xticks([])
 
-        # Steering angle
-        plt.figure(self.fig1)
-        plt.title("Measured and estimated steering angle", **self.csfont)
-        plt.plot(t, r, self.tud_black, linewidth=2.5, linestyle="-", alpha=0.7, label="Reference $\phi_r(t)$")
-        plt.plot(t, x, self.tud_blue, linestyle="--", linewidth=2.5, label="Steering angle $\phi(t)$")
-        plt.plot(t, x_hat, self.tud_red, linewidth=2.5, linestyle="--", label="Estimated $\hat{\phi}(t)$")
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Steering angle (rad)', **self.hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, t[-1])
-        plt.tight_layout(pad=1)
+            figc.suptitle("Gains", **self.csfont)
+            if c > 0:
+                axsb[repetition, c - 1].stackplot(t, Lhhat_pos, Lr_pos, colors=colors,)
+                # axsb[repetition, c - 1].set_ylim(-1.5, 1.5)
+                if repetition == 0:
+                    axsb[repetition, c - 1].set_title(condition)
+                if repetition == 3:
+                    axsb[repetition, c - 1].set_xlabel('Time (s)')
 
-        # Steering rate
-        plt.figure(self.fig2)
-        plt.title("Measured and estimated steering rate", **self.csfont)
-        plt.plot(t, rdot, self.tud_black, linewidth=2.5, linestyle="-", alpha=0.7, label="Reference $\dot{\phi}_r(t)$")
-        plt.plot(t, xdot, self.tud_blue, linestyle="--", linewidth=2.5, label="Steering rate $\dot{\phi}(t)$")
-        plt.plot(t, xhatdot, self.tud_red, linewidth=2.5, linestyle="--", label="Estimated $\dot{\hat{\phi}}(t)$")
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Steering rate (rad/s)', **self.hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, t[-1])
-        plt.tight_layout(pad=1)
-
-        # Input torque (robot)
-        plt.figure()
-        plt.title("Input torque", **self.csfont)
-        plt.plot(t, np.array(ur), self.tud_blue, linestyle="--", linewidth=2, label="Input torque (robot) $u_r(t)$")
-        plt.plot(t, np.array(uhhat), self.tud_red, linestyle="--", linewidth=2, alpha=1, label="Estimated (human) $\hat{u}_h(t)$")
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Torque (Nm)', **self.hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, t[-1])
-        plt.tight_layout(pad=1)
-
-        plt.figure(self.fig3)
-        plt.title("Gains position", **self.csfont)
-        plt.plot(t, Lr_pos, self.tud_blue, linestyle="--", linewidth=3, label="Robot gain $L_r(t)$")
-        plt.plot(t, Lhhat_pos, self.tud_red, linestyle="--", linewidth=3, label="Estimated human gain $\hat{L}_h(t)$")
-        # self.draw_regions(t, conditions, Lr_pos, Lhhat_pos)
-        self.limit_y(Lr_pos, Lhhat_pos)
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Gain (Nm)', **self.hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, t[-1])
-        plt.tight_layout(pad=1)
-
-        plt.figure()
-        plt.title("Computational times", **self.csfont)
-        plt.plot(t, t_ex)
-
-        plt.figure(self.fig4)
-        plt.title("Cost function weights", **self.csfont)
-        plt.plot(t, q_r_1, self.tud_blue, linestyle="--", linewidth=3, label="Robot cost $Q_{r,1}(t)$")
-        plt.plot(t, q_h_1, self.tud_red, linestyle="--", linewidth=3, label="Estimated human cost $\hat{Q}_{h,1}(t)$")
-        # self.draw_regions(t, conditions, q_r_1, q_h_1)
-        self.limit_y(q_r_1, q_h_1)
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Gain (Nm)', **self.hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, t[-1])
-        plt.tight_layout(pad=1)
-
-        plt.figure(self.fig5)
-        plt.title("Cost function weights", **self.csfont)
-        plt.plot(t, q_r_2, self.tud_blue, linestyle="--", linewidth=3, label="Robot cost $Q_{r,2}(t)$")
-        plt.plot(t, q_h_2, self.tud_red, linestyle="--", linewidth=3, label="Estimated human cost $\hat{Q}_{h,2}(t)$")
-        # self.draw_regions(t, conditions, q_r_2, q_h_2)
-        self.limit_y(q_r_2, q_h_2)
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Gain (Nm)', **self.hfont)
-        plt.legend(prop={"size": 8}, loc='upper right')
-        plt.xlim(0, t[-1])
-        plt.tight_layout(pad=1)
-
-
-
-        uhtilde = np.array(data["input_estimation_error"])
-        x_hatdot = np.array(data["state_estimate_derivative"])
-        print(uhtilde)
-
-        plt.figure()
-        plt.plot(t, uhtilde)
-        plt.figure()
-        plt.plot(t, xddot)
-        plt.plot(t, x_hatdot)
-
-        # plt.show()
-
-        # self.save_all_figures()
-
-    def limit_y(self, var1, var2):
-        test = 1
+            # plt.tight_layout(pad=1)
 
     def save_all_figures(self):
-        pp = PdfPages('figures\\experiment_prelim.pdf')
+        pp = PdfPages('figures\\pilot.pdf')
         figs = None
         if figs is None:
             figs = [plt.figure(n) for n in plt.get_fignums()]

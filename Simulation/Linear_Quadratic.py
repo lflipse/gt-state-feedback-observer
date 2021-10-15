@@ -81,6 +81,7 @@ class ControllerLQ:
         except:
             Lh0 = np.matmul(self.B.transpose(), Ph)
         Lr0 = np.matmul(self.B.transpose(), Pr)
+        print(Lh0)
 
         print("Controller gains then are computed as: L_r = ", Lr0, " and L_h = ", Lh0)
 
@@ -108,7 +109,8 @@ class ControllerLQ:
             e[l, :] = x[l, :] - ref[l, :]
 
             try:
-                Lh[l, :] = Lh0[:, l]
+                # print(Lh0[l, :])
+                Lh[l, :] = Lh0
                 uh[l] = np.matmul(-Lh[l, :], e[l, :])
             except:
                 Lh[l, :] = Lh0[:, l].flatten()

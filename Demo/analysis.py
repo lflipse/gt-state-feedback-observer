@@ -3,9 +3,8 @@ import os
 sys.path.insert(1, '..')
 import pandas as pd
 import numpy as np
-from Demo.plots import PlotStuff
+from Experiment.plots import PlotStuff
 import matplotlib.pyplot as plt
-
 
 class Analysis():
     def __init__(self):
@@ -17,7 +16,7 @@ class Analysis():
         self.metrics_individuals = {}
         self.plot_stuff = None
         self.trials = 4
-        self.participants = 0
+        self.participants = 2
         self.periods = 4
         self.conditions = 4
 
@@ -56,8 +55,8 @@ class Analysis():
         self.build_individual_metrics()
 
         # Plot individual data
-        # self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 1)
         self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 1)
+        # self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 2)
 
         # Plot metrics
         self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, False)
@@ -79,6 +78,7 @@ class Analysis():
         self.metrics["authority"] = {}
         self.metrics["condition"] = {}
         self.metrics["repetition"] = {}
+        self.metrics["gain_variability"] = {}
 
         # RMS
         rms_angle_error = []
@@ -94,6 +94,7 @@ class Analysis():
         human_angle_gain = []
         robot_angle_gain = []
         authority = []
+        gain_variability = []
 
         # Info
         repetitions = []
@@ -104,7 +105,8 @@ class Analysis():
         for i in range(self.participants):
             for j in range(self.trials):
                 rep = self.filtered_data[i, j]["repetition"]
-                repetition = rep[10]  # Not very nicely done this
+                # print(self.filtered_data[i, j])
+                repetition = rep[1]  # Not very nicely done this
 
                 # Omit the first trial per condition
                 cond = self.filtered_data[i, j]["condition"]
@@ -140,6 +142,9 @@ class Analysis():
                 C = (avg_robot_gain - avg_human_gain) / (avg_robot_gain + avg_human_gain)
                 authority.append(C)
 
+                gain_var = np.var(self.filtered_data[i, j]["estimated_human_gain_pos"])
+                gain_variability.append(gain_var)
+
         # Save to metrics dictionary
         self.metrics["rms_angle_error"] = rms_angle_error
         self.metrics["rms_rate_error"] = rms_rate_error
@@ -154,6 +159,7 @@ class Analysis():
         self.metrics["settings"] = settings
         self.metrics["condition"] = conditions
         self.metrics["participant"] = participant
+        self.metrics["gain_variability"] = gain_variability
         # print(self.metrics)
 
     def build_individual_metrics(self):
@@ -169,31 +175,19 @@ class Analysis():
         for i in range(self.participants):
             participant = metrics.loc[metrics['participant'] == i]
             manual_control = participant.loc[metrics['condition'] == "Manual Control"]
-            shared_control = participant.loc[metrics['condition'] == "Shared Control"]
-            MC_GV = manual_control.loc[metrics['settings'] == "Good Visuals"]
-            MC_BV = manual_control.loc[metrics['settings'] == "Bad Visuals"]
-            SC_GV = shared_control.loc[metrics['settings'] == "Good Visuals"]
-            SC_BV = shared_control.loc[metrics['settings'] == "Bad Visuals"]
+            positive_control = participant.loc[metrics['condition'] == "Positive Reinforcement"]
+            negative_control = participant.loc[metrics['condition'] == "Negative Reinforcement"]
+            mixed_control = participant.loc[metrics['condition'] == "Mixed Reinforcement"]
 
             participants.append([i, i, i, i])
-            conditions.append(["Manual Control", "Manual Control", "Shared Control", "Shared Control"])
-            settings.append(["Good Visuals", "Bad Visuals", "Good Visuals", "Bad Visuals"])
-            rms_angle_error.append([MC_GV["rms_angle_error"].mean(), MC_BV["rms_angle_error"].mean(),
-                               SC_GV["rms_angle_error"].mean(), SC_BV["rms_angle_error"].mean()])
-            rms_rate_error.append([MC_GV["rms_rate_error"].mean(), MC_BV["rms_rate_error"].mean(),
-                               SC_GV["rms_rate_error"].mean(), SC_BV["rms_rate_error"].mean()])
-            human_angle_cost.append([MC_GV["human_angle_cost"].mean(), MC_BV["human_angle_cost"].mean(),
-                               SC_GV["human_angle_cost"].mean(), SC_BV["human_angle_cost"].mean()])
-            robot_angle_cost.append([MC_GV["robot_angle_cost"].mean(), MC_BV["robot_angle_cost"].mean(),
-                              SC_GV["robot_angle_cost"].mean(), SC_BV["robot_angle_cost"].mean()])
+            conditions.append(["Manual Control", "Positive Reinforcement", "Negative Reinforcement", "Mixed Reinforcement"])
+            rms_angle_error.append([manual_control["rms_angle_error"].mean(), positive_control["rms_angle_error"].mean(),
+                               negative_control["rms_angle_error"].mean(), mixed_control["rms_angle_error"].mean()])
+
 
         self.metrics_individuals["participants"] = [item for sublist in participants for item in sublist]
-        self.metrics_individuals["conditions"] = [item for sublist in conditions for item in sublist]
-        self.metrics_individuals["settings"] = [item for sublist in settings for item in sublist]
+        self.metrics_individuals["condition"] = [item for sublist in conditions for item in sublist]
         self.metrics_individuals["rms_angle_error"] = [item for sublist in rms_angle_error for item in sublist]
-        self.metrics_individuals["rms_rate_error"] = [item for sublist in rms_rate_error for item in sublist]
-        self.metrics_individuals["human_angle_cost"] = [item for sublist in human_angle_cost for item in sublist]
-        self.metrics_individuals["robot_angle_cost"] = [item for sublist in robot_angle_cost for item in sublist]
 
     def cut_data(self, participant, trial):
         # Cut data
@@ -202,8 +196,8 @@ class Analysis():
             for key in self.raw_data[participant, trial].keys():
                 data = self.raw_data[participant, trial][key]
                 time = np.array(self.raw_data[participant, trial]['time'])
-                start_time = 0.2 * time[-1]
-                end_time = 0.8 * time[-1]
+                start_time = 0.01 * time[-1]
+                end_time = 0.99 * time[-1]
                 # Find index where to cut the data
                 # print(start_time, end_time)
                 start_index = np.argmax(time > start_time)
