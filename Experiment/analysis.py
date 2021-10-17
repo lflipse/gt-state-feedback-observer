@@ -26,7 +26,7 @@ class Analysis():
         self.plot_stuff = PlotStuff()
 
     def unpack_data(self):
-        path = "data"
+        path = "..\\Experiment\\data"
         # path = "first_trial"
         list_dir = os.listdir(path)
         self.participants = len(list_dir)
@@ -59,7 +59,7 @@ class Analysis():
         self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 2)
 
         # Plot metrics
-        # self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, False)
+        self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, False)
         plt.show()
 
     def build_metrics(self):
@@ -83,6 +83,7 @@ class Analysis():
         # RMS
         rms_angle_error = []
         rms_rate_error = []
+        rms_estimated_human_torque = []
         rms_human_torque = []
         rms_robot_torque = []
 
@@ -95,6 +96,8 @@ class Analysis():
         robot_angle_gain = []
         authority = []
         gain_variability = []
+
+        conflicts = []
 
         # Info
         repetitions = []
@@ -124,10 +127,17 @@ class Analysis():
                 rms_rate_error.append(np.sqrt(1 / (len(rate_error)) * np.inner(rate_error, rate_error)))
 
                 # RMSU
-                human_torque = self.filtered_data[i, j]["estimated_human_input"]
+                estimated_human_torque = self.filtered_data[i, j]["estimated_human_input"]
+                estimation_error_human_torque = self.filtered_data[i, j]["input_estimation_error"]
+                real_human_torque = np.array(estimated_human_torque) - np.array(estimation_error_human_torque)
                 robot_torque = self.filtered_data[i, j]["torque"]
-                rms_human_torque.append(np.sqrt(1 / (len(rate_error)) * np.inner(human_torque, human_torque)))
+                rms_estimated_human_torque.append(np.sqrt(1 / (len(rate_error)) * np.inner(estimated_human_torque, estimated_human_torque)))
+                rms_human_torque.append(np.sqrt(1 / (len(rate_error)) * np.inner(real_human_torque, real_human_torque)))
                 rms_robot_torque.append(np.sqrt(1 / (len(rate_error)) * np.inner(robot_torque, robot_torque)))
+
+                # Force conflicts
+                conflict = self.compute_conflict(robot_torque, real_human_torque)
+                conflicts.append(conflict)
 
                 # Average cost functions
                 human_angle_cost.append(np.median(self.filtered_data[i, j]["estimated_human_cost_1"]))
@@ -149,6 +159,7 @@ class Analysis():
         self.metrics["rms_angle_error"] = rms_angle_error
         self.metrics["rms_rate_error"] = rms_rate_error
         self.metrics["rms_human_torque"] = rms_human_torque
+        self.metrics["rms_estimated_human_torque"] = rms_estimated_human_torque
         self.metrics["rms_robot_torque"] = rms_robot_torque
         self.metrics["human_angle_cost"] = human_angle_cost
         self.metrics["robot_angle_cost"] = robot_angle_cost
@@ -160,7 +171,10 @@ class Analysis():
         self.metrics["condition"] = conditions
         self.metrics["participant"] = participant
         self.metrics["gain_variability"] = gain_variability
+        self.metrics["conflict"] = conflicts
         # print(self.metrics)
+
+
 
     def build_individual_metrics(self):
         conditions = []
@@ -211,3 +225,12 @@ class Analysis():
             print("no data found")
 
         self.filtered_data[participant, trial] = filtered_data
+
+    def compute_conflict(self, ur, uh):
+        conflicts = 0
+        n = len(ur)
+        for i in range(n):
+            if ur[i]*uh[i] < 0:
+                conflicts += 1
+        conflict = conflicts/n
+        return conflict

@@ -316,7 +316,7 @@ if e < 3:
         else:
             exit('Something seems to have gone wrong, try again')
 else:
-    print("Choose which variable to test:")
+    print("Choose which variable to 1:")
 
     # Normalized Gradient Cost Observer
     if d == 0:

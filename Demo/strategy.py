@@ -42,7 +42,7 @@ tud_lightblue = "#00B7D3"
 
 
 # Compute possible costs from 0 to 40
-q1h = np.linspace(0, 40, num=n)
+q1h = np.linspace(0, 140, num=n)
 Qh = np.zeros((n, 2, 2))
 Qr1 = np.zeros((n, 2, 2))
 Qr2 = np.zeros((n, 2, 2))
@@ -121,7 +121,8 @@ plt.title("Negative reinforcement", csfont)
 plt.xlabel('Human gain (Nm)', hfont)
 plt.ylabel('Robot gain (Nm)', hfont)
 plt.legend(prop={"size": 14}, loc='upper right')
-plt.xlim(Lh1[0, 0], Lh1[-1, 0])
+plt.xlim(0, 5)
+plt.ylim(0, 15)
 plt.tight_layout(pad=1)
 
 plt.figure()
@@ -130,7 +131,8 @@ plt.title("Positive reinforcement", csfont)
 plt.xlabel('Human gain (Nm)', hfont)
 plt.ylabel('Robot gain (Nm)', hfont)
 plt.legend(prop={"size": 14}, loc='upper right')
-plt.xlim(Lh2[0, 0], Lh2[-1, 0])
+plt.xlim(0, 5)
+plt.ylim(0, 15)
 plt.tight_layout(pad=1)
 
 plt.figure()
@@ -139,7 +141,8 @@ plt.title("Mixed Reinforcement", csfont)
 plt.xlabel('Human gain (Nm)', hfont)
 plt.ylabel('Robot gain (Nm)', hfont)
 plt.legend(prop={"size": 14}, loc='upper right')
-plt.xlim(Lh3[0, 0], Lh3[-1, 0])
+plt.xlim(0, 5)
+plt.ylim(0, 15)
 plt.tight_layout(pad=1)
 
 plt.figure()
@@ -154,8 +157,10 @@ xmin = min(Qh[:, 0, 0])
 xmax = max(Qh[:, 0, 0])
 ymin = min(min(Qr1[:, 0, 0]), min(Qr2[:, 0, 0]), min(Qr3[:, 0, 0])) - 0.1
 ymax = max(max(Qr1[:, 0, 0]), max(Qr2[:, 0, 0]), max(Qr3[:, 0, 0])) + 0.1
-plt.xlim(xmin, xmax)
-plt.ylim(ymin, ymax)
+# plt.xlim(xmin, xmax)
+# plt.ylim(ymin, ymax)
+plt.xlim(0, 40)
+plt.ylim(0, 65)
 plt.tight_layout(pad=1)
 
 plt.figure()

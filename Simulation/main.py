@@ -254,7 +254,7 @@ if e == 1:
     controls2, inputs2 = generate_controls(controller_compare, input_dict)
 # Sensitivity Analysis
 elif e == 2:
-    print("Choose which variable to test: 0: kappa, 1: K, 2: velocity gain bias")
+    print("Choose which variable to 1: 0: kappa, 1: K, 2: velocity gain bias")
     v = input()
     if int(v) == 0:
         variable = "kappa"

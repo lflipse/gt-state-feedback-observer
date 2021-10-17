@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
-import nfft
+# import nfft
 import scipy as cp
 import pandas as pd
 import seaborn as sns
@@ -35,18 +35,51 @@ class PlotStuff:
 
 
     def plot_experiment(self, data, averaged_data, compare):
-        a=1
+        # Human torque vs robot torque
+        data_pd = pd.DataFrame(data)
+        options = {"alpha": 1, "s": 25}
+        h = sns.jointplot(data=data_pd, palette=self.colors, x="rms_human_torque", y="rms_robot_torque",
+                          hue="condition", joint_kws=options)
+        h.ax_joint.set_xlabel('RMS human torque (Nm)', **self.hfont)
+        h.ax_joint.set_ylabel('RMS robot torque (Nm)', **self.hfont)
+        plt.tight_layout(pad=1)
+        h.ax_joint.legend(title='Condition', prop={"size": 12}, loc='upper left')
 
+        # Conflict
+        # h2 = sns.jointplot(data=data_pd, palette=self.colors, x="rms_human_torque", y="conflict",
+        #                   hue="condition", joint_kws=options)
+        # h2.ax_joint.set_xlabel('RMS human torque', **self.hfont)
+        # h2.ax_joint.set_ylabel('Conflict', **self.hfont)
+        # plt.tight_layout(pad=1)
+        # h2.ax_joint.legend(title='Condition', prop={"size": 12}, loc='upper left')
+        plt.figure()
+        h2 = sns.kdeplot(data=data_pd, x="conflict", hue="condition", fill=True, alpha=0.5)
+        h2.set_xlabel("Conflict (-)")
+        # h2.legend(title='Condition', prop={"size": 12}, loc='upper right')
+
+        # Sanity check
+        h3 = sns.jointplot(data=data_pd, palette=self.colors, y="rms_human_torque", x="human_angle_gain",
+                           hue="condition", joint_kws=options)
+        h3.ax_joint.set_ylabel('RMS Human Torque (Nm)', **self.hfont)
+        h3.ax_joint.set_xlabel('Estimated Human Error Gain (Nm/rad)', **self.hfont)
+        plt.tight_layout(pad=1)
+        h3.ax_joint.legend(title='Condition', prop={"size": 12}, loc='upper left')
+        self.save_all_figures()
+
+        # Sanity check
+        h4 = sns.jointplot(data=data_pd, palette=self.colors, y="rms_angle_error", x="human_angle_gain",
+                           hue="condition", joint_kws=options)
+        h4.ax_joint.set_ylabel('RMS Steering Angle Error (rad)', **self.hfont)
+        h4.ax_joint.set_xlabel('Estimated Human Error Gain (Nm/rad)', **self.hfont)
+        plt.tight_layout(pad=1)
+        h4.ax_joint.legend(title='Condition', prop={"size": 12}, loc='upper left')
+        self.save_all_figures()
 
     def plot_data(self, raw_data, trials, participant):
         figb, axs = plt.subplots(4, 3)
         figc, axsb = plt.subplots(4, 3)
 
         for i in range(trials):
-            # plt.figure()
-            fig, (ax2, ax1, ax3) = plt.subplots(3)
-
-
             data = raw_data[participant, i]
             condition = data["condition"][0]
             repetition = data["repetition"][0]
@@ -87,21 +120,25 @@ class PlotStuff:
 
             if condition == "Manual Control":
                 ls = '-'
-                label_human = 'Manual control'
+                # label_human = 'Manual control'
                 line_color = self.tud_orange
+                title = "Manual \n Control"
                 c = 0
             elif condition == "Positive Reinforcement":
                 ls = '-'
                 line_color = self.tud_red
+                title = "Positive Re."
                 c = 1
             elif condition == "Negative Reinforcement":
                 ls = '-'
                 line_color = self.tud_blue
-                c=2
+                title = "Negative Re."
+                c = 2
             elif condition == "Mixed Reinforcement":
                 ls = '-'
                 line_color = self.tud_green
-                c=3
+                title = "Mixed Re."
+                c = 3
             else:
                 ls = '.'
                 line_color = self.tud_yellow
@@ -119,55 +156,74 @@ class PlotStuff:
             #     plt.figure(fig4)
 
             t_start = 0
+            t_example = 25
             t_end = t[-1]
 
-            fig.suptitle(condition, **self.csfont)
-            ax1.stackplot(t, Lhhat_pos, Lr_pos, colors=colors, labels=labels)
-            ax1.set_ylabel('Gain (Nm/rad)', **self.hfont)
-            ax1.legend(prop={"size": 12}, loc='upper left')
-            ax1.set_xticks([])
-            ax1.set_xlim(t_start, t_end)
-            # plt.ylim(-3, 6)
+            if repetition == 0:
+                fig, (ax2, ax1, ax3) = plt.subplots(3)
 
-            ax2.plot(t, error, self.tud_blue)
-            ax2.set_ylabel('Error (rad)', **self.hfont)
-            ax2.set_xticks([])
-            ax2.set_xlim(t_start, t_end)
+                fig.suptitle(condition, **self.csfont)
+                ax1.stackplot(t, Lhhat_pos, Lr_pos, colors=colors, labels=labels, edgecolor='black', linewidth=0.8)
+                ax1.set_ylabel('Gain (Nm/rad)', **self.hfont)
+                ax1.legend(prop={"size": 12}, loc='upper left')
+                ax1.set_xticks([])
+                ax1.set_xlim(t_start, t_example)
+                ax1.set_ylim(-1, 12)
 
-            ax3.stackplot(t, uhhat, -np.array(uhtilde), ur, colors=[self.tud_red, self.tud_orange, self.tud_blue], labels=['Estimated Human', 'Estimation Error', 'Robot'])
-            ax3.set_xticks([])
-            ax3.set_ylabel('Input torque (Nm)', **self.hfont)
-            ax3.legend(prop={"size": 12}, loc='upper left')
-            ax3.set_xlim(t_start, t_end)
+                # plt.ylim(-3, 6)
+
+                ax2.plot(t, error, self.tud_blue)
+                ax2.set_ylabel('Error (rad)', **self.hfont)
+                ax2.set_xticks([])
+                ax2.set_xlim(t_start, t_example)
+
+                ax3.stackplot(t, uhhat, -np.array(uhtilde), ur, colors=[self.tud_red, self.tud_orange, self.tud_blue],
+                              labels=['Estimated Human', 'Estimation Error', 'Robot'], edgecolor='black', linewidth=0.2)
+                # ax3.set_xticks([])
+                ax3.set_ylabel('Input torque (Nm)', **self.hfont)
+                ax3.legend(prop={"size": 8}, loc='upper left')
+                ax3.set_xlim(t_start, t_example)
+                ax3.set_xlabel("Time (s)")
+
+                plt.tight_layout(pad=1)
 
             auth_est = (np.array(Lr_pos) - np.array(Lhhat_pos)) / (np.array(Lr_pos) + np.array(Lhhat_pos) + 0.001)
             auth = (ur - uh_rec) / (ur + uh_rec + 0.001)
 
             figb.suptitle("Estimated Control Authority", **self.csfont)
             if c > 0:
-                axs[repetition, c-1].plot(t, auth_est)
-                axs[repetition, c - 1].plot(t, auth, alpha=0.3)
+                axs[repetition, c-1].plot(t, auth_est, label='Estimated authority')
+                axs[repetition, c - 1].plot(t, auth, alpha=0.3, label='Measured authority')
                 axs[repetition, c-1].set_ylim(-1.5, 1.5)
+                axs[repetition, c - 1].set_xlim(t_start, t_end)
                 if repetition == 0:
-                    axs[repetition, c - 1].set_title(condition)
+                    axs[repetition, c - 1].set_title(title)
+                    axs[repetition, c - 1].set_xticks([])
+                    axs[repetition, c-1].legend(prop={"size": 8}, loc='lower right')
                 elif repetition == 3:
                     axs[repetition, c - 1].set_xlabel('Time (s)')
                 else:
                     axs[repetition, c - 1].set_xticks([])
+            # plt.tight_layout(pad=1)
 
             figc.suptitle("Gains", **self.csfont)
             if c > 0:
-                axsb[repetition, c - 1].stackplot(t, Lhhat_pos, Lr_pos, colors=colors,)
-                # axsb[repetition, c - 1].set_ylim(-1.5, 1.5)
+                axsb[repetition, c - 1].stackplot(t, Lhhat_pos, Lr_pos, baseline='zero', colors=colors,
+                                                  edgecolor='black', linewidth=0.8, labels=labels)
+                axsb[repetition, c - 1].set_ylim(-1, 12)
+                axsb[repetition, c - 1].set_xlim(t_start, t_end)
                 if repetition == 0:
-                    axsb[repetition, c - 1].set_title(condition)
+                    axsb[repetition, c - 1].set_title(title)
+                    axsb[repetition, c - 1].set_xticks([])
+                    axsb[repetition, c - 1].legend(prop={"size": 6}, loc='upper left')
                 if repetition == 3:
                     axsb[repetition, c - 1].set_xlabel('Time (s)')
-
+                else:
+                    axsb[repetition, c - 1].set_xticks([])
             # plt.tight_layout(pad=1)
 
     def save_all_figures(self):
-        pp = PdfPages('figures\\pilot.pdf')
+        pp = PdfPages('..\\Experiment\\figures\\pilot.pdf')
         figs = None
         if figs is None:
             figs = [plt.figure(n) for n in plt.get_fignums()]
