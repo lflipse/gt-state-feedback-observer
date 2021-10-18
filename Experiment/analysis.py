@@ -26,7 +26,7 @@ class Analysis():
         self.plot_stuff = PlotStuff()
 
     def unpack_data(self):
-        path = "..\\Experiment\\data"
+        path = "..\\Experiment\\pilot_2"
         # path = "first_trial"
         list_dir = os.listdir(path)
         self.participants = len(list_dir)
@@ -35,7 +35,6 @@ class Analysis():
             participant = int(list_dir[i])
             list_dir_par = os.listdir(path_participant)
             self.trials = len(list_dir_par)
-
             for j in range(self.trials):
                 path_trial = path_participant + "\\" + list_dir_par[j]
                 try:

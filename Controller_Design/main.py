@@ -17,7 +17,7 @@ sys.path.insert(1, '..')
 # from Simulation.Linear_Quadratic import ControllerLQ as LQsim
 # from Simulation.Differential_Game_Gain_Descent import ControllerNG as NGsim
 
-from Controller_Design.reference_trajectory import Reference
+from Experiment.reference_trajectory import Reference
 from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
 from Controller_Design.experiment import Experiment
 from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDGObs
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     # Simulation parameters
     t_warmup = 5
     t_cooldown = 5
-    t_exp = 90
+    t_exp = 77
     duration = t_warmup + t_cooldown + t_exp
     t_step = 0.015
     N = round(t_exp / t_step)
@@ -148,13 +148,13 @@ if __name__ == "__main__":
     alpha = 2
     K = alpha * np.array([[10, 0], [0, 1]])
     kappa = 1
-    C = np.array([[10.0, 0.0], [0.0, 1.0]])
+    C = np.array([[30.0, 0.0], [0.0, 1.0]])
 
-    Qh1 = np.array([[2.5, 0.0], [0.0, 0.5]])
-    Qh2 = np.array([[0.0, 0.0], [0.0, 0.2]])
+    Qh1 = np.array([[25, 0.0], [0.0, 0.5]])
+    Qh2 = np.array([[10, 0.0], [0.0, 0.2]])
 
     vhg = np.zeros((6, 2))
-    # vhg[0, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)[1]
+    vhg[0, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)[1]
     vhg[2, :] = compute_virtual_gain(Qh1, C-Qh1, A, B)[1]
     Lr, vhg[4, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)
     vhg[4, :] = -vhg[4, :]
@@ -181,6 +181,8 @@ if __name__ == "__main__":
             alpha = 1
             K = alpha * np.array([[10.0, 0], [0, 0.5]])
 
+        initial_human = np.array([0, 0])
+
         # Start the senso drive parallel process
         parent_conn, child_conn = mp.Pipe(True)
         senso_dict = {
@@ -192,7 +194,8 @@ if __name__ == "__main__":
             "controller": controller,
             "controller_type": controller_type,
             "parent_conn": parent_conn,
-            "child_conn": child_conn
+            "child_conn": child_conn,
+            "initial_human": initial_human,
         }
         senso_drive_process = SensoDriveModule(senso_dict)
         senso_drive_process.start()

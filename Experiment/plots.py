@@ -177,8 +177,8 @@ class PlotStuff:
                 ax2.set_xticks([])
                 ax2.set_xlim(t_start, t_example)
 
-                ax3.stackplot(t, uhhat, -np.array(uhtilde), ur, colors=[self.tud_red, self.tud_orange, self.tud_blue],
-                              labels=['Estimated Human', 'Estimation Error', 'Robot'], edgecolor='black', linewidth=0.2)
+                ax3.stackplot(t, uhhat, ur, -np.array(uhtilde), colors=[self.tud_red, self.tud_blue, self.tud_orange],
+                              labels=['Estimated Human', 'Robot', 'Estimation Error'], edgecolor='black', linewidth=0.2)
                 # ax3.set_xticks([])
                 ax3.set_ylabel('Input torque (Nm)', **self.hfont)
                 ax3.legend(prop={"size": 8}, loc='upper left')

@@ -38,10 +38,7 @@ class ControllerDGObs:
             elif condition == "Negative Reinforcement":
                 Qr = Qr2
             else:
-                if Qr1[0, 0] > Qr2[0, 0]:
-                    Qr = Qr2
-                else:
-                    Qr = Qr1
+                Qr = C
 
             Qr[0, 0] = max(Qr[0, 0], 0.1)
             Acl = self.A - self.B * Lh_hat

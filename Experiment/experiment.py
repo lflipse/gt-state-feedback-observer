@@ -343,7 +343,7 @@ class Experiment:
             self.computed = True
 
     def reference_preview(self, t_now, h, sigma_h):
-        steps = 250
+        steps = 25
         dt = self.preview_time / steps
 
         # Remove past points

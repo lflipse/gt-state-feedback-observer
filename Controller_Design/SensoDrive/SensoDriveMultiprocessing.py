@@ -366,7 +366,9 @@ class SensoDriveModule(mp.Process):
 
     def virtual_human(self):
         self.states["virtual_human_torque"] = np.matmul(-self.states["virtual_human_gain"], self.states["error_state"])
+        # print(self.states["virtual_human_torque"], self.states["torque"])
         self.states["torque"] += self.states["virtual_human_torque"]
+        # print(self.states["torque"])
 
 
     def map_si_to_sensodrive(self, settings):
