@@ -19,10 +19,11 @@ sys.path.insert(1, '..')
 
 from Experiment.reference_trajectory import Reference
 from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
-from Controller_Design.experiment import Experiment
+from Experiment.experiment import Experiment
 from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDGObs
 from Controller_Design.plots import PlotStuff
 from Simulation.Differential_Game_Gain_Observer import ControllerNG as NG_Obssim
+from Experiment.visuals import Visualize
 
 def compute_virtual_gain(Qh, Qr, A, B):
     # Iterative procedure for calculating gains
@@ -32,6 +33,24 @@ def compute_virtual_gain(Qh, Qr, A, B):
         Lh = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lr, B, Qh, 1))
         Lr = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh, B, Qr, 1))
     return Lr, Lh
+
+def compute_virtual_cost(Lh, C, A, B):
+    beta = B[1]
+    alpha_1 = A[0, 1]
+    alpha_2 = A[1, 1]
+    p = 1 / beta * Lh
+    Qh = np.array([[0,0], [0,0]])
+    for i in range(20):
+        Qr = C - Qh
+        L = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh, B, Qr, 1))
+        Lr = L[0]
+        gamma_1 = alpha_1 - beta * Lr[0]
+        gamma_2 = alpha_2 - beta * Lr[1]
+        q_hhat1 = - 2 * gamma_1 * p[0] + Lh[0] ** 2
+        q_hhat2 = - 2 * p[0] - 2 * gamma_2 * p[1] + Lh[1] ** 2
+        Qh = np.array([[q_hhat1[0],0], [0,q_hhat2[0]]])
+    print(Qh)
+    return np.array([q_hhat1, q_hhat2])
 
 def to_csv(to_be_saved, file):
     columns = []
@@ -58,29 +77,11 @@ def input_controller():
     gen_data = input("Generate data_set? No = 0, Yes = 1.   Please choose: ")
     return controller, controller_type, int(gen_data)
 
-def compute_virtual_cost(Lh, C, A, B):
-    beta = B[1]
-    alpha_1 = A[0, 1]
-    alpha_2 = A[1, 1]
-    p = 1 / beta * Lh
-    Qh = np.array([[0,0], [0,0]])
-    for i in range(20):
-        Qr = C - Qh
-        L = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh, B, Qr, 1))
-        Lr = L[0]
-        gamma_1 = alpha_1 - beta * Lr[0]
-        gamma_2 = alpha_2 - beta * Lr[1]
-        q_hhat1 = - 2 * gamma_1 * p[0] + Lh[0] ** 2
-        q_hhat2 = - 2 * p[0] - 2 * gamma_2 * p[1] + Lh[1] ** 2
-        Qh = np.array([[q_hhat1[0],0], [0,q_hhat2[0]]])
-    print(Qh)
-    return np.array([q_hhat1, q_hhat2])
 
 def run_simulation(experiment_data):
     # Use the correct settings for the simulation
 
     ref = np.array([experiment_data["reference_angle"], experiment_data["reference_rate"]]).transpose()
-    print()
 
     inputs = {
         # "simulation_steps": N_exp,
@@ -96,7 +97,7 @@ def run_simulation(experiment_data):
         "u_initial": experiment_data["torque"][0],
         "reference": ref,
         "initial_state": [experiment_data["steering_angle"][0], experiment_data["steering_rate"][0]],
-        "sharing_rule": C,
+        "sharing_rule": Qr,
         "controller_type_name": controller_type,
         "dynamics_type_name": "Steering_dynamics",
         "controller_type": controller_type,
@@ -122,7 +123,7 @@ if __name__ == "__main__":
     # Simulation parameters
     t_warmup = 5
     t_cooldown = 5
-    t_exp = 77
+    t_exp = 27.5
     duration = t_warmup + t_cooldown + t_exp
     t_step = 0.015
     N = round(t_exp / t_step)
@@ -138,31 +139,32 @@ if __name__ == "__main__":
 
     # Dynamics
     Jw = 0.04914830792783059
-    Bw = 0.5
-    Kw = 0.0
+    Bw = 0.3  # Max = 0.5
+    Kw = 0.0  # Max = 2.5
     A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
     B = np.array([[0], [1 / Jw]])
 
     # TODO: verify values
-    Gamma = 4 * np.array([[1, 0], [0, 2]])
-    alpha = 2
-    K = alpha * np.array([[10, 0], [0, 1]])
+    Gamma = 4 * np.array([[2, 0], [0, 2]])
+    print("should be negative: ", A-Gamma)
+    alpha = 4.0
+    K = alpha * np.array([[10.0, 0], [0, 0.0]])
     kappa = 1
-    C = np.array([[30.0, 0.0], [0.0, 1.0]])
 
-    Qh1 = np.array([[25, 0.0], [0.0, 0.5]])
-    Qh2 = np.array([[10, 0.0], [0.0, 0.2]])
+    Qr = np.array([[20.0, 0.0], [0.0, 0.1]])
+    Qh1 = np.array([[25, 0.0], [0.0, 0.05]])
+    Qh2 = np.array([[10, 0.0], [0.0, 0.02]])
 
     vhg = np.zeros((6, 2))
-    vhg[0, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)[1]
-    vhg[2, :] = compute_virtual_gain(Qh1, C-Qh1, A, B)[1]
-    Lr, vhg[4, :] = compute_virtual_gain(Qh2, C-Qh2, A, B)
+    vhg[0, :] = compute_virtual_gain(Qh2, Qr, A, B)[1]
+    vhg[2, :] = compute_virtual_gain(Qh1, Qr, A, B)[1]
+    Lr, vhg[4, :] = compute_virtual_gain(Qh2, Qr, A, B)
     vhg[4, :] = -vhg[4, :]
     virtual_human_gain = vhg
     Qh = np.zeros((6, 2))
-    # Qh[0, :] = np.array([Qh2[0, 0], Qh2[1, 1]])
+    Qh[0, :] = np.array([Qh2[0, 0], Qh2[1, 1]])
     Qh[2, :] = np.array([Qh1[0, 0], Qh1[1, 1]])
-    Qh3 = compute_virtual_cost(vhg[4, :], C, A, B)
+    Qh3 = compute_virtual_cost(vhg[4, :], Qr, A, B)
     Qh[4, :] = Qh3.transpose()
     virtual_human_weight = Qh
 
@@ -178,10 +180,10 @@ if __name__ == "__main__":
             virtual_human = False
         else:
             virtual_human = True
-            alpha = 1
+            alpha = 5
             K = alpha * np.array([[10.0, 0], [0, 0.5]])
 
-        initial_human = np.array([0, 0])
+        initial_human = np.array([[0, 0]])
 
         # Start the senso drive parallel process
         parent_conn, child_conn = mp.Pipe(True)
@@ -222,13 +224,19 @@ if __name__ == "__main__":
             "virtual_human": virtual_human,
             "virtual_human_gain": virtual_human_gain,
             "virtual_human_cost": Qh,
-            "sharing_rule": C,
+            "sharing_rule": Qr,
             "manual": manual,
+            "preview_time": 0,
+            "trials": 1,
+            "sigma": [0.005, 0.065],
         }
-        experiment_handler = Experiment(experiment_input)
+        visualize = Visualize(screen_width, screen_height, full_screen)
+        experiment_handler = Experiment(experiment_input, visualize)
         if platform.system() == 'Windows':
             with wres.set_resolution(10000):
-                experiment_data = experiment_handler.experiment()
+                ready, experiment_data = experiment_handler.experiment(condition="Validation", trial=0, repetition=0)
+                visualize.quit()
+                senso_drive_process.join(timeout=0)
 
                 # Save data
                 if virtual_human:
@@ -237,7 +245,7 @@ if __name__ == "__main__":
                     string = "data_real_human.csv"
                 to_csv(experiment_data, string)
 
-        senso_drive_process.join(timeout=0)
+
 
     # Retrieve data
     try:
@@ -247,7 +255,6 @@ if __name__ == "__main__":
         # real_data = load_data_set("data_real_human_final.csv")
     except:
         exit("Missing datasets, first create these")
-    # print(virtual_data)
     sim_data = run_simulation(virtual_data)
 
     # Analyse stuff

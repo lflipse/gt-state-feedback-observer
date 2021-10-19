@@ -87,7 +87,7 @@ if __name__ == "__main__":
     # Experiment data
     t_warmup = 5
     t_cooldown = 5
-    t_period = 67.5
+    t_period = 77.5
     sigma = [0.005, 0.065]
     periods = 1
     t_exp = periods * t_period
@@ -173,7 +173,7 @@ if __name__ == "__main__":
         "periods": periods,
         "repetitions": repetitions,
         "trials": trials,
-        "sigma": sigma,
+        "sigma": [0.0],
     }
 
 

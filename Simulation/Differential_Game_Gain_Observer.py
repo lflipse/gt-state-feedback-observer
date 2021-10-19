@@ -54,29 +54,29 @@ class ControllerNG:
     def ydot(self, r, ur, uh, uhhat, y, Gamma, K, kappa):
         # Unpack y vector
         x = np.array([[y[0]], [y[1]]])
-        x_hat = np.array([[y[4]], [y[5]]])
-        x_tilde = x_hat - x
-
-        # Calculate error vector
-        e = x - np.array([[r[0]], [r[1]]])
+        xi = x - np.array([[r[0]], [r[1]]])
+        xi_hat = np.array([[y[4]], [y[5]]])
+        xi_tilde = xi_hat - xi
 
         # Calculate derivatives
         # Real response
         if self.nonlin:
             x_dot = np.matmul(self.A, x) + self.B * (ur + uh + self.nonlinear_term(x))
-            x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat + self.nonlinear_term(x)) - np.matmul(Gamma, x_tilde)
+            xi_dot = np.matmul(self.A, xi) + self.B * (ur + uh + self.nonlinear_term(x))
+            xi_hat_dot = np.matmul(self.A, xi_hat) + self.B * (ur + uhhat + self.nonlinear_term(x)) - np.matmul(Gamma, xi_tilde)
         else:
             x_dot = np.matmul(self.A, x) + self.B * (ur + uh)
-            x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat) - np.matmul(Gamma, x_tilde)
+            xi_dot = np.matmul(self.A, xi) + self.B * (ur + uh)
+            xi_hat_dot = np.matmul(self.A, xi_hat) + self.B * (ur + uhhat) - np.matmul(Gamma, xi_tilde)
 
         # Estimation error
-        x_tilde_dot = x_hat_dot - x_dot
+        xi_tilde_dot = xi_hat_dot - xi_dot
 
         pseudo_B = 1/(np.matmul(self.B.transpose(), self.B)) * self.B.transpose()
-        u_h_tilde = np.matmul(pseudo_B, x_tilde_dot - np.matmul((self.A - Gamma), x_tilde))
-        m_squared = 1 + kappa * np.matmul(e.transpose(), e)
-        Lhhat_dot = u_h_tilde / m_squared * np.matmul(e.transpose(), K)
-        ydot = np.array([x_dot.transpose(), Lhhat_dot, x_hat_dot.transpose()]).flatten()
+        u_h_tilde = np.matmul(pseudo_B, xi_tilde_dot - np.matmul((self.A - Gamma), xi_tilde))
+        m_squared = 1 + kappa * np.matmul(xi.transpose(), xi)
+        Lhhat_dot = u_h_tilde / m_squared * np.matmul(xi.transpose(), K)
+        ydot = np.array([x_dot.transpose(), Lhhat_dot, xi_hat_dot.transpose()]).flatten()
 
         return ydot
 
@@ -90,9 +90,10 @@ class ControllerNG:
         return L
 
     def compute_inputs(self, Q, Lhat, e, bias):
+        xi = np.array([[e[0]], [e[1]]])
         L = self.compute_gains(Q, Lhat)
-        u = np.inner(-L, e)
-        uhat = np.inner(-Lhat-bias, e)
+        u = np.matmul(-L, xi)
+        uhat = np.matmul(-Lhat-bias, xi)
         return u, uhat, L
 
     def update_cost(self, Lr, Lhat):
@@ -156,7 +157,8 @@ class ControllerNG:
         Lh = np.zeros((N, 2))
         Lr = np.zeros((N, 2))
         e = np.zeros((N, 2))
-        xhhat = np.zeros((N, 2))
+        xhat = np.zeros((N, 2))
+        x = np.zeros((N + 1, 2))
         ur = np.zeros(N)
         uhbar = np.zeros(N)
         vh = np.zeros(N)
@@ -177,7 +179,7 @@ class ControllerNG:
 
             # Calculate derivative(s) of reference
             # Compute inputs
-            e[i, :] = (y[i, 0:2] - ref[i, :])
+            e[i, :] = y[i, 0:2] - ref[i, :]
             ur[i], uhhat[i], Lr[i, :] = self.compute_inputs(Qr[i, :, :], Lhhat[i, :], e[i, :], bias)
 
             # Actual human response
@@ -210,6 +212,8 @@ class ControllerNG:
             y[i + 1, 1] = y[i + 1, 1] + vh[i]
             Lhhat[i + 1, :] = y[i + 1, 2:4]
             Qhhat[i + 1, :, :] = self.update_cost(Lr[i, :], Lhhat[i, :])
+            xhat[i, :] = ref[i, :] + y[i, 4:6]
+            x[i, :] = y[i, 0:2]
 
             # Update P and Q
             Jh[i] = self.compute_costs(e[i, :], uh[i], Qh[i, :, :])
@@ -218,11 +222,12 @@ class ControllerNG:
 
 
         outputs = {
-            "states": y[:, 0:2],
-            "estimated_states": y[:, 4:6],
+            "states": x,
+            "estimated_error": y[:, 4:6],
+            "estimated_states": xhat,
             "time": T,
             "reference_signal": ref,
-            "error_states": e,
+            "error_states": y[:, 0:2],
             "human_input": uh,
             "human_estimated_input": uhhat,
             "human_estimated_Q": Qhhat,

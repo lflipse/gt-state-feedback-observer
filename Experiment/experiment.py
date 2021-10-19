@@ -24,14 +24,9 @@ class Experiment:
         self.t_warmup = input["warm_up_time"]
         self.t_cooldown = input["cooldown_time"]
         self.t_exp = input["experiment_time"]
-        self.periods = input["periods"]
-        self.t_period = input["period_time"]
-        self.Qr_start = input["init_robot_cost"]
-        self.Qr_end = input["final_robot_cost"]
         self.virtual_human_cost = input["virtual_human_cost"]
         self.sharing_rule = input["sharing_rule"]
         self.preview_time = input["preview_time"]
-        self.repetitions = input["repetitions"]
         self.trials = input["trials"]
         self.repetition = 0
         self.sigma = input["sigma"]
@@ -203,13 +198,25 @@ class Experiment:
                 self.send_dict["experiment"] = True
                 estimated_gain_pos = self.states["estimated_human_gain"].flatten()[0]
                 robot_gain_pos = self.states["robot_gain"][0, 0]
-                bottom_text = "Gains; H:" + str(round(estimated_gain_pos, 2)) + " R: " + str(round(robot_gain_pos, 2))
 
-                # Determine condition
+                Qh, vhg = self.smooth_virtual_human()
+                if self.virtual_human:
+                    self.send_dict["virtual_human_gain"] = vhg
+                    virtual_gain = vhg[0]
+                    bottom_text = "Gains; H:" + str(round(estimated_gain_pos, 2)) + " R: " + str(
+                        round(robot_gain_pos, 2)) \
+                                  + " Virtual H: " + str(round(virtual_gain, 2))
+                else:
+                    bottom_text = "Gains; H:" + str(round(estimated_gain_pos, 2)) + " R: " + str(
+                        round(robot_gain_pos, 2))
+
+
+                top_text = "Time = " + str(round(self.time - self.t_warmup, 1))
                 text = ""
-                top_text = ""
-                bottom_text = ""
-                # top_text = "Time = " + str(round(self.time - self.t_warmup, 1))
+
+                # Uncomment to remove text
+                # top_text = ""
+                # bottom_text = ""
 
             # COOLDOWN
             else:
@@ -247,8 +254,8 @@ class Experiment:
                     "time": self.time - self.t_warmup,
                     "steering_angle": self.states["steering_angle"],
                     "steering_rate": self.states["steering_rate"],
-                    "angle_error": self.states["angle_error"][0],
-                    "rate_error": self.states["rate_error"][0],
+                    "angle_error": self.states["angle_error"],
+                    "rate_error": self.states["rate_error"],
                     "acceleration": self.states["steering_acc"],
                     "reference_angle": ref[0],
                     "reference_rate": ref[1],
@@ -271,10 +278,20 @@ class Experiment:
                 output["robot_gain_pos"] = self.states["robot_gain"][0, 0]
                 output["robot_gain_vel"] = self.states["robot_gain"][0, 1]
 
-                output["state_estimate_pos"] = self.states["state_estimate"][0][0]
-                output["state_estimate_vel"] = self.states["state_estimate"][1][0]
+                output["state_estimate_pos"] = self.states["estimated_state"][0][0]
+                output["state_estimate_vel"] = self.states["estimated_state"][1][0]
                 output["input_estimation_error"] = self.states["input_estimation_error"]
                 output["state_estimate_derivative"] = self.states["state_estimate_derivative"][1][0]
+
+                if self.virtual_human:
+                    output["virtual_human_gain_pos"] = vhg[0]
+                    output["virtual_human_gain_vel"] = vhg[1]
+                    output["virtual_human_cost_pos"] = Qh[0]
+                    output["virtual_human_cost_vel"] = Qh[1]
+                    try:
+                        output["virtual_human_torque"] = self.states["virtual_human_torque"][0, 0]
+                    except:
+                        output["virtual_human_torque"] = self.states["virtual_human_torque"][0]
 
                 try:
                     output["estimated_human_input"] = self.states["estimated_human_torque"][0, 0]
@@ -374,4 +391,65 @@ class Experiment:
         # Move points according to their velocity
         self.preview_positions += h * np.array(self.preview_speed)
 
+    def smooth_virtual_human(self):
+        if self.time - self.t_warmup < 1 / 6 * self.t_exp:
+            dL1 = self.virtual_human_gain[0, :] - self.virtual_human_gain[1, :]
+            L1 = self.virtual_human_gain[1, :]
+            dL2 = self.virtual_human_gain[1, :] - self.virtual_human_gain[0, :]
+            vhg = self.compute_tanh(0, 1/6, dL1, dL2, L1)
+            dQh1 = self.virtual_human_cost[0, :]
+            Qh1 = self.virtual_human_cost[1, :]
+            dQh2 = self.virtual_human_cost[1, :] - self.virtual_human_cost[0, :]
+            Qh = self.compute_tanh(0, 1 / 6, dQh1, dQh2, Qh1)
+        elif 2 / 6 * self.t_exp > self.time - self.t_warmup > 1 / 6 * self.t_exp:
+            dL1 = self.virtual_human_gain[1, :] - self.virtual_human_gain[0, :]
+            L1 = self.virtual_human_gain[0, :]
+            dL2 = self.virtual_human_gain[2, :] - self.virtual_human_gain[1, :]
+            vhg = self.compute_tanh(1/6, 2/6, dL1, dL2, L1)
+            dQh1 = self.virtual_human_cost[1, :] - self.virtual_human_cost[0, :]
+            Qh1 = self.virtual_human_cost[0, :]
+            dQh2 = self.virtual_human_cost[2, :] - self.virtual_human_cost[1, :]
+            Qh = self.compute_tanh(1 / 6, 2 / 6, dQh1, dQh2, Qh1)
+        elif 3 / 6 * self.t_exp > self.time - self.t_warmup > 2 / 6 * self.t_exp:
+            dL1 = self.virtual_human_gain[2, :] - self.virtual_human_gain[1, :]
+            L1 = self.virtual_human_gain[1, :]
+            dL2 = self.virtual_human_gain[3, :] - self.virtual_human_gain[2, :]
+            vhg = self.compute_tanh(2/6, 3/6, dL1, dL2, L1)
+            dQh1 = self.virtual_human_cost[2, :] - self.virtual_human_cost[1, :]
+            Qh1 = self.virtual_human_cost[1, :]
+            dQh2 = self.virtual_human_cost[3, :] - self.virtual_human_cost[2, :]
+            Qh = self.compute_tanh(2 / 6, 3 / 6, dQh1, dQh2, Qh1)
+        elif 4 / 6 * self.t_exp > self.time - self.t_warmup > 3 / 6 * self.t_exp:
+            dL1 = self.virtual_human_gain[3, :] - self.virtual_human_gain[2, :]
+            L1 = self.virtual_human_gain[2, :]
+            dL2 = self.virtual_human_gain[4, :] - self.virtual_human_gain[3, :]
+            vhg = self.compute_tanh(3/6, 4/6, dL1, dL2, L1)
+            dQh1 = self.virtual_human_cost[3, :] - self.virtual_human_cost[2, :]
+            Qh1 = self.virtual_human_cost[2, :]
+            dQh2 = self.virtual_human_cost[4, :] - self.virtual_human_cost[3, :]
+            Qh = self.compute_tanh(3/ 6, 4 / 6, dQh1, dQh2, Qh1)
+        elif 5 / 6 * self.t_exp > self.time - self.t_warmup > 4 / 6 * self.t_exp:
+            dL1 = self.virtual_human_gain[4, :] - self.virtual_human_gain[3, :]
+            L1 = self.virtual_human_gain[3, :]
+            dL2 = self.virtual_human_gain[5, :] - self.virtual_human_gain[4, :]
+            vhg = self.compute_tanh(4/6, 5/6, dL1, dL2, L1)
+            dQh1 = self.virtual_human_cost[4, :] - self.virtual_human_cost[3, :]
+            Qh1 = self.virtual_human_cost[3, :]
+            dQh2 = self.virtual_human_cost[5, :] - self.virtual_human_cost[4, :]
+            Qh = self.compute_tanh(4 / 6, 5 / 6, dQh1, dQh2, Qh1)
+        else:
+            dL1 = self.virtual_human_gain[5, :] - self.virtual_human_gain[4, :]
+            L1 = self.virtual_human_gain[4, :]
+            dL2 = - self.virtual_human_gain[5, :]
+            vhg = self.compute_tanh(5/6, 6/6, dL1, dL2, L1)
+            dQh1 = self.virtual_human_cost[5, :] - self.virtual_human_cost[4, :]
+            Qh1 = self.virtual_human_cost[4, :]
+            dQh2 = - self.virtual_human_cost[5, :]
+            Qh = self.compute_tanh(5 / 6, 6 / 6, dQh1, dQh2, Qh1)
 
+        return Qh, vhg
+
+    def compute_tanh(self, f1, f2, dL1, dL2, L1):
+        value = (0.5 * dL1 * np.tanh(5 * (self.time - self.t_warmup - f1 * self.t_exp)) + 0.5 * dL1 + L1) + \
+                  (0.5 * dL2 * np.tanh(5 * (self.time - self.t_warmup - f2 * self.t_exp)) + 0.5 * dL2)
+        return value

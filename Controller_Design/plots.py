@@ -69,6 +69,8 @@ class PlotStuff:
         Qh_pos_vir = virt_data["virtual_human_cost_pos"]
         Qh_vel_vir = virt_data["virtual_human_cost_vel"]
         uhhat_vir = np.array(virt_data["estimated_human_input"])
+        uhtilde_vir = np.array(virt_data["input_estimation_error"])
+        uh_measured = uhhat_vir - uhtilde_vir
 
         # Simulation data
         t_sim = sim_data["time"]
@@ -93,6 +95,17 @@ class PlotStuff:
 
         # Let's get plottin'
         # VIRTUAL HUMAN
+
+
+        # Steering torques
+        plt.figure()
+        plt.title("Measured and estimated steering torque", **self.csfont)
+        plt.plot(t_vir, uh_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
+                 label="Virtual Torque")
+        plt.plot(t_vir, uh_measured, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
+                 label="Measured Torque")
+        plt.plot(t_vir, uhhat_vir, self.tud_blue, linewidth=self.lw, linestyle="--", alpha=1,
+                 label="Estimated Torque")
 
         # Steering angle
         plt.figure()
