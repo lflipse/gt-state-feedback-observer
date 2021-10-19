@@ -12,15 +12,13 @@ class ControllerDGObs:
     def compute_control_input(self, states, condition):
         # print(states)
         xi = states["error_state"]
-        # print(xi)
         x = states["state"]
-        xi_hat = states["estimated_error_state"]
-        xi_tilde = xi_hat - xi
-        xi_dot = states["error_derivative"]
-
         x_dot = states["state_derivative"]
+        xi_hat = states["estimated_error_state"]
+        x_hat = states["estimated_state"]
+        xi_tilde = xi_hat - xi
+        xi_dot = states["error_state_derivative"]
         Lh_hat = states["estimated_human_gain"]
-        Lr_old = states["robot_gain"]
         Qh = states["estimated_human_cost"]
         C = states["sharing_rule"]
 
@@ -72,17 +70,18 @@ class ControllerDGObs:
 
         # Observer equations
         xi_hat_dot = np.matmul(self.A, xi_hat) + self.B * (ur + uhhat) - np.matmul(self.Gamma, xi_tilde)
-        xi_tilde_dot = xi_hat_dot - xi_dot
+        x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat) - np.matmul(self.Gamma, xi_tilde)
+        # xi_tilde_dot = xi_hat_dot - xi_dot
+        xi_tilde_dot = x_hat_dot - x_dot
 
         # Update law for human gain
-        pseudo_B = 1 / np.matmul(self.B.transpose(), self.B) * self.B.transpose()
-        uh_tilde = np.matmul(pseudo_B,  xi_tilde_dot - np.matmul(self.A - self.Gamma, xi_tilde))
+        pseudo_B = 1 / (np.matmul(self.B.transpose(), self.B)) * self.B.transpose()
+        u_h_tilde = np.matmul(pseudo_B, (xi_tilde_dot - (np.matmul((self.A - self.Gamma), xi_tilde))))
         m_squared = 1 + self.kappa * np.matmul(xi.transpose(), xi)
-        Lhhat_dot = np.matmul(uh_tilde / m_squared * xi.transpose() + forget_factor, self.K)
+        Lhhat_dot = u_h_tilde / m_squared * np.matmul(xi.transpose(), self.K)
 
         ur_comp = ur - self.nonlinear_term(x)
-
-        uh = np.matmul(pseudo_B, xi_dot - np.matmul(self.A, xi) - np.matmul(self.B, ur))
+        uh_meas = np.matmul(pseudo_B, xi_dot - np.matmul(self.A, x) - np.matmul(self.B, ur))
 
         output = {
             "nonlins": self.nonlinear_term(x),
@@ -93,8 +92,8 @@ class ControllerDGObs:
             "estimated_human_gain_derivative": Lhhat_dot,
             "robot_gain": Lr,
             "robot_P": Pr,
-            "input_estimation_error": uh_tilde[0, 0],
-            "measured_human_input": uh,
+            "input_estimation_error": u_h_tilde[0, 0],
+            "measured_human_input": uh_meas,
             "robot_cost": Qr,
         }
 

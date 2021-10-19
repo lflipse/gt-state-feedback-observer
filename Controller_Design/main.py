@@ -146,9 +146,8 @@ if __name__ == "__main__":
 
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    print("should be negative: ", A-Gamma)
-    alpha = 4.0
-    K = alpha * np.array([[10.0, 0], [0, 0.0]])
+    alpha = 5
+    K = alpha * np.array([[10.0, 0], [0, 0.2]])
     kappa = 1
 
     Qr = np.array([[20.0, 0.0], [0.0, 0.1]])

@@ -31,6 +31,7 @@ class Experiment:
         self.repetition = 0
         self.sigma = input["sigma"]
         self.duration = self.t_warmup + self.t_exp + self.t_cooldown
+        self.t_exp = 77.5*2
         self.t_now = 0
         self.t_last = 0
         self.t0 = 0
@@ -265,11 +266,18 @@ class Experiment:
                     "condition": condition,
                     "human_noise": sigma_h,
                     "setting": setting,
+
                 }
                 try:
                     output['torque'] = self.states["torque"][0, 0]
                 except:
                     output["torque"] = 0
+
+                try:
+                    output["measured_human_input"] = self.states["measured_human_input"][0, 0]
+                except:
+                    output["measured_human_input"] = self.states["measured_human_input"][0][0]
+
 
                 output["estimated_human_gain_pos"] = self.states["estimated_human_gain"].flatten()[0]
                 output["estimated_human_gain_vel"] = self.states["estimated_human_gain"].flatten()[1]

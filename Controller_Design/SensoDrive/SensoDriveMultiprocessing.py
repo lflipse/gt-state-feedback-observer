@@ -21,7 +21,7 @@ class SensoDriveModule(mp.Process):
         self.time_step = 1 / self.frequency
         self._time_step_in_ns = self.time_step * 1e9
         self._bq_filter_velocity = LowPassFilterBiquad(fc=50, fs=self.frequency)
-        self._bq_filter_acc = LowPassFilterBiquad(fc=12, fs=self.frequency)
+        self._bq_filter_acc = LowPassFilterBiquad(fc=20, fs=self.frequency)
         self.controller = senso_dict["controller"]
         self.controller_type = senso_dict["controller_type"]
         self.now = 0
@@ -67,6 +67,7 @@ class SensoDriveModule(mp.Process):
             "estimated_state": np.array([[0], [0]]),
             "estimated_error_state": np.array([[0], [0]]),
             "state_estimate_derivative": np.array([[0], [0]]),
+            "error_state_derivative": np.array([[0], [0]]),
             "angle_error": 0,
             "rate_error": 0,
             "measured_human_input": 0,
@@ -246,6 +247,7 @@ class SensoDriveModule(mp.Process):
                        [rate_error]])
         xi_dot = np.array([[self.states["steering_rate"] - self.states["ref"][1]],
                            [self.states["steering_acc"]]])
+
         self.states["state"] = x
         self.states["state_derivative"] = x_dot
         self.states["error_state"] = xi
@@ -266,7 +268,6 @@ class SensoDriveModule(mp.Process):
         gain_derivative = np.array(self.states["estimated_human_gain_derivative"])
         new_estimated_gain = old_estimated_gain + gain_derivative * delta
         self.states["estimated_human_gain"] = new_estimated_gain
-
         self.states["estimated_human_cost"] = self.compute_cost()
 
         if not self.states["experiment"]:
@@ -417,7 +418,7 @@ class SensoDriveModule(mp.Process):
                 self.states["estimated_human_cost"] = np.array([[0, 0], [0, 0]])
                 self.states["estimated_state"] = self.states["state"]
                 self.states["estimated_error_state"] = self.states["state"] - np.array([[self.states["ref"][0]],
-                                                                               [self.states["ref"][1]]])
+                                                                                        [self.states["ref"][1]]])
                 self.states["estimated_human_gain_derivative"] = np.array([0, 0])
             self.states["error_estimate_derivative"] = output["error_estimate_derivative"]
             self.states["estimated_human_gain_derivative"] = output["estimated_human_gain_derivative"]
@@ -427,13 +428,7 @@ class SensoDriveModule(mp.Process):
             self.states["robot_cost_calc"] = output["robot_cost"]
             self.states["measured_human_input"] = output["measured_human_input"]
 
-
     def map_sensodrive_to_si(self, received):
-        """
-        Converts sensodrive data to actual SI Units
-        :param received: sensodrive unit filled dictionary
-        :return:
-        """
         message = {}
         if received[1].ID == self.STEERINGWHEEL_MESSAGE_RECEIVE_ID:
             # steering wheel

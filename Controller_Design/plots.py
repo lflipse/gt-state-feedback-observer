@@ -71,6 +71,7 @@ class PlotStuff:
         uhhat_vir = np.array(virt_data["estimated_human_input"])
         uhtilde_vir = np.array(virt_data["input_estimation_error"])
         uh_measured = uhhat_vir - uhtilde_vir
+        uh_meas = virt_data["measured_human_input"]
 
         # Simulation data
         t_sim = sim_data["time"]
@@ -99,13 +100,31 @@ class PlotStuff:
 
         # Steering torques
         plt.figure()
+        plt.title("Steering torque estimation", **self.csfont)
+        plt.plot(t_vir, uh_measured, self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.5,
+                 label="Computed Torque")
+        plt.plot(t_vir, uh_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=1,
+                 label="Virtual Torque")
+        plt.plot(t_vir, uhhat_vir, self.tud_red, linewidth=self.lw, linestyle="-", alpha=1,
+                 label="Estimated Torque")
+        plt.xlabel('Time (s)', **self.hfont)
+        plt.ylabel('Human Steering Torque ($Nm$)', **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.xlim(0, 30)
+        plt.tight_layout(pad=1)
+
+        # Steering torques
+        plt.figure()
         plt.title("Measured and estimated steering torque", **self.csfont)
         plt.plot(t_vir, uh_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
                  label="Virtual Torque")
-        plt.plot(t_vir, uh_measured, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
-                 label="Measured Torque")
-        plt.plot(t_vir, uhhat_vir, self.tud_blue, linewidth=self.lw, linestyle="--", alpha=1,
-                 label="Estimated Torque")
+        plt.stackplot(t_vir, uh_measured, -uhtilde_vir)
+        plt.xlabel('Time (s)', **self.hfont)
+        plt.ylabel('Human Steering Torque ($Nm$)', **self.hfont)
+        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.xlim(0, 30)
+        plt.ylim(-0.5, 0.5)
+        plt.tight_layout(pad=1)
 
         # Steering angle
         plt.figure()
