@@ -1,19 +1,17 @@
 import numpy as np
 import multiprocessing as mp
-import time
 import wres
 import platform
-import scipy.linalg as cp
 import pandas as pd
-import random
 import os
+import sys
 
+sys.path.insert(1, '..')
 from Experiment.reference_trajectory import Reference
 from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
 from Experiment.experiment import Experiment
-from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDGObs
+from Controller_Design.Controllers.Linear_Quadratic import ControllerLQ
 from Experiment.visuals import Visualize
-from Demo.analysis import Analysis
 
 def to_csv(to_be_saved, file):
     columns = []
@@ -32,11 +30,6 @@ def load_data_set(file):
 
     return data_set
 
-def choose_condition():
-    print("Choose an experimental condition")
-    condition = int(input("-1: Full experiment, 0: Manual, 1: Positive reinforcement, 2: Negative reinforcement, 3: Mixed reinforcement.  Your answer = "))
-    return condition
-
 
 # This statement is necessary to allow for multiprocessing
 if __name__ == "__main__":
@@ -53,43 +46,35 @@ if __name__ == "__main__":
     A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
     B = np.array([[0], [1 / Jw]])
 
-    # TODO: verify values
-    Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 2.0
-    K = alpha * np.array([[10.0, 0], [0, 0.0]])
-    kappa = 1
-    C = np.array([[25.0, 0.0], [0.0, 0.1]])
-
     # Experiment data
-    t_warmup = 5
-    t_cooldown = 5
-    t_period = 77.5
+    t_warmup = 0.1
+    t_cooldown = 0.1
+    t_period = 30
     sigma = [0.005, 0.065]
     periods = 1
     t_exp = periods * t_period
     t_prev = 0.1
     repetitions = 1
     visual_conditions = 1
-    haptic_conditions = 4
+    haptic_conditions = 1
     robot_conditions = 1
-    conditions = repetitions * visual_conditions * haptic_conditions + robot_conditions
-    conditions = 4
+    conditions = 10
     duration = t_warmup + t_cooldown + t_exp
-
-    # Choose a condition
-    condition = choose_condition()
-    if condition < 0:
-        trials = conditions
-    else:
-        trials = 1
+    trials = conditions
+    q = np.logspace(-1, 3, num=conditions)
+    print("Checking following costs: ", q)
 
     # Visual stuff
     screen_width = 1920
     screen_height = 1080
 
+    cond = "Linear Quadratic"
+    i = 1
+    Q = np.array([[q[i], 0], [0, 0.1]])
+
     # Insert controller
-    controller = ControllerDGObs(A, B, K, Gamma, kappa)
-    controller_type = "Cost_observer"
+    controller = ControllerLQ(A, B, Q)
+    controller_type = "Linear Quadratic"
     initial_human = np.array([0, 0])
 
     # Start the senso drive parallel process
@@ -107,6 +92,7 @@ if __name__ == "__main__":
         "initial_human": initial_human,
     }
     senso_drive_process = SensoDriveModule(senso_dict)
+    senso_drive_process.start()
 
     # Time to do an experiment!
     full_screen = True
@@ -135,7 +121,7 @@ if __name__ == "__main__":
         "virtual_human_cost": None,
         "init_robot_cost": None,
         "final_robot_cost": None,
-        "sharing_rule": C,
+        "sharing_rule": None,
         "periods": periods,
         "trials": trials,
         "repetitions": repetitions,
@@ -143,37 +129,13 @@ if __name__ == "__main__":
         "sigma": sigma,
     }
 
-    # Make folder for the participant
-    try:
-        dirlist = os.listdir("data")
-        new_list = [int(i) for i in dirlist]
-        print("last folder: ", max(new_list))
-        print("folders: ", new_list)
-        participant = max(new_list) + 1
-    except:
-        participant = 0
-
-    print("now making folder for participant: ", participant)
-    folder_name = "data\\" + str(participant)
-    os.mkdir(folder_name)
-    senso_drive_process.start()
-    print("process started!")
-
     # Initialize pygame visualization
     visualize = Visualize(screen_width, screen_height, full_screen)
+
+    experiment_input["sharing_rule"] = Q
     experiment_handler = Experiment(experiment_input, visualize)
 
-    # conditions = 3
-    if condition >= 0:
-        conditions = 1
-
-    condits = ["Manual Control", "Positive Reinforcement", "Negative Reinforcement", "Mixed Reinforcement"]
-
     for i in range(conditions):
-        if condition < 0:
-            cond = condits[i]
-        else:
-            cond = condits[condition]
 
 
         if platform.system() == 'Windows':
@@ -182,13 +144,12 @@ if __name__ == "__main__":
                 ready, experiment_data = experiment_handler.experiment(condition=cond, repetition=0, trial=i)
 
                 # Save data
-                string = "data\\" + str(participant) + "\\trial_" + str(i) + ".csv"
+                string = "data_robot\\trial_" + str(i) + ".csv"
                 to_csv(experiment_data, string)
 
-    visualize.quit()
-    senso_drive_process.join(timeout=0)
+        visualize.quit()
+        senso_drive_process.join(timeout=0)
+
     # live_plotter_process.join(timeout=0)
 
-    analysis = Analysis()
-    analysis.initialize()
-    analysis.analyse()
+

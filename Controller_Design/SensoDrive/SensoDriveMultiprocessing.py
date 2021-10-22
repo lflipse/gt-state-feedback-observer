@@ -5,8 +5,6 @@ import math
 import multiprocessing as mp
 import numpy as np
 
-
-
 class SensoDriveModule(mp.Process):
     def __init__(self, senso_dict):
 
@@ -129,6 +127,7 @@ class SensoDriveModule(mp.Process):
     def run(self):
         print("running process has started")
         self.initialize()
+
         self.last_time = time.perf_counter_ns()
 
         while not self.exit:
@@ -137,6 +136,7 @@ class SensoDriveModule(mp.Process):
             self.count_senso += 1
 
             # Compute control input using states, read out data and update states
+
             sensor_data = self.write_and_read(msgtype="201", data=self.settings)
 
             # Update timestamp, calculate interval and update states
@@ -148,6 +148,7 @@ class SensoDriveModule(mp.Process):
             # When data is available, receive new reference value
             # Feedback states to main loop
             data_available = self.child_channel.poll()
+
             if data_available is True:
                 self.count_loop += 1
                 msg = self.child_channel.recv()
@@ -192,6 +193,7 @@ class SensoDriveModule(mp.Process):
         Initializes the PCAN Dongle and sends appropriate initialization messages to the SensoDrive.
         :return:
         """
+        print("initializing")
         self._pcan_channel = PCAN_USBBUS1
         # Here we can initialize our PCAN Communication (WE HAVE TO DO THIS HERE ELSE WE WONT HAVE THE PCAN
         # OBJECT IN OUR DESIRED PROCESS)
@@ -256,31 +258,32 @@ class SensoDriveModule(mp.Process):
         self.states["rate_error"] = rate_error
 
         # Estimated states and estimated error states (xi_hat = x_hat - r)
-        error_estimate_derivative = np.array(self.states["error_estimate_derivative"])
-        old_estimated_error_state = np.array(self.states["estimated_error_state"])
-        new_estimated_error_state = old_estimated_error_state + error_estimate_derivative * delta
-        self.states["estimated_error_state"] = new_estimated_error_state
-        self.states["estimated_state"] = new_estimated_error_state + np.array([[self.states["ref"][0]],
-                                                                               [self.states["ref"][1]]])
+        if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
+            error_estimate_derivative = np.array(self.states["error_estimate_derivative"])
+            old_estimated_error_state = np.array(self.states["estimated_error_state"])
+            new_estimated_error_state = old_estimated_error_state + error_estimate_derivative * delta
+            self.states["estimated_error_state"] = new_estimated_error_state
+            self.states["estimated_state"] = new_estimated_error_state + np.array([[self.states["ref"][0]],
+                                                                                   [self.states["ref"][1]]])
 
-        # Estimated human gain
-        old_estimated_gain = np.array(self.states["estimated_human_gain"])
-        gain_derivative = np.array(self.states["estimated_human_gain_derivative"])
-        new_estimated_gain = old_estimated_gain + gain_derivative * delta
-        self.states["estimated_human_gain"] = new_estimated_gain
-        self.states["estimated_human_cost"] = self.compute_cost()
+            # Estimated human gain
+            old_estimated_gain = np.array(self.states["estimated_human_gain"])
+            gain_derivative = np.array(self.states["estimated_human_gain_derivative"])
+            new_estimated_gain = old_estimated_gain + gain_derivative * delta
+            self.states["estimated_human_gain"] = new_estimated_gain
+            self.states["estimated_human_cost"] = self.compute_cost()
 
-        if not self.states["experiment"]:
-            self.states["estimated_human_gain"] = self.initial_human
-            self.states["estimated_human_cost"] = np.array([[0.0, 0.0], [0.0, 0.0]])
+            if not self.states["experiment"]:
+                self.states["estimated_human_gain"] = self.initial_human
+                self.states["estimated_human_cost"] = np.array([[0.0, 0.0], [0.0, 0.0]])
 
-        # Cap for safety reasons
-        try:
-            self.states["estimated_human_gain"][0, 1] = max(-0.5, min(2, self.states["estimated_human_gain"][0, 1]))
-            self.states["estimated_human_gain"][0, 0] = max(-4, min(8, self.states["estimated_human_gain"][0, 0]))
-        except:
-            self.states["estimated_human_gain"][1] = max(-0.5, min(2, self.states["estimated_human_gain"][1]))
-            self.states["estimated_human_gain"][0] = max(-4, min(8, self.states["estimated_human_gain"][0]))
+            # Cap for safety reasons
+            try:
+                self.states["estimated_human_gain"][0, 1] = max(-0.5, min(2, self.states["estimated_human_gain"][0, 1]))
+                self.states["estimated_human_gain"][0, 0] = max(-4, min(8, self.states["estimated_human_gain"][0, 0]))
+            except:
+                self.states["estimated_human_gain"][1] = max(-0.5, min(2, self.states["estimated_human_gain"][1]))
+                self.states["estimated_human_gain"][0] = max(-4, min(8, self.states["estimated_human_gain"][0]))
 
     def compute_cost(self):
         Lr = self.states["robot_gain"][0]

@@ -93,15 +93,11 @@ if __name__ == "__main__":
     t_exp = periods * t_period
     t_prev = 1.2
     repetitions = 4
-    haptic_conditions = 4
+    haptic_conditions = 3
     trials = repetitions * haptic_conditions
     duration = t_warmup + t_cooldown + t_exp
-    latin_square = [["Manual Control", "Positive Reinforcement", "Negative Reinforcement", "Mixed Reinforcement"],
-                    ["Manual Control", "Positive Reinforcement", "Mixed Reinforcement", "Negative Reinforcement"],
-                    ["Manual Control", "Negative Reinforcement", "Positive Reinforcement", "Mixed Reinforcement"],
-                    ["Manual Control", "Negative Reinforcement", "Mixed Reinforcement", "Positive Reinforcement"],
-                    ["Manual Control", "Mixed Reinforcement", "Positive Reinforcement", "Negative Reinforcement"],
-                    ["Manual Control", "Mixed Reinforcement", "Negative Reinforcement", "Postive Reinforcement"]]
+    latin_square = [["Manual Control", "Positive Reinforcement", "Negative Reinforcement"],
+                    ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"]]
 
     # Choose a condition
     participant, trial_number = init_experiment()
@@ -136,7 +132,7 @@ if __name__ == "__main__":
     preview = True
     do_exp = True
 
-    order_nr = participant % 6
+    order_nr = participant % 2
     order = latin_square[order_nr]
     print(participant, order_nr, order)
 

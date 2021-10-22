@@ -19,7 +19,7 @@ class Analysis():
         self.trials = 16
         self.participants = 0
         self.periods = 4
-        self.conditions = 4
+        self.conditions = 3
 
     def initialize(self):
         self.unpack_data()
@@ -58,7 +58,7 @@ class Analysis():
         self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 2)
 
         # Plot metrics
-        self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, False)
+        self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, self.participants, self.conditions)
         plt.show()
 
     def build_metrics(self):
@@ -74,6 +74,8 @@ class Analysis():
         self.metrics["robot_angle_cost"] = {}
         self.metrics["human_angle_gain"] = {}
         self.metrics["robot_angle_gain"] = {}
+        self.metrics["system_angle_cost"] = {}
+        self.metrics["system_angle_gain"] = {}
         self.metrics["authority"] = {}
         self.metrics["condition"] = {}
         self.metrics["repetition"] = {}
@@ -89,10 +91,14 @@ class Analysis():
         # Costs
         human_angle_cost = []
         robot_angle_cost = []
+        system_angle_cost = []
 
         # Gains
         human_angle_gain = []
         robot_angle_gain = []
+        system_angle_gain = []
+
+        # Co-adaptation
         authority = []
         gain_variability = []
 
@@ -139,17 +145,25 @@ class Analysis():
                 conflicts.append(conflict)
 
                 # Average cost functions
-                human_angle_cost.append(np.median(self.filtered_data[i, j]["estimated_human_cost_1"]))
-                robot_angle_cost.append(np.median(self.filtered_data[i, j]["robot_cost_pos"]))
+                human_cost = self.filtered_data[i, j]["estimated_human_cost_1"]
+                robot_cost = self.filtered_data[i, j]["robot_cost_pos"]
+                system_cost = np.array(human_cost) + np.array(robot_cost)
+                human_angle_cost.append(np.median(human_cost))
+                robot_angle_cost.append(np.median(robot_cost))
+                system_angle_cost.append(np.median(system_cost))
 
                 # Average gains
-                avg_human_gain = np.median(self.filtered_data[i, j]["estimated_human_gain_pos"])
-                avg_robot_gain = np.median(self.filtered_data[i, j]["robot_gain_pos"])
-                human_angle_gain.append(avg_human_gain)
-                robot_angle_gain.append(avg_robot_gain)
-                C = (avg_robot_gain - avg_human_gain) / (avg_robot_gain + avg_human_gain)
+                human_gain = self.filtered_data[i, j]["estimated_human_gain_pos"]
+                robot_gain = self.filtered_data[i, j]["robot_gain_pos"]
+                system_gain = np.array(human_gain) + np.array(robot_gain)
+                human_angle_gain.append(np.median(human_gain))
+                robot_angle_gain.append(np.median(robot_gain))
+                system_angle_gain.append(np.median(system_gain))
 
-                gain_var = np.var(self.filtered_data[i, j]["estimated_human_gain_pos"])
+                # C = (avg_robot_gain - avg_human_gain) / (avg_robot_gain + avg_human_gain)
+                C = 1
+
+                gain_var = np.var(human_gain)
                 gain_variability.append(gain_var)
 
                 authority.append(C)
@@ -162,8 +176,10 @@ class Analysis():
         self.metrics["rms_robot_torque"] = rms_robot_torque
         self.metrics["human_angle_cost"] = human_angle_cost
         self.metrics["robot_angle_cost"] = robot_angle_cost
+        self.metrics["system_angle_cost"] = system_angle_cost
         self.metrics["human_angle_gain"] = human_angle_gain
         self.metrics["robot_angle_gain"] = robot_angle_gain
+        self.metrics["system_angle_gain"] = system_angle_gain
         self.metrics["authority"] = authority
         self.metrics["repetition"] = repetitions
         self.metrics["settings"] = settings
@@ -181,30 +197,71 @@ class Analysis():
         increase = []
         performance = []
 
+        # Costs
+        cost_human = []
+        cost_robot = []
+        cost_system = []
+
+        # Gains
+        gain_human = []
+        gain_robot = []
+        gain_system = []
+
+        # Inputs
+        inputs_human = []
+        inputs_robot = []
 
         metrics = pd.DataFrame.from_dict(self.metrics)
         for i in range(self.participants):
             participant = metrics.loc[metrics['participant'] == i]
             manual_control = participant.loc[metrics['condition'] == "Manual Control"]
-
             negative_control = participant.loc[metrics['condition'] == "Negative Reinforcement"]
-            mixed_control = participant.loc[metrics['condition'] == "Mixed Reinforcement"]
             positive_control = participant.loc[metrics['condition'] == "Positive Reinforcement"]
 
-            participants.append([i, i, i, i])
+            participants.append([i, i, i])
             conditions.append(
-                ["Manual Control", "Negative Reinforcement", "Mixed Reinforcement", "Positive Reinforcement"])
+                ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"])
             m = manual_control["rms_angle_error"].mean()
-            increase.append(
-                [100*m/m, 100*m/negative_control["rms_angle_error"].mean(),
-                 100*m/mixed_control["rms_angle_error"].mean(), 100*m/positive_control["rms_angle_error"].mean(),])
-            performance.append(
-                [m, negative_control["rms_angle_error"].mean(), mixed_control["rms_angle_error"].mean(), positive_control["rms_angle_error"].mean(),])
+            increase.append([100*m/m, 100*m/negative_control["rms_angle_error"].mean(),
+                             100*m/positive_control["rms_angle_error"].mean()])
+            performance.append([m, negative_control["rms_angle_error"].mean(),
+                                positive_control["rms_angle_error"].mean()])
+
+            # Costs
+            cost_human.append([manual_control["human_angle_cost"].mean(), negative_control["human_angle_cost"].mean(),
+                                positive_control["human_angle_cost"].mean()])
+            cost_robot.append([manual_control["robot_angle_cost"].mean(), negative_control["robot_angle_cost"].mean(),
+                               positive_control["robot_angle_cost"].mean()])
+            cost_system.append([manual_control["system_angle_cost"].mean(), negative_control["system_angle_cost"].mean(),
+                               positive_control["system_angle_cost"].mean()])
+
+            # Gains
+            gain_human.append([manual_control["human_angle_gain"].mean(), negative_control["human_angle_gain"].mean(),
+                               positive_control["human_angle_gain"].mean()])
+            gain_robot.append([manual_control["robot_angle_gain"].mean(), negative_control["robot_angle_gain"].mean(),
+                               positive_control["robot_angle_gain"].mean()])
+            gain_system.append([manual_control["system_angle_gain"].mean(), negative_control["system_angle_gain"].mean(),
+                               positive_control["system_angle_gain"].mean()])
+
+            # Inputs
+            inputs_human.append([manual_control["rms_estimated_human_torque"].mean(),
+                                 negative_control["rms_estimated_human_torque"].mean(),
+                                 positive_control["rms_estimated_human_torque"].mean()])
+            inputs_robot.append([manual_control["rms_robot_torque"].mean(), negative_control["rms_robot_torque"].mean(),
+                                 positive_control["rms_robot_torque"].mean()])
 
         self.metrics_individuals["participant"] = [item for sublist in participants for item in sublist]
         self.metrics_individuals["condition"] = [item for sublist in conditions for item in sublist]
         self.metrics_individuals["increase"] = [item for sublist in increase for item in sublist]
         self.metrics_individuals["performance"] = [item for sublist in performance for item in sublist]
+        self.metrics_individuals["cost_human"] = [item for sublist in cost_human for item in sublist]
+        self.metrics_individuals["cost_robot"] = [item for sublist in cost_robot for item in sublist]
+        self.metrics_individuals["cost_system"] = [item for sublist in cost_system for item in sublist]
+        self.metrics_individuals["gain_human"] = [item for sublist in gain_human for item in sublist]
+        self.metrics_individuals["gain_robot"] = [item for sublist in gain_robot for item in sublist]
+        self.metrics_individuals["gain_system"] = [item for sublist in gain_system for item in sublist]
+        self.metrics_individuals["inputs_human"] = [item for sublist in inputs_human for item in sublist]
+        self.metrics_individuals["inputs_robot"] = [item for sublist in inputs_robot for item in sublist]
 
     def cut_data(self, participant, trial):
         # Cut data

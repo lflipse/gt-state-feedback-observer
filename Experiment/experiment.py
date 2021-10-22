@@ -31,7 +31,7 @@ class Experiment:
         self.repetition = 0
         self.sigma = input["sigma"]
         self.duration = self.t_warmup + self.t_exp + self.t_cooldown
-        self.t_exp = 77.5*2
+        # self.t_exp = 77.5*2
         self.t_now = 0
         self.t_last = 0
         self.t0 = 0
@@ -200,8 +200,9 @@ class Experiment:
                 estimated_gain_pos = self.states["estimated_human_gain"].flatten()[0]
                 robot_gain_pos = self.states["robot_gain"][0, 0]
 
-                Qh, vhg = self.smooth_virtual_human()
+
                 if self.virtual_human:
+                    Qh, vhg = self.smooth_virtual_human()
                     self.send_dict["virtual_human_gain"] = vhg
                     virtual_gain = vhg[0]
                     bottom_text = "Gains; H:" + str(round(estimated_gain_pos, 2)) + " R: " + str(
@@ -273,45 +274,46 @@ class Experiment:
                 except:
                     output["torque"] = 0
 
-                try:
-                    output["measured_human_input"] = self.states["measured_human_input"][0, 0]
-                except:
-                    output["measured_human_input"] = self.states["measured_human_input"][0][0]
-
-
-                output["estimated_human_gain_pos"] = self.states["estimated_human_gain"].flatten()[0]
-                output["estimated_human_gain_vel"] = self.states["estimated_human_gain"].flatten()[1]
-
-                # print(self.states["robot_gain"])
-                output["robot_gain_pos"] = self.states["robot_gain"][0, 0]
-                output["robot_gain_vel"] = self.states["robot_gain"][0, 1]
-
-                output["state_estimate_pos"] = self.states["estimated_state"][0][0]
-                output["state_estimate_vel"] = self.states["estimated_state"][1][0]
-                output["input_estimation_error"] = self.states["input_estimation_error"]
-                output["state_estimate_derivative"] = self.states["state_estimate_derivative"][1][0]
-
-                if self.virtual_human:
-                    output["virtual_human_gain_pos"] = vhg[0]
-                    output["virtual_human_gain_vel"] = vhg[1]
-                    output["virtual_human_cost_pos"] = Qh[0]
-                    output["virtual_human_cost_vel"] = Qh[1]
+                if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
                     try:
-                        output["virtual_human_torque"] = self.states["virtual_human_torque"][0, 0]
+                        output["measured_human_input"] = self.states["measured_human_input"][0, 0]
                     except:
-                        output["virtual_human_torque"] = self.states["virtual_human_torque"][0]
-
-                try:
-                    output["estimated_human_input"] = self.states["estimated_human_torque"][0, 0]
-                except:
-                    output["estimated_human_input"] = self.states["estimated_human_torque"][0]
+                        output["measured_human_input"] = self.states["measured_human_input"][0][0]
 
 
-                output["robot_cost_pos"] = self.states["robot_cost_calc"][0, 0]
-                output["robot_cost_vel"] = self.states["robot_cost_calc"][1, 1]
+                    output["estimated_human_gain_pos"] = self.states["estimated_human_gain"].flatten()[0]
+                    output["estimated_human_gain_vel"] = self.states["estimated_human_gain"].flatten()[1]
 
-                output["estimated_human_cost_1"] = self.states["estimated_human_cost"][0, 0]
-                output["estimated_human_cost_2"] = self.states["estimated_human_cost"][1, 1]
+                    # print(self.states["robot_gain"])
+                    output["robot_gain_pos"] = self.states["robot_gain"][0, 0]
+                    output["robot_gain_vel"] = self.states["robot_gain"][0, 1]
+
+                    output["state_estimate_pos"] = self.states["estimated_state"][0][0]
+                    output["state_estimate_vel"] = self.states["estimated_state"][1][0]
+                    output["input_estimation_error"] = self.states["input_estimation_error"]
+                    output["state_estimate_derivative"] = self.states["state_estimate_derivative"][1][0]
+
+                    if self.virtual_human:
+                        output["virtual_human_gain_pos"] = vhg[0]
+                        output["virtual_human_gain_vel"] = vhg[1]
+                        output["virtual_human_cost_pos"] = Qh[0]
+                        output["virtual_human_cost_vel"] = Qh[1]
+                        try:
+                            output["virtual_human_torque"] = self.states["virtual_human_torque"][0, 0]
+                        except:
+                            output["virtual_human_torque"] = self.states["virtual_human_torque"][0]
+
+                    try:
+                        output["estimated_human_input"] = self.states["estimated_human_torque"][0, 0]
+                    except:
+                        output["estimated_human_input"] = self.states["estimated_human_torque"][0]
+
+
+                    output["robot_cost_pos"] = self.states["robot_cost_calc"][0, 0]
+                    output["robot_cost_vel"] = self.states["robot_cost_calc"][1, 1]
+
+                    output["estimated_human_cost_1"] = self.states["estimated_human_cost"][0, 0]
+                    output["estimated_human_cost_2"] = self.states["estimated_human_cost"][1, 1]
 
                 # print(output)
                 self.store_variables(output)
@@ -348,8 +350,6 @@ class Experiment:
 
         else:
             ready_for_experiment = True
-
-
 
         # Time to close off
         # self.send_dict["exit"] = True

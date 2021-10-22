@@ -26,7 +26,7 @@ class ControllerDGObs:
             Qr = np.array([[0, 0], [0, 0]])
             Pr = Qr
             Lr = np.array([[0, 0]])
-            ur = 0
+            ur = np.array([[0.0]])
             beta = 0
         else:
             alpha = np.array([[0.1, 0], [0, 1.0]])
@@ -81,12 +81,12 @@ class ControllerDGObs:
         Lhhat_dot = u_h_tilde / m_squared * np.matmul(xi.transpose(), self.K)
 
         ur_comp = ur - self.nonlinear_term(x)
-        uh_meas = np.matmul(pseudo_B, xi_dot - np.matmul(self.A, x) - np.matmul(self.B, ur))
+        uh_meas = np.matmul(pseudo_B, xi_dot - np.matmul(self.A, xi) - np.matmul(self.B, ur))
 
         output = {
             "nonlins": self.nonlinear_term(x),
             "output_torque": ur_comp,
-            "real_torque": ur_comp,
+            "real_torque": ur,
             "estimated_human_torque": uhhat,
             "error_estimate_derivative": xi_hat_dot,
             "estimated_human_gain_derivative": Lhhat_dot,
