@@ -19,7 +19,7 @@ class SensoDriveModule(mp.Process):
         self.time_step = 1 / self.frequency
         self._time_step_in_ns = self.time_step * 1e9
         self._bq_filter_velocity = LowPassFilterBiquad(fc=50, fs=self.frequency)
-        self._bq_filter_acc = LowPassFilterBiquad(fc=20, fs=self.frequency)
+        self._bq_filter_acc = LowPassFilterBiquad(fc=15, fs=self.frequency)
         self.controller = senso_dict["controller"]
         self.controller_type = senso_dict["controller_type"]
         self.now = 0
@@ -412,6 +412,7 @@ class SensoDriveModule(mp.Process):
     def update_controller_states(self, output):
         self.states["torque"] = output["output_torque"]
         self.states["real_torque"] = output["real_torque"]
+        self.states["robot_gain"] = output["robot_gain"]
 
         # Update gains
         if self.controller_type == "Gain_observer" or self.controller_type == "Cost_observer":
@@ -427,7 +428,6 @@ class SensoDriveModule(mp.Process):
             self.states["estimated_human_gain_derivative"] = output["estimated_human_gain_derivative"]
             self.states["estimated_human_torque"] = output["estimated_human_torque"]
             self.states["input_estimation_error"] = output["input_estimation_error"]
-            self.states["robot_gain"] = output["robot_gain"]
             self.states["robot_cost_calc"] = output["robot_cost"]
             self.states["measured_human_input"] = output["measured_human_input"]
 

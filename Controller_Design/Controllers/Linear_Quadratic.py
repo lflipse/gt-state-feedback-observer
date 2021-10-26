@@ -18,13 +18,17 @@ class ControllerLQ:
         # print("xi is", xi)
         xi = states["error_state"]
         x = states["state"]
-        ur = - np.matmul(self.Lr, xi)
+        Qr = states["sharing_rule"]
+        Pr = cp.solve_continuous_are(self.A, self.B, Qr, 1)
+        Lr = np.matmul(self.B.transpose(), Pr)
+        ur = - np.matmul(Lr, xi)
         ur_comp = ur - self.nonlinear_term(x)
         Jr = self.compute_costs(xi, ur)
         output = {
             "output_torque": ur_comp,
             "real_torque": ur,
-            "cost": Jr
+            "cost": Jr,
+            "robot_gain": Lr,
         }
         return output
 

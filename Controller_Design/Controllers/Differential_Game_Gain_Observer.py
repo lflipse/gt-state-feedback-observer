@@ -30,7 +30,7 @@ class ControllerDGObs:
             beta = 0
         else:
             alpha = np.array([[0.1, 0], [0, 1.0]])
-            gamma = np.array([[1.5, 0], [0, -1.0]])
+            gamma = np.array([[1.0, 0], [0, -1.0]])
             zeta = np.array([[1.0, 0], [0, 1.0]])
             Qr1 = np.matmul(alpha, C) + np.matmul(gamma, Qh)
             Qr2 = C - np.matmul(zeta, Qh)
@@ -41,7 +41,7 @@ class ControllerDGObs:
             else:
                 Qr = C
 
-            Qr[0, 0] = max(Qr[0, 0], 0.1)
+            # Qr[0, 0] = max(Qr[0, 0], 0.1)
             Acl = self.A - self.B * Lh_hat
 
             try:
@@ -63,7 +63,8 @@ class ControllerDGObs:
         except:
             Lh_pos = Lh_hat[0]
         if Lh_pos < 0:
-            beta = 0.00
+            beta = 0.0
+            # beta = 0.05
         else:
             beta = 0.00
         forget_factor = beta * np.array([[1, 1]])

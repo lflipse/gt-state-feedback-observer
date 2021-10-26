@@ -41,8 +41,8 @@ class Strategy():
         C2 = np.zeros(n)
         Qh[:, 0, 0] = q1h
 
-        # C = np.array([[25.0, 0], [0, 0.1]])
-        C = np.array([[80.0, 0], [0, 0.1]])
+        C = np.array([[25.0, 0], [0, 0.1]])
+        # C = np.array([[80.0, 0], [0, 0.1]])
 
         # Dynamics
         Jw = 0.04914830792783059
@@ -53,14 +53,14 @@ class Strategy():
 
         for i in range(n):
             # New laws
-            # alpha = np.array([[0.1, 0], [0, 1.0]])
-            # gamma = np.array([[1.5, 0], [0, -1.0]])
-            # zeta = np.array([[1.0, 0], [0, 1.0]])
+            alpha = np.array([[0.1, 0], [0, 1.0]])
+            gamma = np.array([[1.0, 0], [0, -1.0]])
+            zeta = np.array([[1.0, 0], [0, 1.0]])
 
             # Old laws
-            alpha = np.array([[0.02, 0], [0, 1.0]])
-            gamma = np.array([[2.5, 0], [0, -1.0]])
-            zeta = np.array([[2.0, 0], [0, 1.0]])
+            # alpha = np.array([[0.02, 0], [0, 1.0]])
+            # gamma = np.array([[2.5, 0], [0, -1.0]])
+            # zeta = np.array([[2.0, 0], [0, 1.0]])
 
             if Qh[i, 0, 0] < 1 / zeta[0, 0] * C[0, 0]:
                 Qr1[i, :, :] = C - np.matmul(zeta, Qh[i, :, :])
@@ -102,15 +102,19 @@ class Strategy():
         plt.ylabel('Robot cost weight (-)', self.hfont)
         # plt.legend(prop={"size": 14}, loc='upper right')
         plt.xlim(Qh[0, 0, 0], Qh[-1, 0, 0])
+        plt.xlim(0, 30)
+        plt.ylim(0, 30)
         plt.tight_layout(pad=1)
 
         plt.figure()
         plt.plot(Qh[:, 0, 0], Qr2[:, 0, 0], linewidth=self.linewidth)
-        plt.title("No reinforcement", self.csfont)
+        plt.title("Positive reinforcement", self.csfont)
         plt.xlabel('Human cost weight (-)', self.hfont)
         plt.ylabel('Robot cost weight (-)', self.hfont)
         # plt.legend(prop={"size": 14}, loc='upper right')
-        plt.xlim(Qh[0, 0, 0], Qh[-1, 0, 0])
+        plt.xlim(0, 100)
+        plt.ylim(0, 100)
+        # plt.xlim(Qh[0, 0, 0], Qh[-1, 0, 0])
         plt.tight_layout(pad=1)
 
 
@@ -124,7 +128,7 @@ class Strategy():
         plt.ylabel('Robot gain (Nm)', self.hfont)
         plt.legend(prop={"size": 14}, loc='upper right')
         plt.xlim(0, 5)
-        plt.ylim(0, 15)
+        plt.ylim(0, 12)
         plt.tight_layout(pad=1)
 
         plt.figure()
@@ -134,7 +138,7 @@ class Strategy():
         plt.ylabel('Robot gain (Nm)', self.hfont)
         plt.legend(prop={"size": 14}, loc='upper right')
         plt.xlim(0, 5)
-        plt.ylim(0, 15)
+        plt.ylim(0, 12)
         plt.tight_layout(pad=1)
 
         plt.figure()
@@ -151,7 +155,7 @@ class Strategy():
         # plt.xlim(xmin, xmax)
         # plt.ylim(ymin, ymax)
         plt.xlim(0, 40)
-        plt.ylim(0, 65)
+        plt.ylim(0, 40)
         plt.tight_layout(pad=1)
 
         plt.figure()
@@ -165,8 +169,8 @@ class Strategy():
         xmax = min(max(Lh1[:, 0]), max(Lh2[:, 0]))
         ymin = min(min(Lr1[:, 0]), min(Lr2[:, 0])) - 0.1
         ymax = max(max(Lr1[:, 0]), max(Lr2[:, 0])) + 0.1
-        plt.xlim(xmin, xmax)
-        plt.ylim(ymin, ymax)
+        plt.xlim(0, 5)
+        plt.ylim(0, 5)
         plt.tight_layout(pad=1)
 
         plt.figure()
@@ -181,7 +185,7 @@ class Strategy():
         xmax = min(max(Lh1[:, 0]), max(Lh2[:, 0]))
         ymin = min(min(C1), min(C2)) - 0.1
         ymax = max(max(C1), max(C2)) + 0.1
-        plt.xlim(xmin, xmax)
+        plt.xlim(0, 5)
         plt.ylim(ymin, ymax)
         plt.tight_layout(pad=1)
 

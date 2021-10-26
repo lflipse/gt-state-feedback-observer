@@ -14,7 +14,7 @@ class PlotStuff:
         print("About to be plotting stuff")
         title_size = 14
         label_size = 10
-        self.linewidth = 3
+        self.linewidth = 4
         self.csfont = {'fontname': 'Georgia', 'size': title_size}
         self.hfont = {'fontname': 'Georgia', 'size': label_size}
 
@@ -36,7 +36,7 @@ class PlotStuff:
         sns.set(style="whitegrid")
 
 
-    def plot_experiment(self, data, averaged_data, participants, conditions):
+    def plot_experiment(self, data, averaged_data, data_robot, participants, conditions):
         # Human torque vs robot torque
         data_pd = pd.DataFrame(data)
         mean_data_pd = pd.DataFrame(averaged_data)
@@ -177,8 +177,11 @@ class PlotStuff:
 
                 # Figure 2b.
                 axs4[j].scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, label=label)
-                # axs4[j].set_xlim(-10, 85)
-                # axs4[j].set_ylim(-10, 85)
+                if i == 0:
+                    axs4[j].plot(data_robot["robot_angle_gain"], data_robot["rms_angle_error"], self.tud_blue,
+                                 linewidth=self.linewidth, alpha=0.5, label="Optimal Control")
+                axs4[j].set_xlim(0, 10)
+                axs4[j].set_ylim(0, 0.08)
                 axs4[j].legend()
                 axs4[j].set_xlabel("Total Estimated System Gain (Nm/rad)", **self.hfont)
                 axs4[j].set_ylabel("RMS Error (rad)", **self.hfont)

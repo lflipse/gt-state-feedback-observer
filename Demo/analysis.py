@@ -59,7 +59,7 @@ class Analysis():
         # self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 2)
 
         # Plot metrics
-        self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, False)
+        self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, self.metrics_individuals, self.participants, False)
         plt.show()
 
     def build_metrics(self):

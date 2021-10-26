@@ -11,15 +11,18 @@ class Analysis():
     def __init__(self):
         # Unpack data
         self.raw_data = {}
+        self.raw_data_robot = {}
         self.filtered_data = {}
         self.average_data = {}
         self.metrics = {}
+        self.metrics_robot = {}
         self.metrics_individuals = {}
         self.plot_stuff = None
         self.trials = 16
         self.participants = 0
         self.periods = 4
         self.conditions = 3
+        self.robot_trials = 8
 
     def initialize(self):
         self.unpack_data()
@@ -27,7 +30,19 @@ class Analysis():
 
     def unpack_data(self):
         path = "..\\Experiment\\pilot_2"
+        path_robot = "..\\Controller_Design\\data_robot"
         # path = "first_trial"
+        list_dir_robot = os.listdir(path_robot)
+        self.robot_trials = len(list_dir_robot)
+        for j in range(self.robot_trials):
+            path_trial_robot = path_robot + "\\" + list_dir_robot[j]
+            try:
+                df = pd.read_csv(path_trial_robot, index_col=0)
+                self.raw_data_robot[j] = df.to_dict(orient='list')
+                print("loaded ", path_trial_robot)
+            except:
+                exit("Something went wrong")
+
         list_dir = os.listdir(path)
         self.participants = len(list_dir)
         for i in range(self.participants):
@@ -58,7 +73,7 @@ class Analysis():
         self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 2)
 
         # Plot metrics
-        self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, self.participants, self.conditions)
+        self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, self.metrics_robot, self.participants, self.conditions)
         plt.show()
 
     def build_metrics(self):
@@ -81,6 +96,11 @@ class Analysis():
         self.metrics["repetition"] = {}
         self.metrics["gain_variability"] = {}
 
+        # Robot RMS and gains
+        self.metrics_robot["rms_angle_error"] = {}
+        # self.metrics_robot["rms_rate_error"] = {}
+        self.metrics_robot["robot_angle_gain"] = {}
+
         # RMS
         rms_angle_error = []
         rms_rate_error = []
@@ -98,6 +118,10 @@ class Analysis():
         robot_angle_gain = []
         system_angle_gain = []
 
+        # Robot
+        robot_rms = []
+        robot_gains = []
+
         # Co-adaptation
         authority = []
         gain_variability = []
@@ -109,6 +133,13 @@ class Analysis():
         conditions = []
         participant = []
         settings = []
+
+        for k in range(self.robot_trials):
+            # Robot
+            robot_error = self.raw_data_robot[k]["angle_error"]
+            robot_rms.append(np.sqrt(1 / (len(robot_error)) * np.inner(robot_error, robot_error)))
+            robot_solo_gain = self.raw_data_robot[k]["robot_gain_pos"]
+            robot_gains.append(np.median(robot_solo_gain))
 
         for i in range(self.participants):
             for j in range(self.trials):
@@ -124,6 +155,8 @@ class Analysis():
                 set = self.filtered_data[i, j]["setting"]
                 setting = set[10]  # Not very nicely done this
                 settings.append(setting)
+
+
 
                 # RMSE
                 angle_error = self.filtered_data[i, j]["angle_error"]
@@ -187,6 +220,8 @@ class Analysis():
         self.metrics["participant"] = participant
         self.metrics["gain_variability"] = gain_variability
         self.metrics["conflict"] = conflicts
+        self.metrics_robot["rms_angle_error"] = robot_rms
+        self.metrics_robot["robot_angle_gain"] = robot_gains
         # print(self.metrics)
 
 

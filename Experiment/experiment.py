@@ -199,6 +199,7 @@ class Experiment:
                 self.send_dict["experiment"] = True
                 estimated_gain_pos = self.states["estimated_human_gain"].flatten()[0]
                 robot_gain_pos = self.states["robot_gain"][0, 0]
+                # print(self.states["robot_gain"])
 
 
                 if self.virtual_human:
@@ -267,7 +268,8 @@ class Experiment:
                     "condition": condition,
                     "human_noise": sigma_h,
                     "setting": setting,
-
+                    "robot_gain_pos": self.states["robot_gain"][0, 0],
+                    "robot_gain_vel": self.states["robot_gain"][0, 1],
                 }
                 try:
                     output['torque'] = self.states["torque"][0, 0]
@@ -285,8 +287,7 @@ class Experiment:
                     output["estimated_human_gain_vel"] = self.states["estimated_human_gain"].flatten()[1]
 
                     # print(self.states["robot_gain"])
-                    output["robot_gain_pos"] = self.states["robot_gain"][0, 0]
-                    output["robot_gain_vel"] = self.states["robot_gain"][0, 1]
+
 
                     output["state_estimate_pos"] = self.states["estimated_state"][0][0]
                     output["state_estimate_vel"] = self.states["estimated_state"][1][0]

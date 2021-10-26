@@ -41,14 +41,14 @@ def compute_virtual_cost(Lh, C, A, B):
     p = 1 / beta * Lh
     Qh = np.array([[0,0], [0,0]])
     for i in range(20):
-        Qr = C - Qh
+        Qr = C
         L = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh, B, Qr, 1))
         Lr = L[0]
         gamma_1 = alpha_1 - beta * Lr[0]
         gamma_2 = alpha_2 - beta * Lr[1]
         q_hhat1 = - 2 * gamma_1 * p[0] + Lh[0] ** 2
         q_hhat2 = - 2 * p[0] - 2 * gamma_2 * p[1] + Lh[1] ** 2
-        Qh = np.array([[q_hhat1[0],0], [0,q_hhat2[0]]])
+        Qh = np.array([[q_hhat1[0], 0], [0, q_hhat2[0]]])
     print(Qh)
     return np.array([q_hhat1, q_hhat2])
 
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     # Simulation parameters
     t_warmup = 5
     t_cooldown = 5
-    t_exp = 27.5
+    t_exp = 200
     duration = t_warmup + t_cooldown + t_exp
     t_step = 0.015
     N = round(t_exp / t_step)
@@ -146,13 +146,13 @@ if __name__ == "__main__":
 
     # TODO: verify values
     Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 5
-    K = alpha * np.array([[10.0, 0], [0, 0.2]])
+    alpha = 7.5
+    K = alpha * np.array([[10.0, 0], [0, 1.0]])
     kappa = 1
 
-    Qr = np.array([[20.0, 0.0], [0.0, 0.1]])
-    Qh1 = np.array([[25, 0.0], [0.0, 0.05]])
-    Qh2 = np.array([[10, 0.0], [0.0, 0.02]])
+    Qr = np.array([[20.0, 0.0], [0.0, 2.0]])
+    Qh1 = np.array([[25, 0.0], [0.0, 1.0]])
+    Qh2 = np.array([[10, 0.0], [0.0, 0.5]])
 
     vhg = np.zeros((6, 2))
     vhg[0, :] = compute_virtual_gain(Qh2, Qr, A, B)[1]
@@ -179,8 +179,6 @@ if __name__ == "__main__":
             virtual_human = False
         else:
             virtual_human = True
-            alpha = 5
-            K = alpha * np.array([[10.0, 0], [0, 0.5]])
 
         initial_human = np.array([[0, 0]])
 

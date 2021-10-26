@@ -61,7 +61,7 @@ if __name__ == "__main__":
     conditions = 10
     duration = t_warmup + t_cooldown + t_exp
     trials = conditions
-    q = np.logspace(-1, 3, num=conditions)
+    q = np.logspace(0, 2, num=conditions)
     print("Checking following costs: ", q)
 
     # Visual stuff
@@ -70,8 +70,8 @@ if __name__ == "__main__":
 
     cond = "Linear Quadratic"
     i = 1
-    Q = np.array([[q[i], 0], [0, 0.1]])
 
+    Q = np.array([[q[i], 0], [0, 0.1]])
     # Insert controller
     controller = ControllerLQ(A, B, Q)
     controller_type = "Linear Quadratic"
@@ -99,43 +99,44 @@ if __name__ == "__main__":
     preview = True
     do_exp = True
 
-    experiment_input = {
-        "damping": Bw,
-        "stiffness": Kw,
-        "reference": reference,
-        "controller_type": controller_type,
-        "parent_conn": parent_conn,
-        "child_conn": child_conn,
-        "senso_drive": senso_drive_process,
-        "screen_width": screen_width,
-        "screen_height": screen_height,
-        "full_screen": full_screen,
-        "preview": preview,
-        "preview_time": t_prev,
-        "warm_up_time": t_warmup,
-        "experiment_time": t_exp,
-        "cooldown_time": t_cooldown,
-        "period_time": t_period,
-        "virtual_human": False,
-        "virtual_human_gain": None,
-        "virtual_human_cost": None,
-        "init_robot_cost": None,
-        "final_robot_cost": None,
-        "sharing_rule": None,
-        "periods": periods,
-        "trials": trials,
-        "repetitions": repetitions,
-        "visual_conditions": visual_conditions,
-        "sigma": sigma,
-    }
-
     # Initialize pygame visualization
     visualize = Visualize(screen_width, screen_height, full_screen)
 
-    experiment_input["sharing_rule"] = Q
-    experiment_handler = Experiment(experiment_input, visualize)
-
     for i in range(conditions):
+
+        Q = np.array([[q[i], 0], [0, 0.1]])
+
+        experiment_input = {
+            "damping": Bw,
+            "stiffness": Kw,
+            "reference": reference,
+            "controller_type": controller_type,
+            "parent_conn": parent_conn,
+            "child_conn": child_conn,
+            "senso_drive": senso_drive_process,
+            "screen_width": screen_width,
+            "screen_height": screen_height,
+            "full_screen": full_screen,
+            "preview": preview,
+            "preview_time": t_prev,
+            "warm_up_time": t_warmup,
+            "experiment_time": t_exp,
+            "cooldown_time": t_cooldown,
+            "period_time": t_period,
+            "virtual_human": False,
+            "virtual_human_gain": None,
+            "virtual_human_cost": None,
+            "init_robot_cost": None,
+            "final_robot_cost": None,
+            "sharing_rule": None,
+            "periods": periods,
+            "trials": trials,
+            "repetitions": repetitions,
+            "visual_conditions": visual_conditions,
+            "sigma": sigma,
+        }
+        experiment_input["sharing_rule"] = Q
+        experiment_handler = Experiment(experiment_input, visualize)
 
 
         if platform.system() == 'Windows':
@@ -147,8 +148,8 @@ if __name__ == "__main__":
                 string = "data_robot\\trial_" + str(i) + ".csv"
                 to_csv(experiment_data, string)
 
-        visualize.quit()
-        senso_drive_process.join(timeout=0)
+    visualize.quit()
+    senso_drive_process.join(timeout=0)
 
     # live_plotter_process.join(timeout=0)
 
