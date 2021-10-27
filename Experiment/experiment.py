@@ -218,8 +218,8 @@ class Experiment:
                 text = ""
 
                 # Uncomment to remove text
-                # top_text = ""
-                # bottom_text = ""
+                top_text = ""
+                bottom_text = ""
 
             # COOLDOWN
             else:

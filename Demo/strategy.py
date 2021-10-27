@@ -41,7 +41,7 @@ class Strategy():
         C2 = np.zeros(n)
         Qh[:, 0, 0] = q1h
 
-        C = np.array([[25.0, 0], [0, 0.1]])
+        C = np.array([[20.0, 0], [0, 0.1]])
         # C = np.array([[80.0, 0], [0, 0.1]])
 
         # Dynamics

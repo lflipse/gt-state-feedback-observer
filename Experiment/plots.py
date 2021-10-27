@@ -150,8 +150,8 @@ class PlotStuff:
 
                 # Figure 1a.
                 axs1[j].scatter(data_now["cost_human"][key], data_now["cost_robot"][key], s=size, label=label)
-                axs1[j].set_xlim(-10, 85)
-                axs1[j].set_ylim(-10, 85)
+                axs1[j].set_xlim(0, 50)
+                axs1[j].set_ylim(0, 50)
                 axs1[j].legend()
                 axs1[j].set_xlabel("Averaged Estimated Human Cost Weight (Nm/rad)", **self.hfont)
                 axs1[j].set_ylabel("Averaged Robot Cost Weight (-)", **self.hfont)
@@ -159,8 +159,8 @@ class PlotStuff:
 
                 # Figure 1b.
                 axs2[j].scatter(data_now["cost_system"][key], data_now["performance"][key], s=size, label=label)
-                # axs2[j].set_xlim(-10, 85)
-                # axs2[j].set_ylim(-10, 85)
+                axs2[j].set_xlim(-10, 50)
+                axs2[j].set_ylim(0, 0.15)
                 axs2[j].legend()
                 axs2[j].set_xlabel("Total Estimated System Cost Weight (-)", **self.hfont)
                 axs2[j].set_ylabel("RMS Error (rad)", **self.hfont)
@@ -168,8 +168,8 @@ class PlotStuff:
 
                 # Figure 2a.
                 axs3[j].scatter(data_now["gain_human"][key], data_now["gain_robot"][key], s=size, label=label)
-                axs3[j].set_xlim(-0.5, 10)
-                axs3[j].set_ylim(-0.5, 10)
+                axs3[j].set_xlim(-0.5, 6)
+                axs3[j].set_ylim(-0.5, 6)
                 axs3[j].legend()
                 axs3[j].set_xlabel("Averaged Estimated Human Gain (Nm/rad)", **self.hfont)
                 axs3[j].set_ylabel("Averaged Robot Gain (Nm/rad)", **self.hfont)
@@ -181,7 +181,7 @@ class PlotStuff:
                     axs4[j].plot(data_robot["robot_angle_gain"], data_robot["rms_angle_error"], self.tud_blue,
                                  linewidth=self.linewidth, alpha=0.5, label="Optimal Control")
                 axs4[j].set_xlim(0, 10)
-                axs4[j].set_ylim(0, 0.08)
+                axs4[j].set_ylim(0, 0.15)
                 axs4[j].legend()
                 axs4[j].set_xlabel("Total Estimated System Gain (Nm/rad)", **self.hfont)
                 axs4[j].set_ylabel("RMS Error (rad)", **self.hfont)
@@ -189,8 +189,8 @@ class PlotStuff:
 
                 # Figure 3a.
                 axs5[j].scatter(data_now["inputs_human"][key], data_now["inputs_robot"][key], s=size, label=label)
-                axs5[j].set_xlim(0, 0.2)
-                axs5[j].set_ylim(0, 0.2)
+                axs5[j].set_xlim(0, 0.5)
+                axs5[j].set_ylim(0, 0.5)
                 axs5[j].legend()
                 axs5[j].set_xlabel("RMS Human Torque (Nm)", **self.hfont)
                 axs5[j].set_ylabel("RMS Robot Torque (Nm)", **self.hfont)
@@ -206,13 +206,13 @@ class PlotStuff:
 
 
 
-        # self.save_all_figures()
+        self.save_all_figures()
 
 
 
 
     def plot_data(self, raw_data, trials, participant):
-        figb, axs = plt.subplots(4, 3)
+        figb, axs = plt.subplots(4, 2)
         figc, axsb = plt.subplots(4, 3)
 
         for i in range(trials):
@@ -292,7 +292,7 @@ class PlotStuff:
             #     plt.figure(fig4)
 
             t_start = 0
-            t_example = 25
+            t_example = 35
             t_end = t[-1]
 
             if repetition == 0:
@@ -328,14 +328,14 @@ class PlotStuff:
 
             figb.suptitle("Estimated Control Authority", **self.csfont)
             if c > 0:
-                axs[repetition, c-1].plot(t, auth_est, label='Estimated authority')
+                axs[repetition, c - 1].plot(t, auth_est, label='Estimated authority')
                 axs[repetition, c - 1].plot(t, auth, alpha=0.3, label='Measured authority')
-                axs[repetition, c-1].set_ylim(-1.5, 1.5)
+                axs[repetition, c - 1].set_ylim(-1.5, 1.5)
                 axs[repetition, c - 1].set_xlim(t_start, t_end)
                 if repetition == 0:
                     axs[repetition, c - 1].set_title(title)
                     axs[repetition, c - 1].set_xticks([])
-                    axs[repetition, c-1].legend(prop={"size": 8}, loc='lower right')
+                    axs[repetition, c - 1].legend(prop={"size": 8}, loc='lower right')
                 elif repetition == 3:
                     axs[repetition, c - 1].set_xlabel('Time (s)')
                 else:
@@ -343,19 +343,19 @@ class PlotStuff:
             # plt.tight_layout(pad=1)
 
             figc.suptitle("Gains", **self.csfont)
-            if c > 0:
-                axsb[repetition, c - 1].stackplot(t, Lhhat_pos, Lr_pos, baseline='zero', colors=colors,
-                                                  edgecolor='black', linewidth=0.8, labels=labels)
-                axsb[repetition, c - 1].set_ylim(-1, 12)
-                axsb[repetition, c - 1].set_xlim(t_start, t_end)
-                if repetition == 0:
-                    axsb[repetition, c - 1].set_title(title)
-                    axsb[repetition, c - 1].set_xticks([])
-                    axsb[repetition, c - 1].legend(prop={"size": 6}, loc='upper left')
-                if repetition == 3:
-                    axsb[repetition, c - 1].set_xlabel('Time (s)')
-                else:
-                    axsb[repetition, c - 1].set_xticks([])
+            # if c > 0:
+            axsb[repetition, c].stackplot(t, Lhhat_pos, Lr_pos, baseline='zero', colors=colors,
+                                              edgecolor='black', linewidth=0.8, labels=labels)
+            axsb[repetition, c].set_ylim(-1, 12)
+            axsb[repetition, c].set_xlim(t_start, t_end)
+            if repetition == 0:
+                axsb[repetition, c].set_title(title)
+                axsb[repetition, c].set_xticks([])
+                axsb[repetition, c].legend(prop={"size": 6}, loc='upper left')
+            if repetition == 3:
+                axsb[repetition, c].set_xlabel('Time (s)')
+            else:
+                axsb[repetition, c].set_xticks([])
             # plt.tight_layout(pad=1)
 
     def save_all_figures(self):

@@ -63,8 +63,8 @@ class ControllerDGObs:
         except:
             Lh_pos = Lh_hat[0]
         if Lh_pos < 0:
-            beta = 0.0
-            # beta = 0.05
+            # beta = 0.0
+            beta = 0.05
         else:
             beta = 0.00
         forget_factor = beta * np.array([[1, 1]])

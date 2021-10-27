@@ -29,7 +29,7 @@ class Analysis():
         self.plot_stuff = PlotStuff()
 
     def unpack_data(self):
-        path = "..\\Experiment\\pilot_2"
+        path = "..\\Experiment\\data"
         path_robot = "..\\Controller_Design\\data_robot"
         # path = "first_trial"
         list_dir_robot = os.listdir(path_robot)
@@ -70,7 +70,7 @@ class Analysis():
 
         # Plot individual data
         self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 1)
-        self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 2)
+        # self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 2)
 
         # Plot metrics
         self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, self.metrics_robot, self.participants, self.conditions)

@@ -1,6 +1,16 @@
 import numpy as np
 import scipy.linalg as cp
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+
+def save_all_figures():
+    pp = PdfPages('cooperation.pdf')
+    figs = None
+    if figs is None:
+        figs = [plt.figure(n) for n in plt.get_fignums()]
+    for fig in figs:
+        fig.savefig(pp, format='pdf')
+    pp.close()
 
 def solve_coupled_riccati(it, Qr, Qh, A, B):
     S = B * B.transpose()
@@ -142,5 +152,7 @@ plt.xlim(0, 7.5)
 plt.legend(prop={"size": legend_size}, loc='upper right')
 plt.tight_layout(pad=1)
 plt.legend()
+
+save_all_figures()
 
 plt.show()
