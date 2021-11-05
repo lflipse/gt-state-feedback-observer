@@ -33,6 +33,7 @@ class Analysis():
         for i in range(self.participants):
             path_participant = path + "\\" + list_dir[i]
             participant = int(list_dir[i])
+            self.raw_data[participant] = {}
             list_dir_par = os.listdir(path_participant)
             self.trials = len(list_dir_par)
 
@@ -40,7 +41,7 @@ class Analysis():
                 path_trial = path_participant + "\\" + list_dir_par[j]
                 try:
                     df = pd.read_csv(path_trial, index_col=0)
-                    self.raw_data[participant, j] = df.to_dict(orient='list')
+                    self.raw_data[participant][j] = df.to_dict(orient='list')
                     print("loaded ", path_trial)
                 except:
                     exit("Something went wrong")
@@ -55,11 +56,11 @@ class Analysis():
         self.build_individual_metrics()
 
         # Plot individual data
-        self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 1)
+        self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 1)
         # self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 2)
 
         # Plot metrics
-        self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, self.metrics_individuals, self.participants, False)
+        # self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, self.metrics_individuals, self.participants, False)
         plt.show()
 
     def build_metrics(self):
@@ -71,14 +72,20 @@ class Analysis():
         self.metrics["rms_rate_error"] = {}
         self.metrics["rms_human_torque"] = {}
         self.metrics["rms_robot_torque"] = {}
+        self.metrics["rms_human_power"] = {}
+        self.metrics["rms_robot_power"] = {}
         self.metrics["human_angle_cost"] = {}
         self.metrics["robot_angle_cost"] = {}
         self.metrics["human_angle_gain"] = {}
         self.metrics["robot_angle_gain"] = {}
+        self.metrics["system_angle_cost"] = {}
+        self.metrics["system_angle_gain"] = {}
         self.metrics["authority"] = {}
         self.metrics["condition"] = {}
+        self.metrics["condition_number"] = {}
         self.metrics["repetition"] = {}
         self.metrics["gain_variability"] = {}
+
 
         # RMS
         rms_angle_error = []
@@ -86,14 +93,24 @@ class Analysis():
         rms_estimated_human_torque = []
         rms_human_torque = []
         rms_robot_torque = []
+        rms_human_power = []
+        rms_robot_power = []
 
         # Costs
         human_angle_cost = []
         robot_angle_cost = []
+        system_angle_cost = []
 
         # Gains
         human_angle_gain = []
         robot_angle_gain = []
+        system_angle_gain = []
+
+        # Robot
+        robot_rms = []
+        robot_gains = []
+
+        # Co-adaptation
         authority = []
         gain_variability = []
 
@@ -102,57 +119,85 @@ class Analysis():
         # Info
         repetitions = []
         conditions = []
+        condition_numbers = []
         participant = []
         settings = []
 
+
         for i in range(self.participants):
             for j in range(self.trials):
-                rep = self.filtered_data[i, j]["repetition"]
+                rep = self.filtered_data[i][j]["repetition"]
                 repetition = rep[10]  # Not very nicely done this
 
                 # Omit the first trial per condition
-                cond = self.filtered_data[i, j]["condition"]
+                cond = self.filtered_data[i][j]["condition"]
                 condition = cond[10]  # Not very nicely done this
+                if condition == "Manual Control":
+                    condit_nr = 0
+                elif condition == "Positive Reinforcement":
+                    condit_nr = 1
+                elif condition == "Negative Reinforcement":
+                    condit_nr = 2
+                else:
+                    condit_nr = -1
+                    print("nope")
                 conditions.append(condition)
+                condition_numbers.append(condit_nr)
                 repetitions.append(repetition)
                 participant.append(i)
-                set = self.filtered_data[i, j]["setting"]
+                set = self.filtered_data[i][j]["setting"]
                 setting = set[10]  # Not very nicely done this
                 settings.append(setting)
 
                 # RMSE
-                angle_error = self.filtered_data[i, j]["angle_error"]
-                rate_error = self.filtered_data[i, j]["rate_error"]
+                angle_error = self.filtered_data[i][j]["angle_error"]
+                rate_error = self.filtered_data[i][j]["rate_error"]
                 rms_angle_error.append(np.sqrt(1 / (len(angle_error)) * np.inner(angle_error, angle_error)))
                 rms_rate_error.append(np.sqrt(1 / (len(rate_error)) * np.inner(rate_error, rate_error)))
 
                 # RMSU
-                estimated_human_torque = self.filtered_data[i, j]["estimated_human_input"]
-                estimation_error_human_torque = self.filtered_data[i, j]["input_estimation_error"]
+                estimated_human_torque = self.filtered_data[i][j]["estimated_human_input"]
+                estimation_error_human_torque = self.filtered_data[i][j]["input_estimation_error"]
                 real_human_torque = np.array(estimated_human_torque) - np.array(estimation_error_human_torque)
-                robot_torque = self.filtered_data[i, j]["torque"]
-                rms_estimated_human_torque.append(np.sqrt(1 / (len(rate_error)) * np.inner(estimated_human_torque, estimated_human_torque)))
+                robot_torque = self.filtered_data[i][j]["torque"]
+                steering_rate = self.filtered_data[i][j]["steering_rate"]
+
+                # Power
+                human_power = np.array(estimated_human_torque) * np.array(steering_rate)
+                robot_power = np.array(robot_torque) * np.array(steering_rate)
+
+                rms_estimated_human_torque.append(
+                    np.sqrt(1 / (len(rate_error)) * np.inner(estimated_human_torque, estimated_human_torque)))
                 rms_human_torque.append(np.sqrt(1 / (len(rate_error)) * np.inner(real_human_torque, real_human_torque)))
                 rms_robot_torque.append(np.sqrt(1 / (len(rate_error)) * np.inner(robot_torque, robot_torque)))
+                rms_human_power.append(np.sqrt(1 / (len(rate_error)) * np.inner(human_power, human_power)))
+                rms_robot_power.append(np.sqrt(1 / (len(rate_error)) * np.inner(robot_power, robot_power)))
 
                 # Force conflicts
                 conflict = self.compute_conflict(robot_torque, real_human_torque)
                 conflicts.append(conflict)
 
                 # Average cost functions
-                human_angle_cost.append(np.median(self.filtered_data[i, j]["estimated_human_cost_1"]))
-                robot_angle_cost.append(np.median(self.filtered_data[i, j]["robot_cost_pos"]))
+                human_cost = self.filtered_data[i][j]["estimated_human_cost_1"]
+                robot_cost = self.filtered_data[i][j]["robot_cost_pos"]
+                system_cost = np.array(human_cost) + np.array(robot_cost)
+                human_angle_cost.append(np.median(human_cost))
+                robot_angle_cost.append(np.median(robot_cost))
+                system_angle_cost.append(np.median(system_cost))
 
                 # Average gains
-                avg_human_gain = np.median(self.filtered_data[i, j]["estimated_human_gain_pos"])
-                avg_robot_gain = np.median(self.filtered_data[i, j]["robot_gain_pos"])
-                human_angle_gain.append(avg_human_gain)
-                robot_angle_gain.append(avg_robot_gain)
-                C = (avg_robot_gain - avg_human_gain) / (avg_robot_gain + avg_human_gain)
+                human_gain = self.filtered_data[i][j]["estimated_human_gain_pos"]
+                robot_gain = self.filtered_data[i][j]["robot_gain_pos"]
+                system_gain = np.array(human_gain) + np.array(robot_gain)
+                human_angle_gain.append(np.median(human_gain))
+                robot_angle_gain.append(np.median(robot_gain))
+                system_angle_gain.append(np.median(system_gain))
 
-                gain_var = np.var(self.filtered_data[i, j]["estimated_human_gain_pos"])
+                # C = (avg_robot_gain - avg_human_gain) / (avg_robot_gain + avg_human_gain)
+                C = 1
+
+                gain_var = np.var(human_gain)
                 gain_variability.append(gain_var)
-
                 authority.append(C)
 
         # Save to metrics dictionary
@@ -163,17 +208,20 @@ class Analysis():
         self.metrics["rms_robot_torque"] = rms_robot_torque
         self.metrics["human_angle_cost"] = human_angle_cost
         self.metrics["robot_angle_cost"] = robot_angle_cost
+        self.metrics["system_angle_cost"] = system_angle_cost
         self.metrics["human_angle_gain"] = human_angle_gain
         self.metrics["robot_angle_gain"] = robot_angle_gain
+        self.metrics["system_angle_gain"] = system_angle_gain
         self.metrics["authority"] = authority
         self.metrics["repetition"] = repetitions
         self.metrics["settings"] = settings
         self.metrics["condition"] = conditions
+        self.metrics["condition_number"] = condition_numbers
         self.metrics["participant"] = participant
         self.metrics["gain_variability"] = gain_variability
         self.metrics["conflict"] = conflicts
-        # print(self.metrics)
-
+        self.metrics["rms_human_power"] = rms_human_power
+        self.metrics["rms_robot_power"] = rms_robot_power
 
 
     def build_individual_metrics(self):
@@ -210,11 +258,13 @@ class Analysis():
     def cut_data(self, participant, trial):
         # Cut data
         filtered_data = {}
+        if trial == 0:
+            self.filtered_data[participant] = {}
         try:
-            for key in self.raw_data[participant, trial].keys():
-                data = self.raw_data[participant, trial][key]
-                time = np.array(self.raw_data[participant, trial]['time'])
-                start_time = 0.2 * time[-1]
+            for key in self.raw_data[participant][trial].keys():
+                data = self.raw_data[participant][trial][key]
+                time = np.array(self.raw_data[participant][trial]['time'])
+                start_time = 0.01 * time[-1]
                 end_time = 0.99 * time[-1]
                 # Find index where to cut the data
                 # print(start_time, end_time)
@@ -224,7 +274,7 @@ class Analysis():
         except:
             print("no data found")
 
-        self.filtered_data[participant, trial] = filtered_data
+        self.filtered_data[participant][trial] = filtered_data
 
     def compute_conflict(self, ur, uh):
         conflicts = 0

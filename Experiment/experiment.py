@@ -23,7 +23,8 @@ class Experiment:
         self.senso_process = input["senso_drive"]
         self.t_warmup = input["warm_up_time"]
         self.t_cooldown = input["cooldown_time"]
-        self.t_exp = input["experiment_time"]
+        self.experiment_time = input["experiment_time"]
+        self.t_exp = self.experiment_time
         self.virtual_human_cost = input["virtual_human_cost"]
         self.sharing_rule = input["sharing_rule"]
         self.preview_time = input["preview_time"]
@@ -150,16 +151,19 @@ class Experiment:
         self.factor = 0.25
         top_text = ""
 
+        if condition == "Practice":
+            self.t_exp = 0.5 * self.experiment_time
+        else:
+            self.t_exp = self.experiment_time
+
+        self.duration = self.t_warmup + self.t_exp + self.t_cooldown
+
         # Loop over 1 trial
         while self.time < self.duration:
             # Check whether the process has not been quited
             self.quit = self.visualize.check_quit()
             if self.quit:
                 self.send_dict["exit"] = True
-
-            if condition == "Practice":
-                if self.time > 0.5 * self.duration:
-                    break
 
             # Calculate timings
             self.t_now = time.perf_counter_ns()
@@ -169,7 +173,8 @@ class Experiment:
             self.time_exp = self.time - self.t_warmup
 
             # Compute reference
-            ref = self.reference.generate_reference(self.time, sigma=0, player="robot", ref_sign=self.repetition)
+            delay = 0.180
+            ref = self.reference.generate_reference(self.time - delay, sigma=0, player="robot", ref_sign=self.repetition)
             self.reference_preview(self.time, h, sigma_h=sigma_h)
 
             # WARM_UP
@@ -321,6 +326,8 @@ class Experiment:
 
         ready = False
 
+        print(round(self.RMSE, 4))
+
         if condition == "Practice":
             # Press spacebar to start trial
             while not ready:
@@ -357,6 +364,33 @@ class Experiment:
         # self.parent_conn.send(self.send_dict)
 
         return ready_for_experiment, self.variables
+
+    def ask_agency(self):
+        while True:
+            if self.senso_process.is_alive():
+                self.quit = self.visualize.check_quit()
+                if self.quit:
+                    self.send_dict["exit"] = True
+                self.factor = 0
+                self.send_dict["reset"] = True
+                self.send_dict["experiment"] = False
+                self.send_dict["ref"] = np.array([0.0, 0.0])
+                self.parent_conn.send(self.send_dict)  # Child is for sending
+                new_states = self.parent_conn.recv()  # Receive from child
+                self.computed = False
+            else:
+                print("sensodrive process was killed")
+                return -1
+            time.sleep(0.005)
+            text = "Please fill in the questionnaire"
+
+            if keyboard.is_pressed('enter'):
+                break
+
+            self.visualize.visualize_experiment(0, [], new_states["steering_angle"],
+                                                text=text, top_text="",
+                                                bottom_text="", sigma=0, )
+
 
     def store_variables(self, output):
         for key in output.keys():

@@ -7,3 +7,4 @@ from Experiment.analysis import Analysis
 analysis = Analysis()
 analysis.initialize()
 analysis.analyse()
+print("Finished!")

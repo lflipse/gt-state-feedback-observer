@@ -34,7 +34,7 @@ def load_data_set(file):
 
 def choose_condition():
     print("Choose an experimental condition")
-    condition = int(input("-1: Full experiment, 0: Manual, 1: Positive reinforcement, 2: Negative reinforcement, 3: Mixed reinforcement.  Your answer = "))
+    condition = int(input("-1: Full experiment, 0: Manual, 1: Positive reinforcement, 2: Negative reinforcement  Your answer = "))
     return condition
 
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     alpha = 2.5
     K = alpha * np.array([[10.0, 0], [0, 0.0]])
     kappa = 1
-    C = np.array([[20.0, 0.0], [0.0, 0.1]])
+    C = np.array([[10.0, 0.0], [0.0, 0.1]])
 
     # Experiment data
     t_warmup = 5
@@ -70,10 +70,10 @@ if __name__ == "__main__":
     t_prev = 0.1
     repetitions = 1
     visual_conditions = 1
-    haptic_conditions = 4
+    haptic_conditions = 3
     robot_conditions = 1
     conditions = repetitions * visual_conditions * haptic_conditions + robot_conditions
-    conditions = 4
+    conditions = 3
     duration = t_warmup + t_cooldown + t_exp
 
     # Choose a condition

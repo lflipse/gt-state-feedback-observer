@@ -18,6 +18,7 @@ class PlotStuff:
         self.tud_black = "#000000"
         self.tud_red = "#c3312f"
         self.tud_green = "#00A390"
+        self.tud_orange = "#EB7245"
         self.tud_yellow = "#F1BE3E"
 
         print("Plotting stuff")
@@ -129,16 +130,18 @@ class PlotStuff:
 
         # Steering torques
         plt.figure()
-        plt.title("Measured and estimated steering torque", **self.csfont)
-        plt.plot(t_vir, uh_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Actual Torque")
-        plt.stackplot(t_vir, uhhat_vir, -uhtilde_vir)
+        plt.title("Steering torque estimation", **self.csfont)
+        plt.stackplot(t_vir, uhhat_vir, ur_vir, -np.array(uhtilde_vir), colors=[self.tud_red, self.tud_blue, self.tud_orange],
+                            labels=['Estimated human', 'Robot', 'Estimation error'], edgecolor='black', linewidth=0.1)
+        plt.plot(t_vir, uh_vir, self.tud_black, linewidth=2, linestyle="-", alpha=1,
+                 label="Virtual human")
         plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Human Steering Torque ($Nm$)', **self.hfont)
+        plt.ylabel('Steering Torque ($Nm$)', **self.hfont)
         plt.legend(prop={"size": self.legend_size}, loc='upper right')
-        plt.xlim(0, 30)
-        plt.ylim(-0.5, 0.5)
+        plt.xlim(65, 105)
+        plt.ylim(-1.5, 1.5)
         plt.tight_layout(pad=1)
+
 
         # Steering angle
         plt.figure()

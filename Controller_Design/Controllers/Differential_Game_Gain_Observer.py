@@ -29,15 +29,17 @@ class ControllerDGObs:
             ur = np.array([[0.0]])
             beta = 0
         else:
-            alpha = np.array([[0.1, 0], [0, 1.0]])
-            gamma = np.array([[1.0, 0], [0, -1.0]])
-            zeta = np.array([[1.0, 0], [0, 1.0]])
+            alpha = np.array([[0.02, 0], [0, 1.0]])
+            gamma = np.array([[1.0, 0], [0, 0.0]])
+            zeta = np.array([[1.0, 0], [0, 0.0]])
             Qr1 = np.matmul(alpha, C) + np.matmul(gamma, Qh)
             Qr2 = C - np.matmul(zeta, Qh)
             if condition == "Positive Reinforcement":
                 Qr = Qr1
+                Qr[0, 0] = max(Qr[0, 0], 0)
             elif condition == "Negative Reinforcement":
                 Qr = Qr2
+                Qr[0, 0] = min(max(Qr[0, 0], 0), C[0, 0])
             else:
                 Qr = C
 
@@ -45,6 +47,7 @@ class ControllerDGObs:
             Acl = self.A - self.B * Lh_hat
 
             try:
+                Qr[0, 0] = max(Qr[0, 0], 0)
                 Pr = cp.solve_continuous_are(Acl, self.B, Qr, 1)
                 Lr = np.matmul(self.B.transpose(), Pr)
             except:
@@ -64,7 +67,7 @@ class ControllerDGObs:
             Lh_pos = Lh_hat[0]
         if Lh_pos < 0:
             # beta = 0.0
-            beta = 0.05
+            beta = 0.2
         else:
             beta = 0.00
         forget_factor = beta * np.array([[1, 1]])
@@ -72,7 +75,6 @@ class ControllerDGObs:
         # Observer equations
         xi_hat_dot = np.matmul(self.A, xi_hat) + self.B * (ur + uhhat) - np.matmul(self.Gamma, xi_tilde)
         x_hat_dot = np.matmul(self.A, x_hat) + self.B * (ur + uhhat) - np.matmul(self.Gamma, xi_tilde)
-        # xi_tilde_dot = xi_hat_dot - xi_dot
         xi_tilde_dot = x_hat_dot - x_dot
 
         # Update law for human gain

@@ -88,6 +88,7 @@ if __name__ == "__main__":
     t_warmup = 5
     t_cooldown = 5
     t_period = 77.5
+    # t_period = 5
     sigma = [0.005, 0.065]
     periods = 1
     t_exp = periods * t_period
@@ -195,6 +196,8 @@ if __name__ == "__main__":
             condition = order[condition_number]
         print("Trial: ", i, " Repetition: ", repetition, " Condition nr.: ", condition_number)
 
+
+
         if platform.system() == 'Windows':
             with wres.set_resolution(10000):
                 # Do trial (trial -1 is the robot only run)
@@ -209,6 +212,11 @@ if __name__ == "__main__":
                     # Save data
                     string = "data\\" + str(participant) + "\\trial_" + str(i) + ".csv"
                     to_csv(experiment_data, string)
+
+            if repetition == 3 and i != -1:
+                print("what happens here?")
+                experiment_handler.ask_agency()
+
 
     visualize.quit()
     senso_drive_process.join(timeout=0)
