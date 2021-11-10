@@ -35,6 +35,8 @@ class PlotStuff:
         self.colors = {"Manual Control": self.tud_orange, "Positive Reinforcement": self.tud_green,
                        "Negative Reinforcement": self.tud_otherblue}
 
+        self.order = ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"]
+
         self.colormap = [self.tud_orange, self.tud_green, self.tud_otherblue]
 
         sns.set_palette(sns.color_palette(self.colormap))
@@ -72,10 +74,10 @@ class PlotStuff:
         # Control authority
         figa, axa = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
         figa.suptitle("Control Authority", **self.csfont)
-        sns.boxplot(data=metrics_pd_no_manual, x="condition", y="authority", palette=self.colors, ax=axa[0])
-        sns.swarmplot(data=metrics_pd_no_manual, x="condition", y="authority", palette=self.colors, ax=axa[0],
+        sns.boxplot(data=metrics_pd, x="condition", y="authority", palette=self.colors, ax=axa[0], order=self.order)
+        sns.swarmplot(data=metrics_pd, x="condition", y="authority", palette=self.colors, ax=axa[0], order=self.order,
                       alpha=0.6, size=6, linewidth=1)
-        axa[0].set_xticklabels(labels[1:3])
+        axa[0].set_xticklabels(labels)
         axa[0].set_xlabel("")
         # self.annotate_significance(2, axa[0], ["***"])
         ylims = axa[0].get_ylim()
@@ -91,8 +93,8 @@ class PlotStuff:
         # Performance
         figb, axb = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
         figb.suptitle("Steering Angle Error", **self.csfont)
-        sns.boxplot(data=metrics_pd, x="condition", y="rms_angle_error", palette=self.colors, ax=axb[0])
-        sns.swarmplot(data=metrics_pd, x="condition", y="rms_angle_error", palette=self.colors, ax=axb[0],
+        sns.boxplot(data=metrics_pd, x="condition", y="rms_angle_error", palette=self.colors, ax=axb[0], order=self.order,)
+        sns.swarmplot(data=metrics_pd, x="condition", y="rms_angle_error", palette=self.colors, ax=axb[0], order=self.order,
                       alpha=0.6, size=6, linewidth=1)
         axb[0].set_xticklabels(labels)
         axb[0].set_xlabel("")
@@ -112,8 +114,8 @@ class PlotStuff:
         # Work
         figc, axc = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
         figc.suptitle("Human Input Power", **self.csfont)
-        sns.boxplot(data=metrics_pd, x="condition", y="rms_human_power", palette=self.colors, ax=axc[0])
-        sns.swarmplot(data=metrics_pd, x="condition", y="rms_human_power", palette=self.colors, ax=axc[0],
+        sns.boxplot(data=metrics_pd, x="condition", y="rms_human_power", palette=self.colors, ax=axc[0], order=self.order,)
+        sns.swarmplot(data=metrics_pd, x="condition", y="rms_human_power", palette=self.colors, ax=axc[0], order=self.order,
                       alpha=0.6, size=6, linewidth=1)
         axc[0].set_xticklabels(labels)
         axc[0].set_xlabel("")
@@ -152,7 +154,7 @@ class PlotStuff:
 
         # Differences in control strategy
         plt.figure()
-        sns.boxplot(data=metrics_pd, x="participant", y="human_angle_cost", hue="condition", palette=self.colors)
+        sns.boxplot(data=metrics_pd, x="participant", y="human_angle_cost", hue="condition", palette=self.colors, hue_order=self.order,)
         plt.title("Human control strategy", **self.csfont)
         plt.tight_layout(pad=1)
 
@@ -183,32 +185,37 @@ class PlotStuff:
         fig1 = plt.figure()
         fig2 = plt.figure()
         fig3 = plt.figure()
-        axs1 = [fig1.gca(), fig2.gca(), fig3.gca()]
+        figa = plt.figure()
+        axs1 = [fig1.gca(), fig2.gca(), fig3.gca(), figa.gca()]
         # f1, axs1 = plt.subplots(1, 3)
 
         # 1b. System cost vs Performance
         fig4 = plt.figure()
         fig5 = plt.figure()
         fig6 = plt.figure()
-        axs2 = [fig4.gca(), fig5.gca(), fig6.gca()]
+        figb = plt.figure()
+        axs2 = [fig4.gca(), fig5.gca(), fig6.gca(), figb.gca()]
 
         # 2a. Human gains vs robot gains
         fig7 = plt.figure()
         fig8 = plt.figure()
         fig9 = plt.figure()
-        axs3 = [fig7.gca(), fig8.gca(), fig9.gca()]
+        figc = plt.figure()
+        axs3 = [fig7.gca(), fig8.gca(), fig9.gca(), figc.gca()]
 
         # 2b. System gain vs performance
         fig10 = plt.figure()
         fig11 = plt.figure()
         fig12 = plt.figure()
-        axs4 = [fig10.gca(), fig11.gca(), fig12.gca()]
+        figd = plt.figure()
+        axs4 = [fig10.gca(), fig11.gca(), fig12.gca(), figd.gca()]
 
         # 3a. System gain vs performance
         fig13 = plt.figure()
         fig14 = plt.figure()
         fig15 = plt.figure()
-        axs5 = [fig13.gca(), fig14.gca(), fig15.gca()]
+        fige = plt.figure()
+        axs5 = [fig13.gca(), fig14.gca(), fig15.gca(), fige.gca()]
 
         for i in range(participants):
             participant_data = mean_metrics_pd.loc[mean_metrics_pd["participant"] == i]
@@ -219,85 +226,147 @@ class PlotStuff:
             key = list(performance_dict_manual.keys())[0]
             performance_manual = performance_dict_manual[key]
             color = self.tud_blue
+            condition = ""
 
             for j in range(conditions):
                 if j == 0:
                     data_now = data_manual.to_dict()
+                    if i % 4 == 0:
+                        condition = "Manual Control"
                 elif j == 1:
                     data_now = data_negative.to_dict()
+                    if i % 4 == 0:
+                        condition = "Negative Reinforcement"
                     if i == 0:
                         axs1[j].plot(Qh1[:, 0, 0], Qr1[:, 0, 0], color, label="Design", linewidth=self.linewidth, alpha=0.5)
                         axs3[j].plot(Lh[:, 0], Lr1[:, 0], color, label="Design", linewidth=self.linewidth, alpha=0.5)
                 else:
                     data_now = data_positive.to_dict()
+                    if i % 4 == 0:
+                        condition = "Positive Reinforcement"
                     if i == 0:
                         axs1[j].plot(Qh2[:, 0, 0], Qr2[:, 0, 0], color, label="Design", linewidth=self.linewidth, alpha=0.5)
                         axs3[j].plot(Lh[:, 0], Lr2[:, 0], color, label="Design", linewidth=self.linewidth, alpha=0.5)
 
                 performance_dict = data_now["performance"]
                 key = list(performance_dict.keys())[0]
+                # print(key)
                 performance = performance_dict[key]
                 standard = 100
-                size = int(round(standard + 10/performance, 1))
+                size = int(round(standard + 1000/performance, 1))
                 print("size = ", size)
                 label = "Participant " + str(i)
 
                 # Figure 1a.
                 axs1[j].scatter(data_now["cost_human"][key], data_now["cost_robot"][key], s=size, label=label)
-                # axs1[j].set_xlim(-150, 50)
-                # axs1[j].set_ylim(0, 200)
+                axs1[j].set_xlim(0, 20)
+                axs1[j].set_ylim(0, 20)
                 axs1[j].legend()
-                axs1[j].axis('equal')
+                # axs1[j].axis('equal')
                 axs1[j].set_xlabel("Averaged Estimated Human Cost Weight (Nm/rad)", **self.hfont)
                 axs1[j].set_ylabel("Averaged Robot Cost Weight (-)", **self.hfont)
                 axs1[j].set_title(data_now['condition'][key], **self.csfont)
 
+                # print(self.colormap[j], axs1)
+
+                axs1[3].scatter(data_now["cost_human"][key], data_now["cost_robot"][key], color=self.colormap[j], s=size, label=condition)
+                axs1[3].set_xlim(0, 20)
+                axs1[3].set_ylim(0, 20)
+                if j == 0:
+                    axs1[3].legend()
+                # axs1[j].axis('equal')
+                axs1[3].set_xlabel("Averaged Estimated Human Cost Weight (Nm/rad)", **self.hfont)
+                axs1[3].set_ylabel("Averaged Robot Cost Weight (-)", **self.hfont)
+                axs1[3].set_title("Comparison", **self.csfont)
+
                 # Figure 1b.
                 axs2[j].scatter(data_now["cost_system"][key], data_now["performance"][key], s=size, label=label)
-                # axs2[j].set_xlim(-10, 50)
-                # axs2[j].set_ylim(0, 0.15)
+                axs2[j].set_xlim(0, 30)
+                axs2[j].set_ylim(0, 10)
                 axs2[j].legend()
-                axs2[j].axis('equal')
+                # axs2[j].axis('equal')
                 axs2[j].set_xlabel("Total Estimated System Cost Weight (-)", **self.hfont)
                 axs2[j].set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
                 axs2[j].set_title(data_now['condition'][key], **self.csfont)
 
+                axs2[3].scatter(data_now["cost_system"][key], data_now["performance"][key], color=self.colormap[j], s=size, label=condition)
+                axs2[3].set_xlim(0, 30)
+                axs2[3].set_ylim(0, 10)
+                if j == 0:
+                    axs2[3].legend()
+                # axs2[j].axis('equal')
+                axs2[3].set_xlabel("Total Estimated System Cost Weight (-)", **self.hfont)
+                axs2[3].set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
+                axs2[3].set_title("Comparison", **self.csfont)
+
                 # Figure 2a.
                 axs3[j].scatter(data_now["gain_human"][key], data_now["gain_robot"][key], s=size, label=label)
-                # axs3[j].set_xlim(0, 17.5)
-                # axs3[j].set_ylim(-7.5, 10)
+                axs3[j].set_ylim(0, 6)
+                axs3[j].set_xlim(-2, 4)
                 axs3[j].legend()
-                axs3[j].axis('equal')
                 axs3[j].set_xlabel("Averaged Estimated Human Gain (Nm/rad)", **self.hfont)
                 axs3[j].set_ylabel("Averaged Robot Gain (Nm/rad)", **self.hfont)
                 axs3[j].set_title(data_now['condition'][key], **self.csfont)
 
+                axs3[3].scatter(data_now["gain_human"][key], data_now["gain_robot"][key], color=self.colormap[j], s=size, label=condition)
+                axs3[3].set_ylim(0, 6)
+                axs3[3].set_xlim(-2, 4)
+                if j == 0:
+                    axs3[3].legend()
+                axs3[3].set_xlabel("Averaged Estimated Human Gain (Nm/rad)", **self.hfont)
+                axs3[3].set_ylabel("Averaged Robot Gain (Nm/rad)", **self.hfont)
+                axs3[3].set_title("Comparison", **self.csfont)
+
                 # Figure 2b.
-                axs4[j].scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, label=label)
+                axs4[j].scatter(data_now["gain_system"][key], data_now["performance"][key], marker="o", s=size, label=label)
+                robot_label = ""
+                human_label = ""
                 if i == 0:
+                    robot_label = "Robot gain"
+                    human_label = "Human gain"
                     axs4[j].plot(data_robot["robot_angle_gain"], data_robot["rms_angle_error"], self.tud_blue,
                                  linewidth=self.linewidth, alpha=0.5, label="Optimal Control")
-                # axs4[j].set_xlim(0, 18)
-                # axs4[j].set_ylim(0, 0.15)
+                axs4[j].set_xlim(0, 10)
+                axs4[j].set_ylim(0, 10)
                 axs4[j].legend()
-                axs4[j].axis('equal')
                 axs4[j].set_xlabel("Total Estimated System Gain (Nm/rad)", **self.hfont)
                 axs4[j].set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
                 axs4[j].set_title(data_now['condition'][key], **self.csfont)
 
+                axs4[3].scatter(data_now["gain_system"][key], data_now["performance"][key], marker="o", color=self.colormap[j], s=size, label=condition)
+                axs4[3].scatter(data_now["gain_human"][key], data_now["performance"][key], marker="p", color=self.colormap[j], edgecolor='black', s=size,
+                                label=human_label)
+                axs4[3].scatter(data_now["gain_robot"][key], data_now["performance"][key], marker="v",
+                                color=self.colormap[j], edgecolor='black', s=size,
+                                label=robot_label)
+                if j == 0 and i == 0:
+                    axs4[3].plot(data_robot["robot_angle_gain"], data_robot["rms_angle_error"], self.tud_blue,
+                                 linewidth=self.linewidth, alpha=0.5, label="Optimal Control")
+                axs4[3].set_xlim(0, 10)
+                axs4[3].set_ylim(0, 10)
+                if j == 0:
+                    axs4[3].legend()
+                axs4[3].set_xlabel("Total Estimated System Gain (Nm/rad)", **self.hfont)
+                axs4[3].set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
+                axs4[3].set_title("Comparison", **self.csfont)
+
                 # Figure 3a.
                 axs5[j].scatter(data_now["human_power"][key], data_now["robot_power"][key], s=size, label=label)
-                # axs5[j].set_xlim(0, 1)
-                # axs5[j].set_ylim(0, 1)
-                axs5[j].axis('equal')
+                axs5[j].set_xlim(0, 0.7)
+                axs5[j].set_ylim(0, 0.7)
                 axs5[j].legend()
                 axs5[j].set_xlabel("RMS Estimated Human Power (W)", **self.hfont)
                 axs5[j].set_ylabel("RMS Robot Power (W)", **self.hfont)
                 axs5[j].set_title(data_now['condition'][key], **self.csfont)
 
-
-
-
+                axs5[3].scatter(data_now["human_power"][key], data_now["robot_power"][key], color=self.colormap[j], s=size, label=condition)
+                axs5[3].set_xlim(0, 0.7)
+                axs5[3].set_ylim(0,0.7)
+                if j == 0:
+                    axs5[3].legend()
+                axs5[3].set_xlabel("RMS Estimated Human Power (W)", **self.hfont)
+                axs5[3].set_ylabel("RMS Robot Power (W)", **self.hfont)
+                axs5[3].set_title("Comparison", **self.csfont)
 
     def plot_participant(self, raw_data, trials, participant):
         figb, axs = plt.subplots(4, 2)

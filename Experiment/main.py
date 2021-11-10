@@ -82,7 +82,7 @@ if __name__ == "__main__":
     alpha = 2.5
     K = alpha * np.array([[10.0, 0], [0, 0.0]])
     kappa = 1
-    C = np.array([[25.0, 0.0], [0.0, 0.1]])
+    C = np.array([[12.0, 0.0], [0.0, 0.1]])
 
     # Experiment data
     t_warmup = 5
@@ -97,8 +97,12 @@ if __name__ == "__main__":
     haptic_conditions = 3
     trials = repetitions * haptic_conditions
     duration = t_warmup + t_cooldown + t_exp
-    latin_square = [["Manual Control", "Positive Reinforcement", "Negative Reinforcement"],
-                    ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"]]
+    latin_square = [["Positive Reinforcement", "Negative Reinforcement", "Manual Control"],
+                    ["Manual Control", "Positive Reinforcement", "Negative Reinforcement"],
+                    ["Negative Reinforcement", "Manual Control", "Positive Reinforcement"],
+                    ["Positive Reinforcement", "Manual Control", "Negative Reinforcement"],
+                    ["Manual Control", "Positive Reinforcement", "Negative Reinforcement"],
+                    ["Negative Reinforcement", "Positive Reinforcement", "Manual Control"]]
 
     # Choose a condition
     participant, trial_number = init_experiment()

@@ -53,12 +53,12 @@ if __name__ == "__main__":
     A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
     B = np.array([[0], [1 / Jw]])
 
-    # TODO: verify values
+    # Controller settings
     Gamma = 4 * np.array([[2, 0], [0, 2]])
     alpha = 2.5
     K = alpha * np.array([[10.0, 0], [0, 0.0]])
     kappa = 1
-    C = np.array([[10.0, 0.0], [0.0, 0.1]])
+    C = np.array([[12, 0.0], [0.0, 0.1]])
 
     # Experiment data
     t_warmup = 5

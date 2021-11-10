@@ -39,7 +39,7 @@ class Analysis():
     def unpack_data(self):
         # path = "..\\Experiment\\data"
         path_robot = "..\\Controller_Design\\data_robot"
-        path = "..\\Experiment\\pilot_3"
+        path = "..\\Experiment\\data"
         # path = "first_trial"
         list_dir_robot = os.listdir(path_robot)
         self.robot_trials = len(list_dir_robot)

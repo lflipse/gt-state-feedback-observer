@@ -43,7 +43,10 @@ class Strategy():
         C2 = np.zeros(n)
         Lh[:, 0] = L1h
 
-        C = np.array([[12.5, 0], [0, 0.1]])
+        C = np.array([[10.0, 0], [0, 0.1]])
+
+        # old
+        # C = np.array([[12.5, 0], [0, 0.1]])
 
         # Dynamics
         Jw = 0.04914830792783059
@@ -56,7 +59,11 @@ class Strategy():
         alpha_2 = A[1, 1]
 
         for i in range(n):
-            # New laws
+            # Old
+            # alpha = np.array([[0.1, 0], [0, 1.0]])
+            # gamma = np.array([[1.0, 0], [0, -1.0]])
+            # zeta = np.array([[1.0, 0], [0, 1.0]])
+
             alpha = np.array([[0.02, 0], [0, 1.0]])
             gamma = np.array([[1.0, 0], [0, 0.0]])
             zeta = np.array([[1.0, 0], [0, 0.0]])
@@ -64,6 +71,7 @@ class Strategy():
             for j in range(20):
                 Qr1[i, :, :] = C - np.matmul(zeta, Qh1[i, :, :])
                 Qr1[i, 0, 0] = min(max(Qr1[i, 0, 0], 0), C[0, 0])
+                Qr1[i, 0, 0] = max(Qr1[i, 0, 0], 0)
                 Qr2[i, :, :] = np.matmul(alpha, C) + np.matmul(gamma, Qh2[i, :, :])
                 Qr2[i, 0, 0] = max(Qr2[i, 0, 0], 0)
                 Lr1[i, :] = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh[i, :], B, Qr1[i, :, :], 1))
@@ -71,7 +79,7 @@ class Strategy():
                     Lr2[i, :] = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh[i, :], B, Qr2[i, :, :], 1))
                 except:
                     Lr2[i, :] = np.array([0, 0])
-                    # print(Lh[i, :], A - B * Lh[i, :], Qr2[i, :, :])
+
                 Qh1[i, :, :] = self.compute_cost(Lr1[i, :], Lh[i, :], beta, alpha_1, alpha_2)
                 Qh2[i, :, :] = self.compute_cost(Lr2[i, :], Lh[i, :], beta, alpha_1, alpha_2)
 
@@ -230,6 +238,3 @@ class Strategy():
             Lr = np.matmul(B.transpose(), cp.solve_continuous_are(A - B * Lh, B, Qr, 1))
         C = (Lr[0, 0] - Lh[0, 0]) / (Lr[0, 0] + Lh[0, 0])
         return C, Lr, Lh
-
-# strategy = Strategy()
-# strategy.do()
