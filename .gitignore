@@ -2,3 +2,4 @@ venv
 Archive/JOAN
 Controller_Design/fig_dump
 *.mp3
+/Experiment/data/

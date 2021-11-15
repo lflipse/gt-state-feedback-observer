@@ -99,10 +99,44 @@ if __name__ == "__main__":
     duration = t_warmup + t_cooldown + t_exp
     latin_square = [["Positive Reinforcement", "Negative Reinforcement", "Manual Control"],
                     ["Manual Control", "Positive Reinforcement", "Negative Reinforcement"],
-                    ["Negative Reinforcement", "Manual Control", "Positive Reinforcement"],
-                    ["Positive Reinforcement", "Manual Control", "Negative Reinforcement"],
+                    ["Positive Reinforcement", "Negative Reinforcement", "Manual Control"],
                     ["Manual Control", "Positive Reinforcement", "Negative Reinforcement"],
-                    ["Negative Reinforcement", "Positive Reinforcement", "Manual Control"]]
+                    ["Positive Reinforcement", "Negative Reinforcement", "Manual Control"],
+                    ["Manual Control", "Positive Reinforcement", "Negative Reinforcement"],
+                    ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"],
+                    ["Negative Reinforcement", "Manual Control", "Positive Reinforcement"],
+                    ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"],
+                    ["Negative Reinforcement", "Manual Control", "Positive Reinforcement"],
+                    ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"],
+                    ["Negative Reinforcement", "Manual Control", "Positive Reinforcement"],
+                    ["Negative Reinforcement", "Positive Reinforcement", "Manual Control"],
+                    ["Positive Reinforcement", "Manual Control", "Negative Reinforcement"],
+                    ["Negative Reinforcement", "Positive Reinforcement", "Manual Control"],
+                    ["Positive Reinforcement", "Manual Control", "Negative Reinforcement"],
+                    ["Negative Reinforcement", "Positive Reinforcement", "Manual Control"],
+                    ["Positive Reinforcement", "Manual Control", "Negative Reinforcement"],
+                    ]
+
+    # latin_square = [["Positive Reinforcement", "Negative Reinforcement", "Manual Control"],
+    #                 ["Manual Control", "Positive Reinforcement", "Negative Reinforcement"],
+    #                 ["Negative Reinforcement", "Manual Control", "Positive Reinforcement"],
+    #                 ["Positive Reinforcement", "Manual Control", "Negative Reinforcement"],
+    #                 ["Manual Control", "Positive Reinforcement", "Negative Reinforcement"],
+    #                 ["Negative Reinforcement", "Positive Reinforcement", "Manual Control"]]
+
+    # latin_square = [["Positive Reinforcement", "Negative Reinforcement", "Manual Control"],
+    #                 ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"],
+    #                 ["Negative Reinforcement", "Manual Control", "Positive Reinforcement"],
+    #                 ["Positive Reinforcement", "Manual Control", "Negative Reinforcement"],
+    #                 ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"],
+    #                 ["Negative Reinforcement", "Positive Reinforcement", "Manual Control"]]
+
+    # latin_square = [["Positive Reinforcement", "Negative Reinforcement", "Manual Control"],
+    #                 ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"],
+    #                 ["Negative Reinforcement", "Manual Control", "Positive Reinforcement"],
+    #                 ["Positive Reinforcement", "Manual Control", "Negative Reinforcement"],
+    #                 ["Manual Control", "Positive Reinforcement", "Negative Reinforcement"],
+    #                 ["Negative Reinforcement", "Positive Reinforcement", "Manual Control"]]
 
     # Choose a condition
     participant, trial_number = init_experiment()
@@ -137,12 +171,14 @@ if __name__ == "__main__":
     preview = True
     do_exp = True
 
-    order_nr = participant % 2
+    order_nr = participant
     order = latin_square[order_nr]
     print(participant, order_nr, order)
 
     print("now making folder for participant: ", participant)
     folder_name = "data\\" + str(participant)
+
+    axef = input("continue?")
 
     # Check if folder already exists
     if not os.path.isdir(folder_name):
