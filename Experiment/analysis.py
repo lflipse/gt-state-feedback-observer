@@ -87,9 +87,9 @@ class Analysis():
         # Plot metrics
         self.plot_stuff.plot_experiment(self.metrics_averaged, self.metrics_robot, self.participants, self.conditions)
 
-        # plt.show()
+        plt.show()
         self.save_all_figures()
-        # plt.close()
+        plt.close()
 
     def save_all_figures(self):
         pp = PdfPages('..\\Experiment\\figures\\pilot.pdf')
@@ -369,6 +369,9 @@ class Analysis():
         human_power = []
         robot_power = []
 
+        # authority
+        auth = []
+
         metrics = pd.DataFrame.from_dict(self.metrics)
         for i in range(self.participants):
             participant = metrics.loc[metrics['participant'] == i]
@@ -415,6 +418,11 @@ class Analysis():
             robot_power.append([manual_control["rms_robot_power"].mean(), negative_control["rms_robot_power"].mean(),
                                  positive_control["rms_robot_power"].mean()])
 
+            # auth
+            auth.append([manual_control["authority"].mean(),
+                                 negative_control["authority"].mean(),
+                                 positive_control["authority"].mean()])
+
         self.metrics_averaged["participant"] = [item for sublist in participants for item in sublist]
         self.metrics_averaged["condition"] = [item for sublist in conditions for item in sublist]
         self.metrics_averaged["increase"] = [item for sublist in increase for item in sublist]
@@ -429,6 +437,7 @@ class Analysis():
         self.metrics_averaged["inputs_robot"] = [item for sublist in inputs_robot for item in sublist]
         self.metrics_averaged["human_power"] = [item for sublist in human_power for item in sublist]
         self.metrics_averaged["robot_power"] = [item for sublist in robot_power for item in sublist]
+        self.metrics_averaged["authority"] = [item for sublist in auth for item in sublist]
 
     def cut_data(self, participant, trial):
         # Cut data

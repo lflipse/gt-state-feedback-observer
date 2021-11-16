@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.markers import MarkerStyle
 import os
 from datetime import datetime
 import numpy as np
@@ -180,42 +181,42 @@ class PlotStuff:
 
 
         # Let's go chronologically
-        # 1. Costs
-        # 1a. Human cost vs robot cost
-        fig1 = plt.figure()
-        fig2 = plt.figure()
-        fig3 = plt.figure()
-        figa = plt.figure()
-        axs1 = [fig1.gca(), fig2.gca(), fig3.gca(), figa.gca()]
-        # f1, axs1 = plt.subplots(1, 3)
-
-        # 1b. System cost vs Performance
-        fig4 = plt.figure()
-        fig5 = plt.figure()
-        fig6 = plt.figure()
-        figb = plt.figure()
-        axs2 = [fig4.gca(), fig5.gca(), fig6.gca(), figb.gca()]
-
-        # 2a. Human gains vs robot gains
-        fig7 = plt.figure()
-        fig8 = plt.figure()
-        fig9 = plt.figure()
-        figc = plt.figure()
-        axs3 = [fig7.gca(), fig8.gca(), fig9.gca(), figc.gca()]
+        # # 1. Costs
+        # # 1a. Human cost vs robot cost
+        # fig1 = plt.figure()
+        # fig2 = plt.figure()
+        # fig3 = plt.figure()
+        # figa = plt.figure()
+        # axs1 = [fig1.gca(), fig2.gca(), fig3.gca(), figa.gca()]
+        # # f1, axs1 = plt.subplots(1, 3)
+        #
+        # # 1b. System cost vs Performance
+        # fig4 = plt.figure()
+        # fig5 = plt.figure()
+        # fig6 = plt.figure()
+        # figb = plt.figure()
+        # axs2 = [fig4.gca(), fig5.gca(), fig6.gca(), figb.gca()]
+        #
+        # # 2a. Human gains vs robot gains
+        # fig7 = plt.figure()
+        # fig8 = plt.figure()
+        # fig9 = plt.figure()
+        # figc = plt.figure()
+        # axs3 = [fig7.gca(), fig8.gca(), fig9.gca(), figc.gca()]
 
         # 2b. System gain vs performance
-        fig10 = plt.figure()
-        fig11 = plt.figure()
-        fig12 = plt.figure()
-        figd = plt.figure()
-        axs4 = [fig10.gca(), fig11.gca(), fig12.gca(), figd.gca()]
+        # fig10 = plt.figure()
+        # fig11 = plt.figure()
+        # fig12 = plt.figure()
+        figd = plt.figure().gca()
+        # axs4 = [fig10.gca(), fig11.gca(), fig12.gca(), figd.gca()]
 
         # 3a. System gain vs performance
-        fig13 = plt.figure()
-        fig14 = plt.figure()
-        fig15 = plt.figure()
-        fige = plt.figure()
-        axs5 = [fig13.gca(), fig14.gca(), fig15.gca(), fige.gca()]
+        # fig13 = plt.figure()
+        # fig14 = plt.figure()
+        # fig15 = plt.figure()
+        fige = plt.figure().gca()
+        # axs5 = [fig13.gca(), fig14.gca(), fig15.gca(), fige.gca()]
 
         for i in range(participants):
             participant_data = mean_metrics_pd.loc[mean_metrics_pd["participant"] == i]
@@ -237,136 +238,168 @@ class PlotStuff:
                     data_now = data_negative.to_dict()
                     if i % 4 == 0:
                         condition = "Negative Reinforcement"
-                    if i == 0:
-                        axs1[j].plot(Qh1[:, 0, 0], Qr1[:, 0, 0], color, label="Design", linewidth=self.linewidth, alpha=0.5)
-                        axs3[j].plot(Lh[:, 0], Lr1[:, 0], color, label="Design", linewidth=self.linewidth, alpha=0.5)
+                    # if i == 0:
+                        # axs1[j].plot(Qh1[:, 0, 0], Qr1[:, 0, 0], color, label="Design", linewidth=self.linewidth, alpha=0.5)
+                        # axs3[j].plot(Lh[:, 0], Lr1[:, 0], color, label="Design", linewidth=self.linewidth, alpha=0.5)
                 else:
                     data_now = data_positive.to_dict()
                     if i % 4 == 0:
                         condition = "Positive Reinforcement"
-                    if i == 0:
-                        axs1[j].plot(Qh2[:, 0, 0], Qr2[:, 0, 0], color, label="Design", linewidth=self.linewidth, alpha=0.5)
-                        axs3[j].plot(Lh[:, 0], Lr2[:, 0], color, label="Design", linewidth=self.linewidth, alpha=0.5)
+                    # if i == 0:
+                        # axs1[j].plot(Qh2[:, 0, 0], Qr2[:, 0, 0], color, label="Design", linewidth=self.linewidth, alpha=0.5)
+                        # axs3[j].plot(Lh[:, 0], Lr2[:, 0], color, label="Design", linewidth=self.linewidth, alpha=0.5)
 
                 performance_dict = data_now["performance"]
                 key = list(performance_dict.keys())[0]
                 # print(key)
                 performance = performance_dict[key]
-                standard = 100
-                size = int(round(standard + 1000/performance, 1))
+                standard = 50
+                size = int(round(standard + 800/performance, 1))
                 print("size = ", size)
                 label = "Participant " + str(i)
 
-                # Figure 1a.
-                axs1[j].scatter(data_now["cost_human"][key], data_now["cost_robot"][key], s=size, label=label)
-                axs1[j].set_xlim(0, 20)
-                axs1[j].set_ylim(0, 20)
-                axs1[j].legend()
-                # axs1[j].axis('equal')
-                axs1[j].set_xlabel("Averaged Estimated Human Cost Weight (Nm/rad)", **self.hfont)
-                axs1[j].set_ylabel("Averaged Robot Cost Weight (-)", **self.hfont)
-                axs1[j].set_title(data_now['condition'][key], **self.csfont)
-
-                # print(self.colormap[j], axs1)
-
-                axs1[3].scatter(data_now["cost_human"][key], data_now["cost_robot"][key], color=self.colormap[j], s=size, label=condition)
-                axs1[3].set_xlim(0, 20)
-                axs1[3].set_ylim(0, 20)
-                if j == 0:
-                    axs1[3].legend()
-                # axs1[j].axis('equal')
-                axs1[3].set_xlabel("Averaged Estimated Human Cost Weight (Nm/rad)", **self.hfont)
-                axs1[3].set_ylabel("Averaged Robot Cost Weight (-)", **self.hfont)
-                axs1[3].set_title("Comparison", **self.csfont)
-
-                # Figure 1b.
-                axs2[j].scatter(data_now["cost_system"][key], data_now["performance"][key], s=size, label=label)
-                axs2[j].set_xlim(0, 30)
-                axs2[j].set_ylim(0, 10)
-                axs2[j].legend()
-                # axs2[j].axis('equal')
-                axs2[j].set_xlabel("Total Estimated System Cost Weight (-)", **self.hfont)
-                axs2[j].set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
-                axs2[j].set_title(data_now['condition'][key], **self.csfont)
-
-                axs2[3].scatter(data_now["cost_system"][key], data_now["performance"][key], color=self.colormap[j], s=size, label=condition)
-                axs2[3].set_xlim(0, 30)
-                axs2[3].set_ylim(0, 10)
-                if j == 0:
-                    axs2[3].legend()
-                # axs2[j].axis('equal')
-                axs2[3].set_xlabel("Total Estimated System Cost Weight (-)", **self.hfont)
-                axs2[3].set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
-                axs2[3].set_title("Comparison", **self.csfont)
-
-                # Figure 2a.
-                axs3[j].scatter(data_now["gain_human"][key], data_now["gain_robot"][key], s=size, label=label)
-                axs3[j].set_ylim(0, 6)
-                axs3[j].set_xlim(-2, 4)
-                axs3[j].legend()
-                axs3[j].set_xlabel("Averaged Estimated Human Gain (Nm/rad)", **self.hfont)
-                axs3[j].set_ylabel("Averaged Robot Gain (Nm/rad)", **self.hfont)
-                axs3[j].set_title(data_now['condition'][key], **self.csfont)
-
-                axs3[3].scatter(data_now["gain_human"][key], data_now["gain_robot"][key], color=self.colormap[j], s=size, label=condition)
-                axs3[3].set_ylim(0, 6)
-                axs3[3].set_xlim(-2, 4)
-                if j == 0:
-                    axs3[3].legend()
-                axs3[3].set_xlabel("Averaged Estimated Human Gain (Nm/rad)", **self.hfont)
-                axs3[3].set_ylabel("Averaged Robot Gain (Nm/rad)", **self.hfont)
-                axs3[3].set_title("Comparison", **self.csfont)
+                # # Figure 1a.
+                # axs1[j].scatter(data_now["cost_human"][key], data_now["cost_robot"][key], s=size, label=label)
+                # axs1[j].set_xlim(0, 20)
+                # axs1[j].set_ylim(0, 20)
+                # axs1[j].legend()
+                # # axs1[j].axis('equal')
+                # axs1[j].set_xlabel("Averaged Estimated Human Cost Weight (Nm/rad)", **self.hfont)
+                # axs1[j].set_ylabel("Averaged Robot Cost Weight (-)", **self.hfont)
+                # axs1[j].set_title(data_now['condition'][key], **self.csfont)
+                #
+                # # print(self.colormap[j], axs1)
+                #
+                # axs1[3].scatter(data_now["cost_human"][key], data_now["cost_robot"][key], color=self.colormap[j], s=size, label=condition)
+                # axs1[3].set_xlim(0, 20)
+                # axs1[3].set_ylim(0, 20)
+                # if j == 0:
+                #     axs1[3].legend()
+                # # axs1[j].axis('equal')
+                # axs1[3].set_xlabel("Averaged Estimated Human Cost Weight (Nm/rad)", **self.hfont)
+                # axs1[3].set_ylabel("Averaged Robot Cost Weight (-)", **self.hfont)
+                # axs1[3].set_title("Comparison", **self.csfont)
+                #
+                # # Figure 1b.
+                # axs2[j].scatter(data_now["cost_system"][key], data_now["performance"][key], s=size, label=label)
+                # axs2[j].set_xlim(0, 30)
+                # axs2[j].set_ylim(0, 10)
+                # axs2[j].legend()
+                # # axs2[j].axis('equal')
+                # axs2[j].set_xlabel("Total Estimated System Cost Weight (-)", **self.hfont)
+                # axs2[j].set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
+                # axs2[j].set_title(data_now['condition'][key], **self.csfont)
+                #
+                # axs2[3].scatter(data_now["cost_system"][key], data_now["performance"][key], color=self.colormap[j], s=size, label=condition)
+                # axs2[3].set_xlim(0, 30)
+                # axs2[3].set_ylim(0, 10)
+                # if j == 0:
+                #     axs2[3].legend()
+                # # axs2[j].axis('equal')
+                # axs2[3].set_xlabel("Total Estimated System Cost Weight (-)", **self.hfont)
+                # axs2[3].set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
+                # axs2[3].set_title("Comparison", **self.csfont)
+                #
+                # # Figure 2a.
+                # axs3[j].scatter(data_now["gain_human"][key], data_now["gain_robot"][key], s=size, label=label)
+                # axs3[j].set_ylim(0, 6)
+                # axs3[j].set_xlim(-2, 4)
+                # axs3[j].legend()
+                # axs3[j].set_xlabel("Averaged Estimated Human Gain (Nm/rad)", **self.hfont)
+                # axs3[j].set_ylabel("Averaged Robot Gain (Nm/rad)", **self.hfont)
+                # axs3[j].set_title(data_now['condition'][key], **self.csfont)
+                #
+                # axs3[3].scatter(data_now["gain_human"][key], data_now["gain_robot"][key], color=self.colormap[j], s=size, label=condition)
+                # axs3[3].set_ylim(0, 6)
+                # axs3[3].set_xlim(-2, 4)
+                # if j == 0:
+                #     axs3[3].legend()
+                # axs3[3].set_xlabel("Averaged Estimated Human Gain (Nm/rad)", **self.hfont)
+                # axs3[3].set_ylabel("Averaged Robot Gain (Nm/rad)", **self.hfont)
+                # axs3[3].set_title("Comparison", **self.csfont)
 
                 # Figure 2b.
-                axs4[j].scatter(data_now["gain_system"][key], data_now["performance"][key], marker="o", s=size, label=label)
-                robot_label = ""
-                human_label = ""
-                if i == 0:
-                    robot_label = "Robot gain"
-                    human_label = "Human gain"
-                    axs4[j].plot(data_robot["robot_angle_gain"], data_robot["rms_angle_error"], self.tud_blue,
-                                 linewidth=self.linewidth, alpha=0.5, label="Optimal Control")
-                axs4[j].set_xlim(0, 10)
-                axs4[j].set_ylim(0, 10)
-                axs4[j].legend()
-                axs4[j].set_xlabel("Total Estimated System Gain (Nm/rad)", **self.hfont)
-                axs4[j].set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
-                axs4[j].set_title(data_now['condition'][key], **self.csfont)
+                # figd.scatter(data_now["gain_system"][key], data_now["performance"][key], marker="o", s=size, label=label)
+                # robot_label = ""
+                # human_label = ""
 
-                axs4[3].scatter(data_now["gain_system"][key], data_now["performance"][key], marker="o", color=self.colormap[j], s=size, label=condition)
-                axs4[3].scatter(data_now["gain_human"][key], data_now["performance"][key], marker="p", color=self.colormap[j], edgecolor='black', s=size,
-                                label=human_label)
-                axs4[3].scatter(data_now["gain_robot"][key], data_now["performance"][key], marker="v",
-                                color=self.colormap[j], edgecolor='black', s=size,
-                                label=robot_label)
+                # figd.set_xlim(0, 10)
+                # figd.set_ylim(0, 10)
+                # figd.legend()
+                # figd.set_xlabel("Total Estimated System Gain (Nm/rad)", **self.hfont)
+                # figd.set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
+                # figd.set_title(data_now['condition'][key], **self.csfont)
+
+                marker_style = dict(color=self.colormap[j], linestyle=':', marker='o',
+                                    markersize=size, markerfacecoloralt='tab:white')
+                fill_style = 'top'
+                # print(data_now)
+                lh = data_now["gain_human"][key]
+                lr = data_now["gain_robot"][key]
+
+                if i == 0:
+                    figd.scatter(-100, -100, s=size,
+                                 edgecolor=self.colormap[j],
+                                 marker="o", linewidths=3, facecolors=self.colormap[j], label=condition)
+                    figd.legend()
+
+                im1 = figd.scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, c=lh, edgecolor=self.colormap[j],
+                                 marker=MarkerStyle("o", fillstyle="left"), cmap="Reds", linewidths=3, vmin=-4, vmax=10)
+                im2 = figd.scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, c=lr, edgecolor=self.colormap[j],
+                                 marker=MarkerStyle("o", fillstyle="right"), cmap="Blues", linewidths=3, vmin=-4, vmax=10)
                 if j == 0 and i == 0:
-                    axs4[3].plot(data_robot["robot_angle_gain"], data_robot["rms_angle_error"], self.tud_blue,
-                                 linewidth=self.linewidth, alpha=0.5, label="Optimal Control")
-                axs4[3].set_xlim(0, 10)
-                axs4[3].set_ylim(0, 10)
+                    cbar1 = plt.colorbar(im1, ax=figd)
+                    cbar1.set_label("Human Gain", rotation=90, **self.hfont)
+                    cbar2 = plt.colorbar(im2, ax=figd)
+                    cbar2.set_label("Robot Gain", rotation=90, **self.hfont)
+
+                plt.tight_layout()
+
+                # figd.scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, label=condition,
+                #              fillstyle=fill_style, **marker_style)
+                # figd.scatter(data_now["gain_human"][key], data_now["performance"][key], marker="p", color=self.colormap[j], edgecolor='black', s=size,
+                #                 label=human_label)
+                # figd.scatter(data_now["gain_robot"][key], data_now["performance"][key], marker="v",
+                #                 color=self.colormap[j], edgecolor='black', s=size,
+                #                 label=robot_label)
+
+
+
+                if j == 0 and i == 0:
+                    figd.plot(data_robot["robot_angle_gain"], data_robot["rms_angle_error"], self.tud_blue,
+                                 linewidth=self.linewidth, alpha=0.5, label="Optimal Control",)
+
+                figd.set_xlim(1, 6)
+                figd.set_ylim(0, 13)
                 if j == 0:
-                    axs4[3].legend()
-                axs4[3].set_xlabel("Total Estimated System Gain (Nm/rad)", **self.hfont)
-                axs4[3].set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
-                axs4[3].set_title("Comparison", **self.csfont)
+                    figd.legend()
+                figd.set_xlabel("Total Estimated System Gain (Nm/rad)", **self.hfont)
+                figd.set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
+                figd.set_title("Comparison", **self.csfont)
 
                 # Figure 3a.
-                axs5[j].scatter(data_now["human_power"][key], data_now["robot_power"][key], s=size, label=label)
-                axs5[j].set_xlim(0, 0.7)
-                axs5[j].set_ylim(0, 0.7)
-                axs5[j].legend()
-                axs5[j].set_xlabel("RMS Estimated Human Power (W)", **self.hfont)
-                axs5[j].set_ylabel("RMS Robot Power (W)", **self.hfont)
-                axs5[j].set_title(data_now['condition'][key], **self.csfont)
+                # axs5[j].scatter(data_now["human_power"][key], data_now["robot_power"][key], s=size, label=label)
+                # axs5[j].set_xlim(0, 0.7)
+                # axs5[j].set_ylim(0, 0.7)
+                # axs5[j].legend()
+                # axs5[j].set_xlabel("RMS Estimated Human Power (W)", **self.hfont)
+                # axs5[j].set_ylabel("RMS Robot Power (W)", **self.hfont)
+                # axs5[j].set_title(data_now['condition'][key], **self.csfont)
 
-                axs5[3].scatter(data_now["human_power"][key], data_now["robot_power"][key], color=self.colormap[j], s=size, label=condition)
-                axs5[3].set_xlim(0, 0.7)
-                axs5[3].set_ylim(0,0.7)
-                if j == 0:
-                    axs5[3].legend()
-                axs5[3].set_xlabel("RMS Estimated Human Power (W)", **self.hfont)
-                axs5[3].set_ylabel("RMS Robot Power (W)", **self.hfont)
-                axs5[3].set_title("Comparison", **self.csfont)
+                fige.scatter(data_now["human_power"][key], data_now["robot_power"][key], color=self.colormap[j], s=size, label=condition)
+                fige.set_xlim(0, 1.2)
+                fige.set_ylim(0, 1.2)
+                if i == 0 and j == 0:
+                    fige.plot([0.3, 0], [0, 0.3], color=self.tud_blue, alpha=0.5, label="Constant System Power", linewidth=self.linewidth)
+                    fige.plot([0.6, 0], [0, 0.6], color=self.tud_blue, alpha=0.5, linewidth=self.linewidth)
+                    fige.plot([0.9, 0], [0, 0.9], color=self.tud_blue, alpha=0.5, linewidth=self.linewidth)
+                    fige.plot([1.2, 0], [0, 1.2], color=self.tud_blue, alpha=0.5, linewidth=self.linewidth)
+                    fige.plot([1.5, 0], [0, 1.5], color=self.tud_blue, alpha=0.5, linewidth=self.linewidth)
+                if i == 0:
+                    fige.legend()
+                fige.set_xlabel("RMS Estimated Human Power (W)", **self.hfont)
+                fige.set_ylabel("RMS Robot Power (W)", **self.hfont)
+                fige.set_title("Comparison", **self.csfont)
 
     def plot_participant(self, raw_data, trials, participant):
         figb, axs = plt.subplots(4, 2)
