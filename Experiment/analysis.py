@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as stat
 from statsmodels.stats.anova import AnovaRM
 from matplotlib.backends.backend_pdf import PdfPages
+from Experiment.subjective import Subjective
 
 
 class Analysis():
@@ -31,6 +32,7 @@ class Analysis():
             "test_type": [],
             "p": [],
         }
+        self.subjective = Subjective()
 
     def initialize(self):
         self.unpack_data()
@@ -82,17 +84,19 @@ class Analysis():
         # Plot individual data
         print("number of participants = ", self.participants)
         self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 1)
+        self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 4)
+        self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 7)
         self.plot_stuff.plot_metrics(self.metrics, conditions=self.conditions, participant=self.participants - 1)
 
         # Plot metrics
         self.plot_stuff.plot_experiment(self.metrics_averaged, self.metrics_robot, self.participants, self.conditions)
 
-        plt.show()
+        # plt.show()
         self.save_all_figures()
-        plt.close()
+        # plt.close()
 
     def save_all_figures(self):
-        pp = PdfPages('..\\Experiment\\figures\\pilot.pdf')
+        pp = PdfPages('..\\Experiment\\figures\\experiment.pdf')
         figs = None
         if figs is None:
             figs = [plt.figure(n) for n in plt.get_fignums()]
@@ -106,9 +110,11 @@ class Analysis():
         metrics_negative = metrics.loc[metrics["condition"] == "Negative Reinforcement"]
         metrics_manual = metrics.loc[metrics["condition"] == "Manual Control"]
         metrics_no_manual = metrics.loc[metrics["condition"] != "Manual Control"]
+        metrics_av = pd.DataFrame(self.metrics_averaged)
 
         self.save_data(metrics, "metrics.csv")
         self.save_data(metrics_no_manual, "metrics_no_manual.csv")
+        self.save_data(metrics_av, "metrics_av.csv")
 
         # # Hypothesis 1. Control authority
         # print("looks significant?")
@@ -193,6 +199,8 @@ class Analysis():
         self.metrics_robot["rms_angle_error"] = {}
         self.metrics_robot["rms_angle_error_rad"] = {}
         self.metrics_robot["robot_angle_gain"] = {}
+
+
 
         # RMS
         rms_angle_error = []
@@ -347,6 +355,7 @@ class Analysis():
 
     def build_individual_metrics(self):
         conditions = []
+        condition_nr = []
         participants = []
         increase = []
         performance = []
@@ -382,6 +391,7 @@ class Analysis():
             participants.append([i, i, i])
             conditions.append(
                 ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"])
+            condition_nr.append([0, 1, 2])
             m = manual_control["rms_angle_error"].mean()
             increase.append([100*m/m, 100*m/negative_control["rms_angle_error"].mean(),
                              100*m/positive_control["rms_angle_error"].mean()])
@@ -425,6 +435,7 @@ class Analysis():
 
         self.metrics_averaged["participant"] = [item for sublist in participants for item in sublist]
         self.metrics_averaged["condition"] = [item for sublist in conditions for item in sublist]
+        self.metrics_averaged["condition_nr"] = [item for sublist in condition_nr for item in sublist]
         self.metrics_averaged["increase"] = [item for sublist in increase for item in sublist]
         self.metrics_averaged["performance"] = [item for sublist in performance for item in sublist]
         self.metrics_averaged["cost_human"] = [item for sublist in cost_human for item in sublist]
@@ -439,6 +450,13 @@ class Analysis():
         self.metrics_averaged["robot_power"] = [item for sublist in robot_power for item in sublist]
         self.metrics_averaged["authority"] = [item for sublist in auth for item in sublist]
 
+        # Subjective measures
+        self.metrics_averaged["subjective_1"] = self.subjective.s1_ordered
+        self.metrics_averaged["subjective_2"] = self.subjective.s2_ordered
+        self.metrics_averaged["subjective_3"] = self.subjective.s3_ordered
+        self.metrics_averaged["subjective_4"] = self.subjective.s4_ordered
+        self.metrics_averaged["subjective_authority"] = self.subjective.auth_ordered
+
     def cut_data(self, participant, trial):
         # Cut data
         if trial == 0:
@@ -448,8 +466,8 @@ class Analysis():
             for key in self.raw_data[participant][trial].keys():
                 data = self.raw_data[participant][trial][key]
                 time = np.array(self.raw_data[participant][trial]['time'])
-                start_time = 0.01 * time[-1]
-                end_time = 0.99 * time[-1]
+                start_time = 0.1 * time[-1]
+                end_time = 0.9 * time[-1]
                 # Find index where to cut the data
                 # print(start_time, end_time)
                 start_index = np.argmax(time > start_time)

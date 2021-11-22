@@ -18,6 +18,7 @@ class PlotStuff:
         title_size = 18
         label_size_small = 10
         label_size_big = 14
+        self.legend_size = 15
         self.linewidth = 4
         self.csfont = {'fontname': 'Georgia', 'size': title_size}
         self.hfont = {'fontname': 'Georgia', 'size': label_size_big}
@@ -27,18 +28,18 @@ class PlotStuff:
         self.tud_black = "#000000"
         self.tud_blue = "#0066A2"
         self.tud_red = "#c3312f"
-        self.tud_green = "#00A390"
+        self.tud_green = "#99D28C"
         self.tud_yellow = "#F1BE3E"
         self.tud_orange = "#EB7245"
         self.tud_lightblue = "#00B7D3"
         self.tud_otherblue = "#61A4B4"
 
-        self.colors = {"Manual Control": self.tud_orange, "Positive Reinforcement": self.tud_green,
-                       "Negative Reinforcement": self.tud_otherblue}
+        self.colors = {"Manual Control": self.tud_orange, "Negative Reinforcement": self.tud_otherblue,
+                       "Positive Reinforcement": self.tud_green,}
 
         self.order = ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"]
 
-        self.colormap = [self.tud_orange, self.tud_green, self.tud_otherblue]
+        self.colormap = [self.tud_orange, self.tud_otherblue, self.tud_green, ]
 
         sns.set_palette(sns.color_palette(self.colormap))
 
@@ -85,7 +86,7 @@ class PlotStuff:
         axa[0].set_ylabel("Authority (-)", **self.hfont)
         delta_y = ylims[1] - ylims[0]
         width = delta_y / 40
-        sns.histplot(data=metrics_pd_no_manual, y="authority", hue="condition", ax=axa[1],
+        sns.histplot(data=metrics_pd, y="authority", hue="condition", ax=axa[1],
                      palette=self.colors, binwidth=width)
         axa[1].get_legend().remove()
         axa[1].axes.get_yaxis().set_visible(False)
@@ -201,7 +202,7 @@ class PlotStuff:
         # fig7 = plt.figure()
         # fig8 = plt.figure()
         # fig9 = plt.figure()
-        # figc = plt.figure()
+        # figc = plt.figure().gca()
         # axs3 = [fig7.gca(), fig8.gca(), fig9.gca(), figc.gca()]
 
         # 2b. System gain vs performance
@@ -217,6 +218,24 @@ class PlotStuff:
         # fig15 = plt.figure()
         fige = plt.figure().gca()
         # axs5 = [fig13.gca(), fig14.gca(), fig15.gca(), fige.gca()]
+
+        h = sns.jointplot(data=mean_metrics_pd, x="authority", y="subjective_authority", hue="condition",
+                      palette=self.colors, hue_order=self.order, kind="scatter",)
+        h.fig.suptitle("Subjective and objective control share", **self.csfont)
+        # jp.fig.legend(fontsize=self.legend_size, title=[])
+        h.ax_joint.set_xlabel("Objective control share", **self.hfont)
+        h.ax_joint.set_ylabel("Subjective control share", **self.hfont)
+        h.ax_joint.legend(loc="lower right", title=[])
+        ticks = [-2, -1, 0, 1]
+        labels = ["Competition", "Robot Only", "Cooperation", "Human Only"]
+        h.ax_joint.set_xticks(ticks)
+        h.ax_joint.set_xticklabels(labels)
+        h.ax_joint.set_yticks(ticks)
+        h.ax_joint.set_yticklabels(labels)
+        h.ax_joint.set_xlim(-2.2, 1.7)
+        h.ax_joint.set_ylim(-2.2, 1.7)
+        h.fig.tight_layout()
+
 
         for i in range(participants):
             participant_data = mean_metrics_pd.loc[mean_metrics_pd["participant"] == i]
@@ -255,7 +274,7 @@ class PlotStuff:
                 performance = performance_dict[key]
                 standard = 50
                 size = int(round(standard + 800/performance, 1))
-                print("size = ", size)
+                # print("size = ", size)
                 label = "Participant " + str(i)
 
                 # # Figure 1a.
@@ -334,8 +353,8 @@ class PlotStuff:
                                     markersize=size, markerfacecoloralt='tab:white')
                 fill_style = 'top'
                 # print(data_now)
-                lh = data_now["gain_human"][key]
-                lr = data_now["gain_robot"][key]
+                auth = data_now["authority"][key]
+                # lr = data_now["gain_robot"][key]
 
                 if i == 0:
                     figd.scatter(-100, -100, s=size,
@@ -343,15 +362,19 @@ class PlotStuff:
                                  marker="o", linewidths=3, facecolors=self.colormap[j], label=condition)
                     figd.legend()
 
-                im1 = figd.scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, c=lh, edgecolor=self.colormap[j],
-                                 marker=MarkerStyle("o", fillstyle="left"), cmap="Reds", linewidths=3, vmin=-4, vmax=10)
-                im2 = figd.scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, c=lr, edgecolor=self.colormap[j],
-                                 marker=MarkerStyle("o", fillstyle="right"), cmap="Blues", linewidths=3, vmin=-4, vmax=10)
+                im1 = figd.scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, c=auth, edgecolor=self.colormap[j],
+                                 marker="o", cmap="seismic", linewidths=3, vmin=-2, vmax=2)
+                # im2 = figd.scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, c=lr, edgecolor=self.colormap[j],
+                #                  marker=MarkerStyle("o", fillstyle="right"), cmap="Blues", linewidths=3, vmin=-4, vmax=10)
                 if j == 0 and i == 0:
                     cbar1 = plt.colorbar(im1, ax=figd)
-                    cbar1.set_label("Human Gain", rotation=90, **self.hfont)
-                    cbar2 = plt.colorbar(im2, ax=figd)
-                    cbar2.set_label("Robot Gain", rotation=90, **self.hfont)
+                    # cbar1.set_label("Control Share", rotation=90, **self.hfont)
+                    ticks = [-2, -1, 0, 1, 2]
+                    labels = ["Competition", "Robot Only", "Cooperation", "Human Only", "Competition"]
+                    cbar1.set_ticks(ticks)
+                    cbar1.set_ticklabels(labels)
+                    # cbar2 = plt.colorbar(im2, ax=figd)
+                    # cbar2.set_label("Robot Gain", rotation=90, **self.hfont)
 
                 plt.tight_layout()
 
@@ -390,18 +413,22 @@ class PlotStuff:
                 fige.set_xlim(0, 1.2)
                 fige.set_ylim(0, 1.2)
                 if i == 0 and j == 0:
-                    fige.plot([0.3, 0], [0, 0.3], color=self.tud_blue, alpha=0.5, label="Constant System Power", linewidth=self.linewidth)
-                    fige.plot([0.6, 0], [0, 0.6], color=self.tud_blue, alpha=0.5, linewidth=self.linewidth)
-                    fige.plot([0.9, 0], [0, 0.9], color=self.tud_blue, alpha=0.5, linewidth=self.linewidth)
-                    fige.plot([1.2, 0], [0, 1.2], color=self.tud_blue, alpha=0.5, linewidth=self.linewidth)
-                    fige.plot([1.5, 0], [0, 1.5], color=self.tud_blue, alpha=0.5, linewidth=self.linewidth)
+                    fige.plot([0.3, 0], [0, 0.3], color=self.tud_blue, alpha=0.5, label="Constant System Power", linewidth=2)
+                    fige.plot([0.6, 0], [0, 0.6], color=self.tud_blue, alpha=0.5, linewidth=2)
+                    fige.plot([0.9, 0], [0, 0.9], color=self.tud_blue, alpha=0.5, linewidth=2)
+                    fige.plot([1.2, 0], [0, 1.2], color=self.tud_blue, alpha=0.5, linewidth=2)
+                    fige.plot([1.5, 0], [0, 1.5], color=self.tud_blue, alpha=0.5, linewidth=2)
+                    fige.plot([1.8, 0], [0, 1.8], color=self.tud_blue, alpha=0.5, linewidth=2)
                 if i == 0:
                     fige.legend()
                 fige.set_xlabel("RMS Estimated Human Power (W)", **self.hfont)
                 fige.set_ylabel("RMS Robot Power (W)", **self.hfont)
                 fige.set_title("Comparison", **self.csfont)
 
+
+
     def plot_participant(self, raw_data, trials, participant):
+        print("plotting for participant ", participant)
         figb, axs = plt.subplots(4, 2)
         figc, axsb = plt.subplots(4, 3)
 
