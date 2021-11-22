@@ -8,8 +8,6 @@ class PlotStuff:
 
     def plot_stuff(self, inputs1, outputs1, inputs2, outputs2, inputs3, outputs3, save, v, size="small"):
         # Figure properties
-
-
         # Colors
         tud_blue = "#0066A2"
         tud_blue2 = "#61A4B4"
@@ -70,7 +68,7 @@ class PlotStuff:
         elif inputs2 != None:
             print("we're comparing")
             m = 2
-            robot_colors = [tud_blue, tud_blue2]
+            robot_colors = [tud_blue, tud_orange]
             human_colors = [tud_red, tud_green]
         else:
             print("we're checking performance")
@@ -90,17 +88,28 @@ class PlotStuff:
             dynamics = inputs["dynamics_type"]
             controller_name = inputs["controller_type_name"]
             dynamics_name = inputs["dynamics_type_name"]
+
             r = outputs["reference_signal"]
             x = outputs["states"]
             e = outputs["error_states"]
             Jr = outputs["robot_costs"]
             Jh = outputs["human_costs"]
-            Jt = Jr + Jh
+            try:
+                Jt = Jr + Jh
+            except:
+                Jt = Jr
             ur = outputs["robot_input"]
             uh = outputs["human_input"]
-            ut = ur + uh
+            try:
+                ut = ur + uh
+            except:
+                ut = ur
             Lh = outputs["human_gain"]
             Lr = outputs["robot_gain"]
+            try:
+                Lt = Lr + Lh
+            except:
+                Lt = Lr
             Qh = outputs["human_Q"]
             Qr = outputs["robot_Q"]
 
@@ -117,6 +126,12 @@ class PlotStuff:
                 Qhhat = outputs["human_estimated_Q"]
                 Lhhat = outputs["human_estimated_gain"]
                 xhat = outputs["estimated_states"]
+            else:
+                Jhhat = None
+                uhhat = None
+                Qhhat = None
+                Lhhat = None
+                xhat = None
 
             value = inputs[variable]
             if v == 1:
@@ -130,15 +145,21 @@ class PlotStuff:
                     value = value[1]
 
             # Plot stuff
+            # Position
+            if m == 1:
+                label = "State $x(t)$"
+            elif m == 2:
+                label = controller
+
             plt.figure(f1.number)
             if i == 0:
                 plt.plot(T, r[:, 0], tud_black, linewidth=lw, linestyle="-", alpha=0.7, label="Reference $r(t)$")
             try:
-                plt.plot(T, x[:-1, 0], robot_colors[i], linestyle="-", alpha=0.7, linewidth=lw, label="State $x(t)$")
                 plt.plot(T, xhat[:-1, 0], robot_colors[i], linestyle="--", linewidth=lw,
                          label=self.create_labels(value, var_label, "state $\hat{x}(t)$"))
+                plt.plot(T, x[:-1, 0], robot_colors[i], linestyle="-", alpha=0.7, linewidth=lw, label=label)
             except:
-                plt.plot(T, x[:-1, 0], robot_colors[i], linestyle="-", linewidth=lw, label="State $x(t)$")
+                plt.plot(T, x[:-1, 0], robot_colors[i], linestyle="-", linewidth=lw, label=label)
             plt.title('Position', **csfont)
             plt.xlabel('Time (s)', **hfont)
             plt.ylabel('Position (m)', **hfont)
@@ -146,15 +167,22 @@ class PlotStuff:
             plt.xlim(0, t)
             plt.tight_layout(pad=1)
 
+            # Velocity
+
+            if m == 2:
+                label = controller
+            else:
+                label = "State $\dot{x}(t)$"
+
             plt.figure(f8.number)
             if i == 0:
                 plt.plot(T, r[:, 1], tud_black, linewidth=lw, linestyle="-", alpha=0.7, label="Reference $\dot{r}(t)$")
             try:
-                plt.plot(T, x[:-1, 1], robot_colors[i], linestyle="-", alpha=0.7, linewidth=lw, label="State $\dot{x}(t)$")
                 plt.plot(T, xhat[:-1, 1], robot_colors[i], linestyle="--", linewidth=lw,
                          label=self.create_labels(value, var_label, "state $\dot{\hat{x}}(t)$"))
+                plt.plot(T, x[:-1, 1], robot_colors[i], linestyle="-", alpha=0.7, linewidth=lw, label=label)
             except:
-                plt.plot(T, x[:-1, 1], robot_colors[i], linestyle="-", linewidth=lw, label="State $x(t)$")
+                plt.plot(T, x[:-1, 1], robot_colors[i], linestyle="-", linewidth=lw, label=label)
             plt.title('Velocity', **csfont)
             plt.xlabel('Time (s)', **hfont)
             plt.ylabel('Velocity (m/s)', **hfont)
@@ -163,16 +191,20 @@ class PlotStuff:
             plt.tight_layout(pad=1)
 
             # Cost functions
+
             plt.figure(f2.number)
-            plt.plot(T[1:], Jr[1:], robot_colors[i], linestyle="-", linewidth=lw, label="Robot cost $J_r(t)$")
-            if estimates:
-                if i == 0:
-                    plt.plot(T[1:], Jh[1:], human_colors[i], linestyle="-", linewidth=lw, alpha=0.7, label="Real human cost $J_h(t)$")
-                plt.plot(T[1:], Jhhat[1:], human_colors[i], linestyle="--", linewidth=lw, alpha=1,
-                         label=self.create_labels(value, var_label, "human cost $\hat{J}_h(t)$"))
+            if m != 2:
+                plt.plot(T[1:], Jr[1:], robot_colors[i], linestyle="-", linewidth=lw, label="Robot cost $J_r(t)$")
+                if estimates:
+                    if i == 0:
+                        plt.plot(T[1:], Jh[1:], human_colors[i], linestyle="-", linewidth=lw, alpha=0.7, label="Real human cost $J_h(t)$")
+                    plt.plot(T[1:], Jhhat[1:], human_colors[i], linestyle="--", linewidth=lw, alpha=1,
+                             label=self.create_labels(value, var_label, "human cost $\hat{J}_h(t)$"))
+                else:
+                    if i == 0:
+                        plt.plot(T[1:], Jh[1:], human_colors[i], linestyle="-", linewidth=lw, alpha=1, label="Human cost $J_h(t)$")
             else:
-                if i == 0:
-                    plt.plot(T[1:], Jh[1:], human_colors[i], linestyle="-", linewidth=lw, alpha=1, label="Human cost $J_h(t)$")
+                plt.plot(T[1:], Jt[1:], robot_colors[i], linestyle="-", linewidth=lw, label=controller)
             plt.title('Cost function', **csfont)
             plt.xlabel('Time (s)', **hfont)
             plt.ylabel('Cost function value (-)', **hfont)
@@ -181,18 +213,21 @@ class PlotStuff:
             plt.tight_layout(pad=1)
 
             # Inputs
+
             plt.figure(f3.number)
             # label_text =
-            plt.plot(T, ur, robot_colors[i], linestyle="-", linewidth=lw, label="Robot input $u_r(t)$")
-            if estimates:
-                if i == 0:
-                    plt.plot(T, uh, human_colors[i], linestyle="-", linewidth=lw, alpha=0.7, label="Real human input $u_h(t)$")
-                plt.plot(T, uhhat, human_colors[i], linestyle="--", linewidth=lw,
-                         label=self.create_labels(value, var_label, "human input $\hat{u}_h(t)$"))
+            if m != 2:
+                plt.plot(T, ur, robot_colors[i], linestyle="-", linewidth=lw, label="Robot input $u_r(t)$")
+                if estimates:
+                    if i == 0:
+                        plt.plot(T, uh, human_colors[i], linestyle="-", linewidth=lw, alpha=0.7, label="Real human input $u_h(t)$")
+                    plt.plot(T, uhhat, human_colors[i], linestyle="--", linewidth=lw,
+                             label=self.create_labels(value, var_label, "human input $\hat{u}_h(t)$"))
+                else:
+                    if i == 0:
+                        plt.plot(T, uh, human_colors[i], linestyle="-", linewidth=lw, label="Human input $u_h(t)$")
             else:
-                if i == 0:
-                    plt.plot(T, uh, human_colors[i], linestyle="-", linewidth=lw, label="Human input $u_h(t)$")
-            plt.plot(T, ut, tud_green, alpha=1, linestyle="-", linewidth=lw, label="Total input $u(t)$")
+                plt.plot(T, ut, robot_colors[i], linestyle="-", linewidth=lw, label=controller)
             plt.title('Control action', **csfont)
             plt.xlabel('Time (s)', **hfont)
             plt.ylabel('Input force (N)', **hfont)
@@ -201,16 +236,19 @@ class PlotStuff:
             plt.tight_layout(pad=1)
 
             plt.figure(f4.number)
-            if i == 0:
-                plt.plot(T, Lh[:, 0], human_colors[i], linewidth=lw, alpha=0.7, label="Real human gain $L_{h,1}(t)$")
-            try:
-                plt.plot(T, Lhhat[:-1, 0], human_colors[i], linewidth=lw, linestyle="--",
-                         label=self.create_labels(value, var_label, "human gain $\hat{L}_{h,1}(t)$"))
-            except:
-                print("did not work")
-                a=1
-            if m < 2:
-                plt.plot(T, Lr[:, 0], robot_colors[i], linewidth=lw, label="Robot gain $L_{r,1}(t)$")
+            if m != 2:
+                if i == 0:
+                    plt.plot(T, Lh[:, 0], human_colors[i], linewidth=lw, alpha=0.7, label="Real human gain $L_{h,1}(t)$")
+                try:
+                    plt.plot(T, Lhhat[:-1, 0], human_colors[i], linewidth=lw, linestyle="--",
+                             label=self.create_labels(value, var_label, "human gain $\hat{L}_{h,1}(t)$"))
+                except:
+                    print("did not work")
+                    a=1
+                if m < 2:
+                    plt.plot(T, Lr[:, 0], robot_colors[i], linewidth=lw, label="Robot gain $L_{r,1}(t)$")
+            else:
+                plt.plot(T, Lt[:, 0], robot_colors[i], linewidth=lw, alpha=0.7, label=controller)
             plt.title('Position gain', **csfont)
             plt.xlabel('Time (s)', **hfont)
             plt.ylabel('Gain value (N/m)', **hfont)
@@ -219,15 +257,18 @@ class PlotStuff:
             plt.tight_layout(pad=1)
 
             plt.figure(f5.number)
-            if i == 0:
-                plt.plot(T, Lh[:, 1], human_colors[i], linewidth=lw, alpha=0.7, label="Real human gain $L_{h,2}(t)$")
-            try:
-                plt.plot(T, Lhhat[:-1, 1], human_colors[i], linewidth=lw, linestyle="--",
-                         label=self.create_labels(value, var_label, "human gain $\hat{L}_{h,2}(t)"))
-            except:
-                a=1
-            if m < 2:
-                plt.plot(T, Lr[:, 1], robot_colors[i], linewidth=lw, label="Robot gain $L_{r,2}(t)$")
+            if m != 2:
+                if i == 0:
+                    plt.plot(T, Lh[:, 1], human_colors[i], linewidth=lw, alpha=0.7, label="Real human gain $L_{h,2}(t)$")
+                try:
+                    plt.plot(T, Lhhat[:-1, 1], human_colors[i], linewidth=lw, linestyle="--",
+                             label=self.create_labels(value, var_label, "human gain $\hat{L}_{h,2}(t)"))
+                except:
+                    a=1
+                if m < 2:
+                    plt.plot(T, Lr[:, 1], robot_colors[i], linewidth=lw, label="Robot gain $L_{r,2}(t)$")
+            else:
+                plt.plot(T, Lt[:, 1], robot_colors[i], linewidth=lw, label=controller)
             plt.title('Velocity gain', **csfont)
             plt.xlabel('Time (s)', **hfont)
             plt.ylabel('Gain value (Ns/m)', **hfont)

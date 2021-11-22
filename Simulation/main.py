@@ -243,6 +243,7 @@ input_dict = {
     "e_initial": initial_error,
     "reference": ref,
     "time": T,
+    "kappa": 1,
 }
 
 controls, inputs = generate_controls(controller, input_dict)
