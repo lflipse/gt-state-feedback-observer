@@ -117,7 +117,7 @@ plt.xlim(0, 7.5)
 plt.ylim(0, 7.5)
 plt.legend(prop={"size": legend_size}, loc='upper right')
 plt.tight_layout(pad=1)
-plt.legend()
+
 
 plt.figure()
 plt.plot(Lh_1[:, 0], Lr_1[:, 0], tud_blue2, label="Differential Game", linewidth=lw)
@@ -129,29 +129,29 @@ plt.xlim(0, 7.5)
 plt.ylim(0, 7.5)
 plt.legend(prop={"size": legend_size}, loc='upper right')
 plt.tight_layout(pad=1)
-plt.legend()
+
 
 plt.figure()
 plt.stackplot(Lh_1[:, 0], Lh_1[:, 0], Lr_1[:, 0], labels=["Human Gain", "Robot Gain"], colors=colors)
 plt.xlabel("Human Gain (Nm/rad)", **hfont)
-plt.ylabel("Robot Gain (Nm/rad)", **hfont)
+plt.ylabel("Total system gain (Nm/rad)", **hfont)
 plt.title("Differential Game Gain Distribution", **csfont)
-plt.xlim(0, 7.5)
+plt.xlim(0, 7.0)
 # plt.ylim(0, 7.5)
 plt.legend(prop={"size": legend_size}, loc='upper right')
 plt.tight_layout(pad=1)
-plt.legend()
+
 
 plt.figure()
 plt.stackplot(Lh01[:, 0], Lh01[:, 0], Lr01[:, 0], labels=["Human Gain", "Robot Gain"], colors=colors)
 plt.xlabel("Human Gain (Nm/rad)", **hfont)
-plt.ylabel("Robot Gain (Nm/rad)", **hfont)
+plt.ylabel("Total system gain (Nm/rad)", **hfont)
 plt.title("Optimal Control Distribution", **csfont)
-plt.xlim(0, 7.5)
+plt.xlim(0, 7.2)
 # plt.ylim(0, 7.5)
 plt.legend(prop={"size": legend_size}, loc='upper right')
 plt.tight_layout(pad=1)
-plt.legend()
+
 
 save_all_figures()
 

@@ -2,6 +2,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.backends.backend_pdf import PdfPages
 
 class Reference:
     def __init__(self, duration):
@@ -21,6 +22,8 @@ class Reference:
             'amplitudes': self.amp * self.amplitudes,
         }
 
+        print(self.forcing_function)
+
         self.lw = 4
         self.title_size = 24
         self.label_size = 22
@@ -36,19 +39,19 @@ class Reference:
         tud_green = "#00A390"
         tud_yellow = "#F1BE3E"
 
-        # plt.figure()
-        # for i in range(len(self.periods)):
-        #     plt.plot(frequencies[i], self.amplitudes[i], color=tud_blue, linewidth=self.lw, marker='o')
-        #     plt.plot([frequencies[i], frequencies[i]], [0, self.amplitudes[i]], tud_blue, linewidth=self.lw, alpha=0.7)
-        #
-        # plt.title("Frequency domain reference", **self.csfont)
-        # plt.xlabel("Frequency (rad/s)", **self.hfont)
-        # plt.ylabel("Amplitude (-)", **self.hfont)
-        # plt.xlim(frequencies[0] - 0.1, frequencies[-1] + 10)
-        # plt.ylim(0.01, self.amplitudes[0] + 0.1)
-        # plt.yscale("log")
-        # plt.xscale("log")
-        # plt.tight_layout(pad=1)
+        plt.figure()
+        for i in range(len(self.periods)):
+            plt.plot(frequencies[i], self.amplitudes[i], color=tud_blue, linewidth=self.lw, marker='o')
+            plt.plot([frequencies[i], frequencies[i]], [0, self.amplitudes[i]], tud_blue, linewidth=self.lw, alpha=0.7)
+
+        plt.title("Frequency domain response", **self.csfont)
+        plt.xlabel("Frequency ($rad/s$)", **self.hfont)
+        plt.ylabel("Amplitude ($rad$)", **self.hfont)
+        plt.xlim(frequencies[0] - 0.02, frequencies[-1] + 1)
+        plt.ylim(0.1, self.amplitudes[0] + 0.1)
+        plt.yscale("log")
+        plt.xscale("log")
+        plt.tight_layout(pad=1)
 
         # Show forcing function:
         fs = 100
@@ -59,13 +62,14 @@ class Reference:
             ref = self.generate_reference(t[i], sigma=0, player=None, ref_sign=1)
             r[i] = ref[0]
 
-        # plt.figure()
-        # plt.plot(t, r, tud_blue, linewidth=self.lw)
-        # plt.title("Time domain reference", **self.csfont)
-        # plt.xlabel("Time (s)", **self.hfont)
-        # plt.ylabel("Amplitude (-)", **self.hfont)
-        # plt.xlim(0, 10)
-        # plt.tight_layout(pad=1)
+        plt.figure()
+        plt.plot(t, r, tud_blue, linewidth=self.lw)
+        plt.title("Time domain signal", **self.csfont)
+        plt.xlabel("Time ($s$)", **self.hfont)
+        plt.ylabel("Amplitude ($rad$)", **self.hfont)
+        plt.xlim(0, 15)
+        plt.tight_layout(pad=1)
+        self.save_all_figures()
 
     def load_data(self):
         try:
@@ -76,6 +80,15 @@ class Reference:
             self.amplitudes = np.array(data['amplitudes'])
         except:
             exit("Missing data")
+
+    def save_all_figures(self):
+        pp = PdfPages('..\\Experiment\\figures\\reference.pdf')
+        figs = None
+        if figs is None:
+            figs = [plt.figure(n) for n in plt.get_fignums()]
+        for fig in figs:
+            fig.savefig(pp, format='pdf')
+        pp.close()
 
     def generate_reference(self, t, sigma, player, ref_sign):
         period = self.forcing_function["periods"]
@@ -116,3 +129,5 @@ class Reference:
             ref = np.array([reference_position + v, w])
 
         return ref
+
+# ref = Reference(1)

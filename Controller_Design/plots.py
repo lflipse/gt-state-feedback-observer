@@ -9,9 +9,10 @@ class PlotStuff:
         self.lw = 4
         self.title_size = 24
         self.label_size = 22
-        self.legend_size = 13
+        self.legend_size = 18
         self.csfont = {'fontname': 'Georgia', 'size': self.title_size}
         self.hfont = {'fontname': 'Georgia', 'size': self.label_size}
+        self.legend_font = {'family': 'Georgia', 'size': self.legend_size}
 
         # Colors
         self.tud_blue = "#0066A2"
@@ -96,7 +97,7 @@ class PlotStuff:
         uhhat_sim = sim_data["human_estimated_input"]
 
         # Let's get plottin'
-        # VIRTUAL HUMAN
+        # VIRTUAL HUMAN MODEL FIT
 
 
         # Steering torques
@@ -108,9 +109,9 @@ class PlotStuff:
                  label="Actual Torque")
         plt.plot(t_vir, uhhat_vir, self.tud_red, linewidth=self.lw, linestyle="-", alpha=1,
                  label="Estimated Torque")
-        plt.xlabel('Time (s)', **self.hfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Human Steering Torque ($Nm$)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.legend(prop=self.legend_font, loc='upper right')
         plt.xlim(0, 30)
         plt.tight_layout(pad=1)
 
@@ -122,9 +123,9 @@ class PlotStuff:
                  label="Actual Torque")
         plt.plot(t_vir, uhhat_vir, self.tud_red, linewidth=self.lw, linestyle="-", alpha=1,
                  label="Estimated Torque")
-        plt.xlabel('Time (s)', **self.hfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Human Steering Torque ($Nm$)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.legend(prop=self.legend_font, loc='upper right')
         plt.xlim(0, t_vir[-1])
         plt.tight_layout(pad=1)
 
@@ -135,9 +136,9 @@ class PlotStuff:
                             labels=['Estimated human', 'Robot', 'Estimation error'], edgecolor='black', linewidth=0.1)
         plt.plot(t_vir, uh_vir, self.tud_black, linewidth=2, linestyle="-", alpha=1,
                  label="Virtual human")
-        plt.xlabel('Time (s)', **self.hfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Steering Torque ($Nm$)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.legend(prop=self.legend_font, loc='upper right')
         plt.xlim(65, 105)
         plt.ylim(-1.5, 1.5)
         plt.tight_layout(pad=1)
@@ -152,30 +153,30 @@ class PlotStuff:
         plt.plot(t_sim, x_sim[:-1], self.tud_blue, linewidth=self.lw, linestyle="-", alpha=0.7,
                  label="Simulated $\phi_{sim}(t)$")
         plt.plot(t_vir, x_hat_vir, self.tud_red, linewidth=self.lw, linestyle="--", label="Estimated $\hat{\phi}(t)$")
-        plt.xlabel('Time (s)', **self.hfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Steering angle ($rad$)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.legend(prop=self.legend_font, loc='upper right')
         plt.xlim(0, 10)
         plt.tight_layout(pad=1)
 
         plt.figure()
         plt.title("Filtered acceleration", **self.csfont)
-        plt.plot(t_vir, xddot_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Filtered $\ddot{\phi}(t)$")
-        plt.plot(t_sim, xddot_sim, self.tud_blue, linewidth=self.lw, linestyle="-", alpha=0.7, label="Simulated $\ddot{\phi}(t)$")
-        plt.xlabel('Time (s)', **self.hfont)
+        plt.plot(t_vir, xddot_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Filtered signal")
+        plt.plot(t_sim, xddot_sim, self.tud_blue, linewidth=self.lw, linestyle="-", alpha=0.7, label="Simulated signal")
+        plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Steering acceleration ($rad/s^2$)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.legend(prop=self.legend_font, loc='upper right')
         plt.xlim(0, 10)
         plt.tight_layout(pad=1)
 
         plt.figure()
         plt.title("Filtered velocity", **self.csfont)
-        plt.plot(t_vir, xdot_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Filtered $\dot{\phi}(t)$")
+        plt.plot(t_vir, xdot_vir, self.tud_blue, linewidth=self.lw, linestyle="--", label="Filtered signal")
         plt.plot(t_sim, xdot_sim[:-1], self.tud_blue, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Simulated $\dot{\phi}(t)$")
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Steering rate (rad/s)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+                 label="Simulated signal")
+        plt.xlabel('Time ($s$)', **self.hfont)
+        plt.ylabel('Steering rate ($rad/s$)', **self.hfont)
+        plt.legend(prop=self.legend_font, loc='upper right')
         plt.xlim(0, 10)
         plt.tight_layout(pad=1)
 
@@ -190,9 +191,9 @@ class PlotStuff:
                  label="Simulated $\dot{\phi_{sim}}(t)$")
         plt.plot(t_vir, x_hatdot_vir, self.tud_red, linewidth=self.lw, linestyle="--",
                  label="Estimated $\dot{\hat{\phi}}(t)$")
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Steering angle (rad)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='lower right')
+        plt.xlabel('Time ($s$)', **self.hfont)
+        plt.ylabel('Steering angle ($rad$)', **self.hfont)
+        plt.legend(prop=self.legend_font, loc='lower right')
         plt.xlim(0, 10)
         plt.tight_layout(pad=1)
 
@@ -202,11 +203,11 @@ class PlotStuff:
         # Cost function weights
         plt.figure()
         plt.plot(t_sim, Qhhat_pos_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Simulated (human) $\hat{Q}_{h,1}(t)$")
+                 label="Simulated human cost weight")
         plt.plot(t_vir, Qhhat_pos_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
-                 label="Estimated (human) $\hat{Q}_{h,1}(t)$")
+                 label="Estimated human cost weight")
         plt.plot(t_vir, Qh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Virtual (human) $Q_{h,1,vir}(t)$")
+                 label="Virtual human cost weight")
 
         # plt.annotate("Weak steering", (7.5, Qh_pos_vir[int(n / 12)]), xytext=(7.5, Qh_pos_vir[int(n / 12)] + 5),
         #              arrowprops=options)
@@ -221,21 +222,21 @@ class PlotStuff:
         # plt.annotate("No steering", (82.5, Qh_pos_vir[int(11 * n / 12)]),
         #              xytext=(70, Qh_pos_vir[int(11 * n / 12)] + 10), arrowprops=options)
 
-        plt.title('Steering angle error weight', **self.csfont)
-        plt.xlabel('Time (s)', **self.hfont)
+        plt.title('Virtual Human: Angle error weight', **self.csfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Weight value (-)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='lower left')
+        plt.legend(prop=self.legend_font, loc='lower left')
         plt.xlim(0, t_vir[-1])
         plt.ylim(-30, 35)
         plt.tight_layout(pad=1)
 
         plt.figure()
         plt.plot(t_sim, Qhhat_vel_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Simulated (human) $\hat{Q}_{h,2}(t)$")
+                 label="Simulated human cost weight")
         plt.plot(t_vir, Qhhat_vel_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
-                 label="Estimated (human) $\hat{Q}_{h,2}(t)$")
+                 label="Estimated human cost weight")
         plt.plot(t_vir, Qh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Virtual (human) $Q_{h,2,vir}(t)$")
+                 label="Virtual human cost weight")
 
         # plt.annotate("Weak steering", (7.5, Qh_vel_vir[int(n / 12)]), xytext=(4.5, Qh_vel_vir[int(n / 12)] + 0.2),
         #              arrowprops=options)
@@ -250,10 +251,10 @@ class PlotStuff:
         # plt.annotate("No steering", (82.5, Qh_vel_vir[int(11 * n / 12)]),
         #              xytext=(70, Qh_vel_vir[int(11 * n / 12)] + 0.2), arrowprops=options)
 
-        plt.title('Steering rate error weight', **self.csfont)
-        plt.xlabel('Time (s)', **self.hfont)
+        plt.title('Virtual Human: Rate error weight', **self.csfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Weight value (-)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='lower left')
+        plt.legend(prop=self.legend_font, loc='lower left')
         plt.xlim(0, t_vir[-1])
         plt.ylim(-1.5, 1.5)
         plt.tight_layout(pad=1)
@@ -262,45 +263,34 @@ class PlotStuff:
         if sim_data != None:
             # plt.plot(t_sim, Lr_pos_sim, self.tud_blue, linewidth=self.lw, label="Simulated $L_{r,sim}(t)$", alpha=0.7, )
             plt.plot(t_sim, Lhhat_pos_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
-                     label="Simulated (human) $\hat{L}_{h,1,sim}(t)$")
+                     label="Simulated human gain")
         plt.plot(t_vir, Lhhat_pos_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
-                 label="Estimated (human) $\hat{L}_{h,1}(t)$")
+                 label="Estimated human gain")
         plt.plot(t_vir, Lh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Virtual (human) $L_{h,vir}(t)$")
-        # plt.annotate("Weak steering", (7.5, Lh_pos_vir[int(n/12)]), xytext=(2.5, Lh_pos_vir[int(n/12)] + 2), arrowprops=options)
-        # plt.annotate("No steering", (22.5, Lh_pos_vir[int(3*n/12)]), xytext=(12.5, Lh_pos_vir[int(3*n/12)] + 1.5), arrowprops=options)
-        # plt.annotate("Strong steering", (37.5, Lh_pos_vir[int(5*n/12)]), xytext=(34, Lh_pos_vir[int(5*n/12)] + 1.5), arrowprops=options)
-        # plt.annotate("No steering", (52.5, Lh_pos_vir[int(7*n/12)]), xytext=(48, Lh_pos_vir[int(7*n/12)] + 2), arrowprops=options)
-        # plt.annotate("Counteracting steering", (67.5, Lh_pos_vir[int(9*n/12)]), xytext=(62.5, Lh_pos_vir[int(9*n/12)] - 1.5), arrowprops=options)
-        # plt.annotate("No steering", (82.5, Lh_pos_vir[int(11*n/12)]), xytext=(70, Lh_pos_vir[int(11*n/12)] + 2), arrowprops=options)
+                 label="Virtual human gain")
 
-        plt.title('Steering angle gain', **self.csfont)
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Gain value (Nm/rad)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='lower left')
+
+        plt.title('Virtual Human: Steering angle gain', **self.csfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
+        plt.ylabel('Gain value ($Nm/rad$)', **self.hfont)
+        plt.legend(prop=self.legend_font, loc='lower left')
         plt.xlim(0, t_vir[-1])
         plt.ylim(-4, 5)
         plt.tight_layout(pad=1)
 
         plt.figure()
         plt.plot(t_sim, Lhhat_vel_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
-             label="Simulated (human) $\hat{L}_{h,2,sim}(t)$")
+             label="Simulated human gain")
         plt.plot(t_vir, Lhhat_vel_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
-                 label="Estimated (human) $\hat{L}_{h,2}(t)$")
-        plt.plot(t_vir, Lh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7, label="Virtual (human) $L_{h,2,vir}(t)$")
-        # plt.annotate("Weak steering", (7.5, Lh_vel_vir[int(n/12)]), xytext=(2.5, Lh_vel_vir[int(n/12)] + 0.5), arrowprops=options)
-        # plt.annotate("No steering", (22.5, Lh_vel_vir[int(3*n/12)]), xytext=(12.5, Lh_vel_vir[int(3*n/12)] + 0.4), arrowprops=options)
-        # plt.annotate("Strong steering", (37.5, Lh_vel_vir[int(5*n/12)]), xytext=(25, Lh_vel_vir[int(5*n/12)] + 0.2), arrowprops=options)
-        # plt.annotate("No steering", (52.5, Lh_vel_vir[int(7*n/12)]), xytext=(48, Lh_vel_vir[int(7*n/12)] + 0.65), arrowprops=options)
-        # plt.annotate("Counteracting steering", (67.5, Lh_vel_vir[int(9*n/12)]), xytext=(60, Lh_vel_vir[int(9*n/12)] - 0.2),
-        #              arrowprops=options)
-        # plt.annotate("No steering", (82.5, Lh_vel_vir[int(11*n/12)]), xytext=(70, Lh_vel_vir[int(11*n/12)] + 0.65), arrowprops=options)
-        plt.title('Steering rate gain', **self.csfont)
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Gain value (Nms/rad)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='lower left')
+                 label="Estimated human gain")
+        plt.plot(t_vir, Lh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7, label="Virtual human gain")
+
+        plt.title('Virtual Human: Steering rate gain', **self.csfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
+        plt.ylabel('Gain value ($Nms/rad$)', **self.hfont)
+        plt.legend(prop=self.legend_font, loc='lower left')
         plt.xlim(0, t_vir[-1])
-        plt.ylim(-0.5, 0.8)
+        plt.ylim(-0.6, 0.6)
         plt.tight_layout(pad=1)
 
         # ACTUAL HUMAN
@@ -308,9 +298,9 @@ class PlotStuff:
         # Cost function weights
         plt.figure()
         plt.plot(t_h, Qhhat_pos_h, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
-                 label="Estimated (human) $\hat{Q}_{h,1}(t)$")
+                 label="Estimated human cost weight")
         plt.plot(t_vir, Qh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Virtual (human) $Q_{h,1,vir}(t)$")
+                 label="Virtual human cost weight")
         # plt.annotate("Weak steering", (7.5, Qh_pos_vir[int(n / 12)]), xytext=(7.5, Qh_pos_vir[int(n / 12)] + 20),
         #              arrowprops=options)
         # plt.annotate("No steering", (22.5, Qh_pos_vir[int(3 * n / 12)]),
@@ -323,19 +313,19 @@ class PlotStuff:
         #              xytext=(60, Qh_pos_vir[int(9 * n / 12)] - 7.5), arrowprops=options)
         # plt.annotate("No steering", (82.5, Qh_pos_vir[int(11 * n / 12)]),
         #              xytext=(70, Qh_pos_vir[int(11 * n / 12)] + 15), arrowprops=options)
-        plt.title('Steering angle error weight', **self.csfont)
-        plt.xlabel('Time (s)', **self.hfont)
+        plt.title('Real Human: Angle error weight', **self.csfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Weight value (-)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='lower left')
+        plt.legend(prop=self.legend_font, loc='lower left')
         plt.xlim(0, t_vir[-1])
         plt.ylim(-25, 45)
         plt.tight_layout(pad=1)
 
         plt.figure()
         plt.plot(t_h, Qhhat_vel_h, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
-                 label="Estimated (human) $\hat{Q}_{h,2}(t)$")
+                 label="Estimated human cost weight")
         plt.plot(t_vir, Qh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Virtual (human) $Q_{h,2,vir}(t)$")
+                 label="Virtual human cost weight")
         # plt.annotate("Weak steering", (7.5, Qh_vel_vir[int(n / 12)]), xytext=(7.5, Qh_vel_vir[int(n / 12)] + 0.5),
         #              arrowprops=options)
         # plt.annotate("No steering", (22.5, Qh_vel_vir[int(3 * n / 12)]),
@@ -348,66 +338,60 @@ class PlotStuff:
         #              xytext=(48, Qh_vel_vir[int(9 * n / 12)] - 0.5), arrowprops=options)
         # plt.annotate("No steering", (82.5, Qh_vel_vir[int(11 * n / 12)]),
         #              xytext=(70, Qh_vel_vir[int(11 * n / 12)] + 0.5), arrowprops=options)
-        plt.title('Steering rate error weight', **self.csfont)
-        plt.xlabel('Time (s)', **self.hfont)
+        plt.title('Real Human: Rate error weight', **self.csfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Weight value (-)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='lower left')
+        plt.legend(prop=self.legend_font, loc='lower left')
         plt.xlim(0, t_vir[-1])
         plt.ylim(-3, 2)
         plt.tight_layout(pad=1)
 
         plt.figure()
         plt.plot(t_h, Lhhat_pos_h, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
-                 label="Estimated (human) $\hat{L}_{h}(t)$")
+                 label="Estimated human gain")
         # plt.plot(t_h, Lr_pos_h, self.tud_blue, linewidth=self.lw, linestyle="--", alpha=1,
         #          label="Robot gain $L_{r}(t)$")
         plt.plot(t_vir, Lh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Virtual (human) $L_{h,vir}(t)$")
-        # plt.annotate("Weak steering", (7.5, Lh_pos_vir[int(n / 12)]), xytext=(10, Lh_pos_vir[int(n / 12)] + 1),
-        #              arrowprops=options)
-        # plt.annotate("No steering", (22.5, Lh_pos_vir[int(3 * n / 12)]),
-        #              xytext=(18, Lh_pos_vir[int(3 * n / 12)] - 0.7), arrowprops=options)
-        # plt.annotate("Strong steering", (37.5, Lh_pos_vir[int(5 * n / 12)]),
-        #              xytext=(15, Lh_pos_vir[int(5 * n / 12)] + 1.5), arrowprops=options)
-        # plt.annotate("No steering", (52.5, Lh_pos_vir[int(7 * n / 12)]),
-        #              xytext=(48, Lh_pos_vir[int(7 * n / 12)] + 2), arrowprops=options)
-        # plt.annotate("Counteracting steering", (67.5, Lh_pos_vir[int(9 * n / 12)]),
-        #              xytext=(55, Lh_pos_vir[int(9 * n / 12)] - 1.5), arrowprops=options)
-        # plt.annotate("No steering", (82.5, Lh_pos_vir[int(11 * n / 12)]),
-        #              xytext=(70, Lh_pos_vir[int(11 * n / 12)] + 2), arrowprops=options)
-        plt.title('Steering angle gain', **self.csfont)
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Gain value (Nm/rad)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='lower left')
+                 label="Virtual human gain")
+        plt.annotate("Weak steering", (15, Lh_pos_vir[int(n/12)]), xytext=(2.5, Lh_pos_vir[int(n/12)] + 2), arrowprops=options)
+        plt.annotate("No steering", (50, Lh_pos_vir[int(3*n/12)]), xytext=(30, Lh_pos_vir[int(3*n/12)] + 2), arrowprops=options)
+        plt.annotate("Strong steering", (80, Lh_pos_vir[int(5*n/12)]), xytext=(50, Lh_pos_vir[int(5*n/12)] + 1), arrowprops=options)
+        plt.annotate("No steering", (115, Lh_pos_vir[int(7*n/12)]), xytext=(90, Lh_pos_vir[int(7*n/12)] - 1), arrowprops=options)
+        plt.annotate("Counteracting steering", (150, Lh_pos_vir[int(9*n/12)]), xytext=(135, Lh_pos_vir[int(9*n/12)] - 1.5), arrowprops=options)
+        plt.annotate("No steering", (180, Lh_pos_vir[int(11*n/12)]), xytext=(150, Lh_pos_vir[int(11*n/12)] + 1.5), arrowprops=options)
+        plt.title('Real human: Steering angle gain', **self.csfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
+        plt.ylabel('Gain value ($Nm/rad$)', **self.hfont)
+        plt.legend(prop=self.legend_font, loc='lower left')
         plt.xlim(0, t_vir[-1])
-        plt.ylim(-3, 6.5)
+        plt.ylim(-4, 5)
         plt.tight_layout(pad=1)
 
         plt.figure()
         plt.plot(t_h, Lhhat_vel_h, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
-                 label="Estimated (human) $\hat{L}_{h}(t)$")
+                 label="Estimated human gain")
 
         plt.plot(t_vir, Lh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Virtual (human) $L_{h,vir}(t)$")
+                 label="Virtual human gain")
         # plt.plot(t_h, Lr_vel_h, self.tud_blue, linewidth=self.lw, linestyle="--", alpha=1,
         #          label="Robot gain $L_{r}(t)$")
-        # plt.annotate("Weak steering", (5, Lh_vel_vir[int(n / 12)]), xytext=(7.5, Lh_vel_vir[int(n / 12)] + 0.25),
-        #              arrowprops=options)
-        # plt.annotate("No steering", (22.5, Lh_vel_vir[int(3 * n / 12)]),
-        #              xytext=(12, Lh_vel_vir[int(3 * n / 12)] - 0.2), arrowprops=options)
-        # plt.annotate("Strong steering", (37.5, Lh_vel_vir[int(5 * n / 12)]),
-        #              xytext=(25, Lh_vel_vir[int(5 * n / 12)] + 0.2), arrowprops=options)
-        # plt.annotate("No steering", (52.5, Lh_vel_vir[int(7 * n / 12)]),
-        #              xytext=(48, Lh_vel_vir[int(7 * n / 12)] + 0.65), arrowprops=options)
-        # plt.annotate("Counteracting steering", (67.5, Lh_vel_vir[int(9 * n / 12)]),
-        #              xytext=(55, Lh_vel_vir[int(9 * n / 12)] - 0.2),
-        #              arrowprops=options)
-        # plt.annotate("No steering", (82.5, Lh_vel_vir[int(11 * n / 12)]),
-        #              xytext=(70, Lh_vel_vir[int(11 * n / 12)] + 0.65), arrowprops=options)
-        plt.title('Steering rate gain', **self.csfont)
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Gain value (Nms/rad)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='lower left')
+        plt.annotate("Weak steering", (15, Lh_vel_vir[int(n / 12)]), xytext=(2.5, Lh_vel_vir[int(n / 12)] + 0.25),
+                     arrowprops=options)
+        plt.annotate("No steering", (50, Lh_vel_vir[int(3 * n / 12)]),
+                     xytext=(30, Lh_vel_vir[int(3 * n / 12)] + 0.3), arrowprops=options)
+        plt.annotate("Strong steering", (80, Lh_vel_vir[int(5 * n / 12)]),
+                     xytext=(50, Lh_vel_vir[int(5 * n / 12)] + 0.2), arrowprops=options)
+        plt.annotate("No steering", (115, Lh_vel_vir[int(7 * n / 12)]),
+                     xytext=(115, Lh_vel_vir[int(7 * n / 12)] + 0.25), arrowprops=options)
+        plt.annotate("Counteracting steering", (150, Lh_vel_vir[int(9 * n / 12)]),
+                     xytext=(135, Lh_vel_vir[int(9 * n / 12)] - 0.2),
+                     arrowprops=options)
+        plt.annotate("No steering", (180, Lh_vel_vir[int(11 * n / 12)]),
+                     xytext=(150, Lh_vel_vir[int(11 * n / 12)] + 0.35), arrowprops=options)
+        plt.title('Real human: Steering rate gain', **self.csfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
+        plt.ylabel('Gain value ($Nms/rad$)', **self.hfont)
+        plt.legend(prop=self.legend_font, loc='lower left')
         plt.xlim(0, t_vir[-1])
         plt.ylim(-0.8, 0.8)
         plt.tight_layout(pad=1)
@@ -415,39 +399,37 @@ class PlotStuff:
         # Metrics
         plt.figure()
         plt.plot(t_sim, Lhhat_pos_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Simulated (human) $\hat{L}_{h,1,sim}(t)$")
+                 label="Simulated human gain")
         plt.plot(t_vir, Lhhat_pos_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
-                 label="Estimated (human) $\hat{L}_{h,1}(t)$")
+                 label="Estimated human gain")
         plt.plot(t_vir, Lh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Virtual (human) $L_{h,1,vir}(t)$")
+                 label="Virtual human gain")
         # self.stepinfo(t_vir, Lhhat_pos_vir, Lh_pos_vir)
-        plt.title('Steering angle gain', **self.csfont)
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Gain value (Nm/rad)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.title('Virtual human: Steering angle gain', **self.csfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
+        plt.ylabel('Gain value ($Nm/rad$)', **self.hfont)
+        plt.legend(prop=self.legend_font, loc='upper right')
         plt.xlim(0, 15)
         plt.ylim(-0.1, 1.9)
         plt.tight_layout(pad=1)
 
         plt.figure()
         plt.plot(t_sim, Lhhat_vel_sim[:-1], self.tud_red, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Simulated (human) $\hat{L}_{h,2,sim}(t)$")
+                 label="Simulated human gain")
         plt.plot(t_vir, Lhhat_vel_vir, self.tud_red, linewidth=self.lw, linestyle="--", alpha=1,
-                 label="Estimated (human) $\hat{L}_{h,2}(t)$")
+                 label="Estimated human gain")
         plt.plot(t_vir, Lh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
-                 label="Virtual (human) $L_{h,2,vir}(t)$")
+                 label="Virtual human gain")
         # self.stepinfo(t_vir, Lhhat_vel_vir, Lh_vel_vir)
-        plt.title('Steering rate gain', **self.csfont)
-        plt.xlabel('Time (s)', **self.hfont)
-        plt.ylabel('Gain value (Nms/rad)', **self.hfont)
-        plt.legend(prop={"size": self.legend_size}, loc='upper right')
+        plt.title('Virtual human: Steering rate gain', **self.csfont)
+        plt.xlabel('Time ($s$)', **self.hfont)
+        plt.ylabel('Gain value ($Nms/rad$)', **self.hfont)
+        plt.legend(prop=self.legend_font, loc='upper right')
         plt.xlim(0, 15)
         plt.ylim(-0.1, 0.6)
         plt.tight_layout(pad=1)
 
         self.save_all_figures()
-
-
         plt.show()
 
     def stepinfo(self, t, L, Lref):

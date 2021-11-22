@@ -111,6 +111,14 @@ s4 = [
     1, -2, 2
 ]
 
+age = [26, 24, 25, 26, 26, 24, 25, 25, 25, 26, 26, 89, 61, 26, 25, 24, 24, 24]
+print(np.std(age))
+print(np.median(age))
+
+gender = ["M", "F", "M", "F", "M", "M", "M", "M","M", "M", "M", "M", "M", "M", "F", "F", "F", "M"]
+print("no. males = ",gender.count("M"))
+print("no. females",gender.count("F"))
+
 auth = (np.array(s1) - np.array(s2)) / (np.array(s1) + np.array(s2) + 4)
 
 questionnaire = {
@@ -121,6 +129,8 @@ questionnaire = {
     "question_3": s3,
     "question_4": s4,
     "auth": auth,
+    "age": age,
+    "gender": gender,
 }
 
 q_pd = pd.DataFrame(questionnaire)

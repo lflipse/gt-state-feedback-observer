@@ -6,7 +6,7 @@ import numpy as np
 from Experiment.plots import PlotStuff
 import matplotlib.pyplot as plt
 import scipy.stats as stat
-from statsmodels.stats.anova import AnovaRM
+# from statsmodels.stats.anova import AnovaRM
 from matplotlib.backends.backend_pdf import PdfPages
 
 

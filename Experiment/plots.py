@@ -19,9 +19,13 @@ class PlotStuff:
         label_size_small = 10
         label_size_big = 14
         self.linewidth = 4
+        self.legend_size_small = 8
+        self.legend_size_large = 12
         self.csfont = {'fontname': 'Georgia', 'size': title_size}
         self.hfont = {'fontname': 'Georgia', 'size': label_size_big}
         self.hfont_small = {'fontname': 'Georgia', 'size': label_size_small}
+        self.legend_font_small = {'family': 'Georgia', 'size': self.legend_size_small}
+        self.legend_font_large = {'family': 'Georgia', 'size': self.legend_size_large}
 
         # Colors
         self.tud_black = "#000000"
@@ -341,7 +345,7 @@ class PlotStuff:
                     figd.scatter(-100, -100, s=size,
                                  edgecolor=self.colormap[j],
                                  marker="o", linewidths=3, facecolors=self.colormap[j], label=condition)
-                    figd.legend()
+                    figd.legend(prop=self.legend_font_large)
 
                 im1 = figd.scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, c=lh, edgecolor=self.colormap[j],
                                  marker=MarkerStyle("o", fillstyle="left"), cmap="Reds", linewidths=3, vmin=-4, vmax=10)
@@ -372,7 +376,7 @@ class PlotStuff:
                 figd.set_xlim(1, 6)
                 figd.set_ylim(0, 13)
                 if j == 0:
-                    figd.legend()
+                    figd.legend(prop=self.legend_font_large)
                 figd.set_xlabel("Total Estimated System Gain (Nm/rad)", **self.hfont)
                 figd.set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
                 figd.set_title("Comparison", **self.csfont)
@@ -396,7 +400,7 @@ class PlotStuff:
                     fige.plot([1.2, 0], [0, 1.2], color=self.tud_blue, alpha=0.5, linewidth=self.linewidth)
                     fige.plot([1.5, 0], [0, 1.5], color=self.tud_blue, alpha=0.5, linewidth=self.linewidth)
                 if i == 0:
-                    fige.legend()
+                    fige.legend(prop=self.legend_font_large)
                 fige.set_xlabel("RMS Estimated Human Power (W)", **self.hfont)
                 fige.set_ylabel("RMS Robot Power (W)", **self.hfont)
                 fige.set_title("Comparison", **self.csfont)
@@ -486,9 +490,13 @@ class PlotStuff:
                 fig, axa = plt.subplots(4, 2, gridspec_kw={'width_ratios': [5, 1]})
 
                 fig.suptitle(condition, **self.csfont)
-                axa[0, 0].stackplot(t, Lhhat_pos, Lr_pos, colors=colors, labels=labels, edgecolor='black', linewidth=0.8)
+                stacks = axa[0, 0].stackplot(t, Lhhat_pos, Lr_pos, colors=colors, labels=labels, edgecolor='black', linewidth=0.8)
+                hatches = ["\\", "//"]
+                for stack, hatch in zip(stacks, hatches):
+                    stack.set_hatch(hatch)
+
                 axa[0, 0].set_ylabel('Gain (Nm/rad)', **self.hfont_small)
-                axa[0, 0].legend(prop={"size": 8}, loc='upper left')
+                axa[0, 0].legend(prop=self.legend_font_small, loc='upper left')
                 axa[0, 0].set_xticks([])
                 axa[0, 0].set_xlim(t_start, t_example)
                 Lt = np.array(Lhhat_pos) + np.array(Lr_pos)
@@ -528,18 +536,24 @@ class PlotStuff:
                 axa[1, 1].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 
 
-                axa[2, 0].stackplot(t, uhhat, ur, -np.array(uhtilde), colors=[self.tud_red, self.tud_blue, self.tud_orange],
+                stacks = axa[2, 0].stackplot(t, uhhat, ur, -np.array(uhtilde), colors=[self.tud_red, self.tud_blue, self.tud_orange],
                               labels=['Estimated Human', 'Robot', 'Estimation Error'], edgecolor='black', linewidth=0.8)
+                hatches = ["\\", "//"]
+                for stack, hatch in zip(stacks, hatches):
+                    stack.set_hatch(hatch)
                 axa[2, 0].set_ylabel('Torque (Nm)', **self.hfont_small)
-                axa[2, 0].legend(prop={"size": 8}, loc='upper left')
+                axa[2, 0].legend(prop=self.legend_font_small, loc='upper left')
                 axa[2, 0].set_xlim(t_start, t_example)
                 axa[2, 0].set_xticks([])
 
                 plt.figure()
-                plt.stackplot(t, uhhat, ur, -np.array(uhtilde),
+                stacks = plt.stackplot(t, uhhat, ur, -np.array(uhtilde),
                                     colors=[self.tud_red, self.tud_blue, self.tud_orange],
                                     labels=['Estimated Human', 'Robot', 'Estimation Error'], edgecolor='black',
                                     linewidth=0.2)
+                hatches = ["\\", "//"]
+                for stack, hatch in zip(stacks, hatches):
+                    stack.set_hatch(hatch)
                 plt.ylabel('Torque (Nm)', **self.hfont_small)
                 plt.legend(prop={"size": 8}, loc='upper left')
                 plt.xlim(t_start, 30)
@@ -561,10 +575,13 @@ class PlotStuff:
                 ymin_t = min(Qhhat_pos)
                 ymax_t = max(Qt)
 
-                axa[3, 0].stackplot(t, Qhhat_pos, Qr_pos, colors=colors, labels=labels, edgecolor='black',
+                stacks = axa[3, 0].stackplot(t, Qhhat_pos, Qr_pos, colors=colors, labels=labels, edgecolor='black',
                                     linewidth=0.8)
+                hatches = ["\\", "//"]
+                for stack, hatch in zip(stacks, hatches):
+                    stack.set_hatch(hatch)
                 axa[3, 0].set_ylabel('Cost Weight (-)', **self.hfont_small)
-                axa[3, 0].legend(prop={"size": 8}, loc='upper left')
+                axa[3, 0].legend(prop=self.legend_font_small, loc='upper left')
                 axa[3, 0].set_ylim(ymin_t, ymax_t)
                 axa[3, 0].set_xlim(t_start, t_example)
                 axa[3, 0].set_xlabel("Time (s)")
@@ -602,14 +619,17 @@ class PlotStuff:
             # plt.tight_layout(pad=1)
 
             figc.suptitle("Gains", **self.csfont)
-            axsb[repetition, c].stackplot(t, Lhhat_pos, Lr_pos, baseline='zero', colors=colors,
+            stacks = axsb[repetition, c].stackplot(t, Lhhat_pos, Lr_pos, baseline='zero', colors=colors,
                                               edgecolor='black', linewidth=0.8, labels=labels)
+            hatches = ["\\", "//"]
+            for stack, hatch in zip(stacks, hatches):
+                stack.set_hatch(hatch)
             axsb[repetition, c].set_ylim(-1, 12)
             axsb[repetition, c].set_xlim(t_start, t_end)
             if repetition == 0:
                 axsb[repetition, c].set_title(title)
                 axsb[repetition, c].set_xticks([])
-                axsb[repetition, c].legend(prop={"size": 6}, loc='upper left')
+                axsb[repetition, c].legend(prop=self.legend_font_small, loc='upper left')
             if repetition == 3:
                 axsb[repetition, c].set_xlabel('Time (s)', **self.hfont)
             else:
