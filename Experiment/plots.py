@@ -32,7 +32,7 @@ class PlotStuff:
         self.tud_black = "#000000"
         self.tud_blue = "#0066A2"
         self.tud_red = "#c3312f"
-        self.tud_green = "#99D28C"
+        self.tud_green = "#00A390"
         self.tud_yellow = "#F1BE3E"
         self.tud_orange = "#EB7245"
         self.tud_lightblue = "#00B7D3"
@@ -79,7 +79,7 @@ class PlotStuff:
 
         # Control authority
         figa, axa = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
-        figa.suptitle("Control Authority", **self.csfont)
+        figa.suptitle("Control Share", **self.csfont)
         sns.boxplot(data=metrics_pd, x="condition", y="authority", palette=self.colors, ax=axa[0], order=self.order)
         sns.swarmplot(data=metrics_pd, x="condition", y="authority", palette=self.colors, ax=axa[0], order=self.order,
                       alpha=0.6, size=6, linewidth=1)
@@ -125,7 +125,7 @@ class PlotStuff:
                       alpha=0.6, size=6, linewidth=1)
         axc[0].set_xticklabels(labels)
         axc[0].set_xlabel("")
-        axc[0].set_ylabel("RMS power (W)", **self.hfont)
+        axc[0].set_ylabel("RMS power ($W$)", **self.hfont)
         ylims = axc[0].get_ylim()
         delta_y = ylims[1] - ylims[0]
         width = delta_y / 40
@@ -178,7 +178,7 @@ class PlotStuff:
         Qh2 = inputs["cost_human_neg"]
         Qr1 = inputs["cost_robot_pos"]
         Lr1 = inputs["gain_robot_pos"]
-        Lh = inputs["gain_human"]
+        Lh1 = inputs["gain_human_pos"]
         Qr2 = inputs["cost_robot_neg"]
         Lr2 = inputs["gain_robot_neg"]
         C1 = inputs["auth_pos"]
@@ -224,7 +224,7 @@ class PlotStuff:
         # axs5 = [fig13.gca(), fig14.gca(), fig15.gca(), fige.gca()]
 
         h = sns.jointplot(data=mean_metrics_pd, x="authority", y="subjective_authority", hue="condition",
-                      palette=self.colors, hue_order=self.order, kind="scatter",)
+                      palette=self.colors, hue_order=self.order, kind="scatter", joint_kws={"s":100})
         h.fig.suptitle("Subjective and objective control share", **self.csfont)
         # jp.fig.legend(fontsize=self.legend_size, title=[])
         h.ax_joint.set_xlabel("Objective control share", **self.hfont)
@@ -400,7 +400,7 @@ class PlotStuff:
                 figd.set_ylim(0, 13)
                 if j == 0:
                     figd.legend(prop=self.legend_font_large)
-                figd.set_xlabel("Total Estimated System Gain (Nm/rad)", **self.hfont)
+                figd.set_xlabel("Total Estimated System Gain ($Nm/rad$)", **self.hfont)
                 figd.set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
                 figd.set_title("Comparison", **self.csfont)
 
@@ -417,7 +417,7 @@ class PlotStuff:
                 fige.set_xlim(0, 1.2)
                 fige.set_ylim(0, 1.2)
                 if i == 0 and j == 0:
-                    fige.plot([0.3, 0], [0, 0.3], color=self.tud_blue, alpha=0.5, label="Constant System Power", linewidth=2)
+                    fige.plot([0.3, 0], [0, 0.3], color=self.tud_blue, alpha=0.5, label="Constant System Power", linewidth=3)
                     fige.plot([0.6, 0], [0, 0.6], color=self.tud_blue, alpha=0.5, linewidth=2)
                     fige.plot([0.9, 0], [0, 0.9], color=self.tud_blue, alpha=0.5, linewidth=2)
                     fige.plot([1.2, 0], [0, 1.2], color=self.tud_blue, alpha=0.5, linewidth=2)
@@ -425,8 +425,8 @@ class PlotStuff:
                     fige.plot([1.8, 0], [0, 1.8], color=self.tud_blue, alpha=0.5, linewidth=2)
                 if i == 0:
                     fige.legend(prop=self.legend_font_large)
-                fige.set_xlabel("RMS Estimated Human Power (W)", **self.hfont)
-                fige.set_ylabel("RMS Robot Power (W)", **self.hfont)
+                fige.set_xlabel("RMS Estimated Human Power ($W$)", **self.hfont)
+                fige.set_ylabel("RMS Robot Power ($W$)", **self.hfont)
                 fige.set_title("Comparison", **self.csfont)
 
 
@@ -518,11 +518,11 @@ class PlotStuff:
 
                 fig.suptitle(condition, **self.csfont)
                 stacks = axa[0, 0].stackplot(t, Lhhat_pos, Lr_pos, colors=colors, labels=labels, edgecolor='black', linewidth=0.8)
-                hatches = ["\\", "//"]
+                hatches = ["\\\\", "//"]
                 for stack, hatch in zip(stacks, hatches):
                     stack.set_hatch(hatch)
 
-                axa[0, 0].set_ylabel('Gain (Nm/rad)', **self.hfont_small)
+                axa[0, 0].set_ylabel('Gain ($Nm/rad$)', **self.hfont_small)
                 axa[0, 0].legend(prop=self.legend_font_small, loc='upper left')
                 axa[0, 0].set_xticks([])
                 axa[0, 0].set_xlim(t_start, t_example)
@@ -568,7 +568,7 @@ class PlotStuff:
                 hatches = ["\\", "//"]
                 for stack, hatch in zip(stacks, hatches):
                     stack.set_hatch(hatch)
-                axa[2, 0].set_ylabel('Torque (Nm)', **self.hfont_small)
+                axa[2, 0].set_ylabel('Torque ($Nm$)', **self.hfont_small)
                 axa[2, 0].legend(prop=self.legend_font_small, loc='upper left')
                 axa[2, 0].set_xlim(t_start, t_example)
                 axa[2, 0].set_xticks([])
@@ -581,10 +581,10 @@ class PlotStuff:
                 hatches = ["\\", "//"]
                 for stack, hatch in zip(stacks, hatches):
                     stack.set_hatch(hatch)
-                plt.ylabel('Torque (Nm)', **self.hfont_small)
+                plt.ylabel('Torque ($Nm$)', **self.hfont_small)
                 plt.legend(prop={"size": 8}, loc='upper left')
                 plt.xlim(t_start, 30)
-                plt.xlabel("Time (s)")
+                plt.xlabel("Time ($s$)")
 
                 data_inputs = pd.DataFrame({"Input torque": uhhat})
                 sns.histplot(data=data_inputs, y=uhhat, ax=axa[2, 1], kde=True, color=self.tud_red)
@@ -611,7 +611,7 @@ class PlotStuff:
                 axa[3, 0].legend(prop=self.legend_font_small, loc='upper left')
                 axa[3, 0].set_ylim(ymin_t, ymax_t)
                 axa[3, 0].set_xlim(t_start, t_example)
-                axa[3, 0].set_xlabel("Time (s)")
+                axa[3, 0].set_xlabel("Time ($s$)")
 
                 data_gains = pd.DataFrame({"costs": Qhhat_pos})
                 sns.histplot(data=data_gains, y="costs", ax=axa[3, 1], kde=True, color=self.tud_red)
@@ -629,7 +629,7 @@ class PlotStuff:
                 plt.tight_layout(pad=1)
 
             auth_est = (np.array(Lr_pos) - np.array(Lhhat_pos)) / (np.array(Lr_pos) + np.array(Lhhat_pos) + 0.001)
-            figb.suptitle("Estimated Control Authority", **self.csfont)
+            figb.suptitle("Estimated Control Share", **self.csfont)
             if c > 0:
                 axs[repetition, c - 1].plot(t, auth_est, label='Estimated authority')
                 # axs[repetition, c - 1].plot(t, auth, alpha=0.3, label='Measured authority')
@@ -640,7 +640,7 @@ class PlotStuff:
                     axs[repetition, c - 1].set_xticks([])
                     # axs[repetition, c - 1].legend(prop={"size": 8}, loc='lower right')
                 elif repetition == 3:
-                    axs[repetition, c - 1].set_xlabel('Time (s)', **self.hfont)
+                    axs[repetition, c - 1].set_xlabel('Time ($s$)', **self.hfont)
                 else:
                     axs[repetition, c - 1].set_xticks([])
             # plt.tight_layout(pad=1)
@@ -658,7 +658,7 @@ class PlotStuff:
                 axsb[repetition, c].set_xticks([])
                 axsb[repetition, c].legend(prop=self.legend_font_small, loc='upper left')
             if repetition == 3:
-                axsb[repetition, c].set_xlabel('Time (s)', **self.hfont)
+                axsb[repetition, c].set_xlabel('Time ($s$)', **self.hfont)
             else:
                 axsb[repetition, c].set_xticks([])
             # plt.tight_layout(pad=1)
