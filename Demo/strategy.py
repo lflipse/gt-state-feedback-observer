@@ -286,5 +286,5 @@ class Strategy():
         C = (Lh[0, 0] - Lr[0, 0]) / (Lr[0, 0] + Lh[0, 0] + 0.001)
         return C, Lr, Lh
 
-strategy = Strategy()
-strategy.do()
+# strategy = Strategy()
+# strategy.do()

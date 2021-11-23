@@ -87,7 +87,7 @@ class PlotStuff:
         axa[0].set_xlabel("")
         # self.annotate_significance(2, axa[0], ["***"])
         ylims = axa[0].get_ylim()
-        axa[0].set_ylabel("Authority (-)", **self.hfont)
+        axa[0].set_ylabel("Control share (-)", **self.hfont)
         delta_y = ylims[1] - ylims[0]
         width = delta_y / 40
         sns.histplot(data=metrics_pd, y="authority", hue="condition", ax=axa[1],
@@ -172,17 +172,17 @@ class PlotStuff:
         # data_pd = pd.DataFrame(data)
         mean_metrics_pd = pd.DataFrame(averaged_metrics)
 
-        strategy = Strategy()
-        inputs = strategy.run()
-        Qh1 = inputs["cost_human_pos"]
-        Qh2 = inputs["cost_human_neg"]
-        Qr1 = inputs["cost_robot_pos"]
-        Lr1 = inputs["gain_robot_pos"]
-        Lh1 = inputs["gain_human_pos"]
-        Qr2 = inputs["cost_robot_neg"]
-        Lr2 = inputs["gain_robot_neg"]
-        C1 = inputs["auth_pos"]
-        C2 = inputs["auth_neg"]
+        # strategy = Strategy()
+        # inputs = strategy.run()
+        # Qh1 = inputs["cost_human_pos"]
+        # Qh2 = inputs["cost_human_neg"]
+        # Qr1 = inputs["cost_robot_pos"]
+        # Lr1 = inputs["gain_robot_pos"]
+        # Lh1 = inputs["gain_human_pos"]
+        # Qr2 = inputs["cost_robot_neg"]
+        # Lr2 = inputs["gain_robot_neg"]
+        # C1 = inputs["auth_pos"]
+        # C2 = inputs["auth_neg"]
 
 
         # Let's go chronologically
@@ -277,7 +277,7 @@ class PlotStuff:
                 # print(key)
                 performance = performance_dict[key]
                 standard = 50
-                size = int(round(standard + 800/performance, 1))
+                size = int(round(standard + 500/performance, 1))
                 # print("size = ", size)
                 label = "Participant " + str(i)
 
@@ -360,7 +360,7 @@ class PlotStuff:
                 auth = data_now["authority"][key]
                 # lr = data_now["gain_robot"][key]
 
-                markers = ["o", "p", "s"]
+                markers = ["o", "v", "p"]
 
                 if i == 0:
                     figd.scatter(-100, -100, s=size,
@@ -369,7 +369,7 @@ class PlotStuff:
                     figd.legend(prop=self.legend_font_large)
 
                 im1 = figd.scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, c=auth, edgecolor=self.colormap[j],
-                                 marker="o", cmap="seismic", linewidths=3, vmin=-2, vmax=2)
+                                 marker=markers[j], cmap="seismic", linewidths=3, vmin=-2, vmax=2)
                 # im2 = figd.scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, c=lr, edgecolor=self.colormap[j],
                 #                  marker=MarkerStyle("o", fillstyle="right"), cmap="Blues", linewidths=3, vmin=-4, vmax=10)
                 if j == 0 and i == 0:
@@ -396,7 +396,7 @@ class PlotStuff:
 
                 if j == 0 and i == 0:
                     figd.plot(data_robot["robot_angle_gain"], data_robot["rms_angle_error"], self.tud_blue,
-                                 linewidth=self.linewidth, alpha=0.5, label="Optimal Control",)
+                                 linewidth=self.linewidth, alpha=0.7, label="Optimal Control",)
 
                 figd.set_xlim(1, 6)
                 figd.set_ylim(0, 13)
@@ -415,16 +415,16 @@ class PlotStuff:
                 # axs5[j].set_ylabel("RMS Robot Power (W)", **self.hfont)
                 # axs5[j].set_title(data_now['condition'][key], **self.csfont)
 
-                fige.scatter(data_now["human_power"][key], data_now["robot_power"][key], color=self.colormap[j], s=size, label=condition)
-                fige.set_xlim(0, 1.2)
-                fige.set_ylim(0, 1.2)
+                fige.scatter(data_now["human_power"][key], data_now["robot_power"][key], marker=markers[j], color=self.colormap[j], s=size, label=condition)
+                fige.set_xlim(-0.05, 1.2)
+                fige.set_ylim(-0.05, 1.2)
                 if i == 0 and j == 0:
-                    fige.plot([0.3, 0], [0, 0.3], color=self.tud_blue, alpha=0.5, label="Constant System Power", linewidth=3)
-                    fige.plot([0.6, 0], [0, 0.6], color=self.tud_blue, alpha=0.5, linewidth=2)
-                    fige.plot([0.9, 0], [0, 0.9], color=self.tud_blue, alpha=0.5, linewidth=2)
-                    fige.plot([1.2, 0], [0, 1.2], color=self.tud_blue, alpha=0.5, linewidth=2)
-                    fige.plot([1.5, 0], [0, 1.5], color=self.tud_blue, alpha=0.5, linewidth=2)
-                    fige.plot([1.8, 0], [0, 1.8], color=self.tud_blue, alpha=0.5, linewidth=2)
+                    fige.plot([0.3, -0.3], [-0.3, 0.3], color=self.tud_blue, alpha=0.5, label="Constant System Power", linewidth=3)
+                    fige.plot([0.6, -0.3], [-0.3, 0.6], color=self.tud_blue, alpha=0.5, linewidth=3)
+                    fige.plot([0.9, -0.3], [-0.3, 0.9], color=self.tud_blue, alpha=0.5, linewidth=3)
+                    fige.plot([1.2, -0.3], [-0.3, 1.2], color=self.tud_blue, alpha=0.5, linewidth=3)
+                    fige.plot([1.5, -0.3], [-0.3, 1.5], color=self.tud_blue, alpha=0.5, linewidth=3)
+                    fige.plot([1.8, -0.3], [-0.3, 1.8], color=self.tud_blue, alpha=0.5, linewidth=3)
                 if i == 0:
                     fige.legend(prop=self.legend_font_large)
                 fige.set_xlabel("RMS Estimated Human Power ($W$)", **self.hfont)
@@ -566,7 +566,8 @@ class PlotStuff:
 
 
                 stacks = axa[2, 0].stackplot(t, uhhat, ur, -np.array(uhtilde), colors=[self.tud_red, self.tud_blue, self.tud_orange],
-                              labels=['Estimated Human', 'Robot', 'Estimation Error'], edgecolor='black', linewidth=0.8)
+                              labels=['Estimated Human', 'Robot', 'Estimation Error'], edgecolor='black', linewidth=0.2)
+
                 hatches = ["\\", "//"]
                 for stack, hatch in zip(stacks, hatches):
                     stack.set_hatch(hatch)
@@ -579,7 +580,7 @@ class PlotStuff:
                 stacks = plt.stackplot(t, uhhat, ur, -np.array(uhtilde),
                                     colors=[self.tud_red, self.tud_blue, self.tud_orange],
                                     labels=['Estimated Human', 'Robot', 'Estimation Error'], edgecolor='black',
-                                    linewidth=0.2)
+                                    linewidth=0.5)
                 hatches = ["\\", "//"]
                 for stack, hatch in zip(stacks, hatches):
                     stack.set_hatch(hatch)
@@ -663,6 +664,9 @@ class PlotStuff:
                 axsb[repetition, c].set_xlabel('Time ($s$)', **self.hfont)
             else:
                 axsb[repetition, c].set_xticks([])
+
+            if c ==0:
+                axsb[repetition, c].set_ylabel("Gain ($Nm/rad$)")
             # plt.tight_layout(pad=1)
 
 
