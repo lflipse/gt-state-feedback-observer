@@ -40,7 +40,7 @@ class ControllerLi:
         x_tilde_dot = x_hat_dot - x_dot
 
         # P matrix update rule
-        P_hhat_dot = alpha * (x_tilde) * (e).transpose()
+        P_hhat_dot = np.matmul(alpha, (x_tilde) * (e).transpose())
 
         ydot = np.array([x_dot.transpose(), x_tilde_dot.transpose(), x_hat_dot.transpose(), [P_hhat_dot[0]], [P_hhat_dot[1]]]).flatten()
 
@@ -142,8 +142,8 @@ class ControllerLi:
 
             # Update cost matrices
             Qhhat[i + 1, :, :] = self.update_costs(Qr[i, :, :], Phhat[i + 1, :, :])
-            Qhhat[i + 1, 0, 1] = 0
-            Qhhat[i + 1, 1, 0] = 0
+            # Qhhat[i + 1, 0, 1] = 0
+            # Qhhat[i + 1, 1, 0] = 0
 
         outputs = {
             "states": y[:, 0:2],
@@ -165,6 +165,6 @@ class ControllerLi:
             "human_costs": Jh,
             "human_estimated_costs": Jhhat,
             "robot_costs": Jr,
+            "estimated_states": y[:, 4:6],
         }
-
         return outputs

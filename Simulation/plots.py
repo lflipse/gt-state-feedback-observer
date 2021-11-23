@@ -38,10 +38,11 @@ class PlotStuff:
             lw = 4
             title_size = 24
             label_size = 22
-            legend_size = 15
+            legend_size = 14
 
         csfont = {'fontname': 'Georgia', 'size': title_size}
         hfont = {'fontname': 'Georgia', 'size': label_size}
+        legend_font = {'family': 'Georgia', 'size': legend_size}
 
         list_inputs = [inputs1, inputs2, inputs3]
         list_outputs = [outputs1, outputs2, outputs3]
@@ -50,6 +51,7 @@ class PlotStuff:
         if inputs3 != None:
             print("we're doing sensitivity analysis")
             m = 3
+
             robot_colors = [tud_blue, tud_blue2, tud_blue3]
             human_colors = [tud_red, tud_blue3, tud_green]
 
@@ -68,8 +70,10 @@ class PlotStuff:
         elif inputs2 != None:
             print("we're comparing")
             m = 2
-            robot_colors = [tud_blue, tud_orange]
-            human_colors = [tud_red, tud_green]
+            robot_colors = [tud_blue3, tud_orange]
+            human_colors = robot_colors
+            # robot_colors = [tud_blue, tud_orange]
+            # human_colors = [tud_red, tud_green]
         else:
             print("we're checking performance")
             m = 1
@@ -121,6 +125,7 @@ class PlotStuff:
                 estimates = False
 
             if estimates:
+                print("using estimates")
                 Jhhat = outputs["human_estimated_costs"]
                 uhhat = outputs["human_estimated_input"]
                 Qhhat = outputs["human_estimated_Q"]
@@ -161,9 +166,9 @@ class PlotStuff:
             except:
                 plt.plot(T, x[:-1, 0], robot_colors[i], linestyle="-", linewidth=lw, label=label)
             plt.title('Position', **csfont)
-            plt.xlabel('Time (s)', **hfont)
-            plt.ylabel('Position (m)', **hfont)
-            plt.legend(prop={"size": legend_size}, loc='upper right')
+            plt.xlabel('Time ($s$)', **hfont)
+            plt.ylabel('Position ($m$)', **hfont)
+            plt.legend(prop=legend_font, loc='upper right')
             plt.xlim(0, t)
             plt.tight_layout(pad=1)
 
@@ -184,9 +189,9 @@ class PlotStuff:
             except:
                 plt.plot(T, x[:-1, 1], robot_colors[i], linestyle="-", linewidth=lw, label=label)
             plt.title('Velocity', **csfont)
-            plt.xlabel('Time (s)', **hfont)
-            plt.ylabel('Velocity (m/s)', **hfont)
-            plt.legend(prop={"size": legend_size}, loc='upper right')
+            plt.xlabel('Time ($s$)', **hfont)
+            plt.ylabel('Velocity ($m/s$)', **hfont)
+            plt.legend(prop=legend_font, loc='upper right')
             plt.xlim(0, t)
             plt.tight_layout(pad=1)
 
@@ -206,9 +211,9 @@ class PlotStuff:
             else:
                 plt.plot(T[1:], Jt[1:], robot_colors[i], linestyle="-", linewidth=lw, label=controller)
             plt.title('Cost function', **csfont)
-            plt.xlabel('Time (s)', **hfont)
+            plt.xlabel('Time ($s$)', **hfont)
             plt.ylabel('Cost function value (-)', **hfont)
-            plt.legend(prop={"size": legend_size}, loc='upper right')
+            plt.legend(prop=legend_font, loc='best')
             plt.xlim(0, t)
             plt.tight_layout(pad=1)
 
@@ -229,9 +234,9 @@ class PlotStuff:
             else:
                 plt.plot(T, ut, robot_colors[i], linestyle="-", linewidth=lw, label=controller)
             plt.title('Control action', **csfont)
-            plt.xlabel('Time (s)', **hfont)
-            plt.ylabel('Input force (N)', **hfont)
-            plt.legend(prop={"size": legend_size}, loc='upper right')
+            plt.xlabel('Time ($s$)', **hfont)
+            plt.ylabel('Input force ($N$)', **hfont)
+            plt.legend(prop=legend_font, loc='best')
             plt.xlim(0, t)
             plt.tight_layout(pad=1)
 
@@ -243,16 +248,23 @@ class PlotStuff:
                     plt.plot(T, Lhhat[:-1, 0], human_colors[i], linewidth=lw, linestyle="--",
                              label=self.create_labels(value, var_label, "human gain $\hat{L}_{h,1}(t)$"))
                 except:
-                    print("did not work")
-                    a=1
+                    plt.plot(T, Lhhat[:, 0], human_colors[i], linewidth=lw, linestyle="--",
+                             label=self.create_labels(value, var_label, "human gain $\hat{L}_{h,1}(t)$"))
                 if m < 2:
                     plt.plot(T, Lr[:, 0], robot_colors[i], linewidth=lw, label="Robot gain $L_{r,1}(t)$")
             else:
-                plt.plot(T, Lt[:, 0], robot_colors[i], linewidth=lw, alpha=0.7, label=controller)
+                if i == 0:
+                    plt.plot(T, Lh[:, 0], human_colors[i], linewidth=lw, alpha=0.7, label="Real human gain")
+                try:
+                    plt.plot(T, Lhhat[:-1, 0], human_colors[i], linewidth=lw, linestyle="--",
+                             label=label)
+                except:
+                    plt.plot(T, Lhhat[:, 0], human_colors[i], linewidth=lw, linestyle="--",
+                             label=label)
             plt.title('Position gain', **csfont)
-            plt.xlabel('Time (s)', **hfont)
-            plt.ylabel('Gain value (N/m)', **hfont)
-            plt.legend(prop={"size": legend_size}, loc='lower right')
+            plt.xlabel('Time ($s$)', **hfont)
+            plt.ylabel('Gain value ($N/m$)', **hfont)
+            plt.legend(prop=legend_font, loc='best')
             plt.xlim(0, t)
             plt.tight_layout(pad=1)
 
@@ -262,51 +274,68 @@ class PlotStuff:
                     plt.plot(T, Lh[:, 1], human_colors[i], linewidth=lw, alpha=0.7, label="Real human gain $L_{h,2}(t)$")
                 try:
                     plt.plot(T, Lhhat[:-1, 1], human_colors[i], linewidth=lw, linestyle="--",
-                             label=self.create_labels(value, var_label, "human gain $\hat{L}_{h,2}(t)"))
+                             label=self.create_labels(value, var_label, "human gain $\hat{L}_{h,2}(t)$"))
                 except:
-                    a=1
+                    plt.plot(T, Lhhat[:, 1], human_colors[i], linewidth=lw, linestyle="--",
+                             label=self.create_labels(value, var_label, "human gain $\hat{L}_{h,2}(t)$"))
                 if m < 2:
                     plt.plot(T, Lr[:, 1], robot_colors[i], linewidth=lw, label="Robot gain $L_{r,2}(t)$")
             else:
-                plt.plot(T, Lt[:, 1], robot_colors[i], linewidth=lw, label=controller)
+                if i == 0:
+                    plt.plot(T, Lh[:, 1], human_colors[i], linewidth=lw, alpha=0.7,
+                             label="Real human gain")
+                try:
+                    plt.plot(T, Lhhat[:-1, 1], human_colors[i], linewidth=lw, linestyle="--",
+                             label=label)
+                except:
+                    plt.plot(T, Lhhat[:, 1], human_colors[i], linewidth=lw, linestyle="--",
+                             label=label)
             plt.title('Velocity gain', **csfont)
-            plt.xlabel('Time (s)', **hfont)
-            plt.ylabel('Gain value (Ns/m)', **hfont)
-            plt.legend(prop={"size": legend_size}, loc='upper right')
+            plt.xlabel('Time ($s$)', **hfont)
+            plt.ylabel('Gain value ($Ns/m$)', **hfont)
+            plt.legend(prop=legend_font, loc='best')
             plt.xlim(0, t)
             plt.tight_layout(pad=1)
 
             plt.figure(f6.number)
             if i == 0:
-                plt.plot(T, Qh[:, 0, 0], human_colors[i], linewidth=lw, alpha=0.7, label="Real human weight $Q_{h,(1,1)}(t)$")
+                plt.plot(T, Qh[:, 0, 0], human_colors[i], linewidth=lw, alpha=0.7, label="Real human weight")
             try:
-                plt.plot(T, Qhhat[:-1, 0, 0], human_colors[i], linewidth=lw, linestyle="--",
-                         label=self.create_labels(value, var_label, "human weight$\hat{Q}_{h,(1,1)}(t)$"))
+                if m != 2:
+                    plt.plot(T, Qhhat[:-1, 0, 0], human_colors[i], linewidth=lw, linestyle="--",
+                         label=self.create_labels(value, var_label, "human weight"))
+                else:
+                    plt.plot(T, Qhhat[:-1, 0, 0], human_colors[i], linewidth=lw, linestyle="--",
+                             label=label)
             except:
                 a=1
             if m < 2:
-                plt.plot(T, Qr[:, 0, 0], robot_colors[i], linewidth=lw, label="Robot weight $Q_{r,(1,1)}(t)$")
+                plt.plot(T, Qr[:, 0, 0], robot_colors[i], linewidth=lw, label="Robot weight")
             plt.title('Position cost weight', **csfont)
-            plt.xlabel('Time (s)', **hfont)
+            plt.xlabel('Time ($s$)', **hfont)
             plt.ylabel('Weight value (-)', **hfont)
-            plt.legend(prop={"size": legend_size}, loc='lower right')
+            plt.legend(prop=legend_font, loc='best')
             plt.xlim(0, t)
             plt.tight_layout(pad=1)
 
             plt.figure(f7.number)
             if i == 0:
-                plt.plot(T, Qh[:, 1, 1], human_colors[i], linewidth=lw, alpha=0.7, label="Real human weight $Q_{h,(2,2)}(t)$")
+                plt.plot(T, Qh[:, 1, 1], human_colors[i], linewidth=lw, alpha=0.7, label="Real human weight")
             try:
-                plt.plot(T, Qhhat[:-1, 1, 1], human_colors[i], linewidth=lw, linestyle="--",
-                         label=self.create_labels(value, var_label, "human weight $\hat{Q}_{h,(2,2)}(t)$"))
+                if m != 2:
+                    plt.plot(T, Qhhat[:-1, 1, 1], human_colors[i], linewidth=lw, linestyle="--",
+                         label=self.create_labels(value, var_label, "human weight"))
+                else:
+                    plt.plot(T, Qhhat[:-1, 1, 1], human_colors[i], linewidth=lw, linestyle="--",
+                             label=label)
             except:
                 a=1
             if m < 2:
-                plt.plot(T, Qr[:, 1, 1], robot_colors[i], linewidth=lw, label="Robot weight $Q_{r,(2,2)}(t)$")
+                plt.plot(T, Qr[:, 1, 1], robot_colors[i], linewidth=lw, label="Robot weight")
             plt.title('Velocity cost weight', **csfont)
-            plt.xlabel('Time (s)', **hfont)
+            plt.xlabel('Time ($s$)', **hfont)
             plt.ylabel('Weight value (-)', **hfont)
-            plt.legend(prop={"size": legend_size}, loc='upper right')
+            plt.legend(prop=legend_font, loc='best')
             plt.xlim(0, t)
             plt.tight_layout(pad=1)
 
@@ -316,7 +345,7 @@ class PlotStuff:
         try:
             if save:
                 if m == 1:
-                    name = location + size + '_performance.pdf'
+                    name = location + size + '_performance_li.pdf'
                 elif m == 2:
                     name = location + size + '_comparison.pdf'
                 else:

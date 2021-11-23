@@ -330,7 +330,7 @@ class GreyBox:
         return cost
 
     def compute_metrics(self):
-        phi =self.data_set_ver["steering_angle"]
+        phi = self.data_set_ver["steering_angle"]
         phidot = self.data_set_ver["steering_rate"]
         dphi_f = np.abs(np.array(phi) - np.array(self.phi_sim_final))
         dphidot_f = np.abs(np.array(phidot) - np.array(self.phidot_sim_final))
@@ -573,7 +573,7 @@ class GreyBox:
 
         print("Make this into a table! VAF values:")
         print("Initial guess: ", self.VAF["initial"])
-        print("Finald: ", self.VAF["final"])
+        print("Final: ", self.VAF["final"])
         print("Linear: ", self.VAF["linear"])
 
         print("means (init, final, linear), (angle, rate, cost):")

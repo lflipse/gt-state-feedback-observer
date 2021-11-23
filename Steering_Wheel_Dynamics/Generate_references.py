@@ -67,8 +67,9 @@ def crest_phases(n, bandwidth, periods, amplitudes):
         CF[i] = f_max / np.sqrt(sigma)
 
     # Take the two best phase sets
-    ind1 = np.argmin(CF)
-    np.delete(CF, ind1)
+    for i in range(8):
+        ind1 = np.argmin(CF)
+        np.delete(CF, ind1)
     ind2 = np.argmin(CF)
     indmax = np.argmax(CF)
     phase1 = phases[ind1, :]
@@ -180,18 +181,17 @@ amplitudes2 = low_pass_filter(bw2, periods2)
 # amplitudes fixen als een filter
 # amplitudes = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.707, 0.1, 0.1, 0.1, 0.1])
 
-n = 1000
+n = 400
 
-phase1b, phase2b, phasemax2 = crest_phases(n, bw2, periods2, amplitudes2)
-# phase1, phase2, phasemax = crest_phases(n, bw, periods, amplitudes)
-
+# phase1b, phase2b, phasemax2 = crest_phases(n, bw2, periods2, amplitudes2)
+phase1, phase2, phasemax = crest_phases(n, bw, periods, amplitudes)
 
 # to_csv(phase1, periods, amplitudes, "ID_phases.csv")
-# to_csv(phase2, periods, amplitudes, "Validation_phases.csv")
-to_csv(phase2b, periods2, amplitudes2, "Experiment_phases.csv")
+to_csv(phase2, periods, amplitudes, "Validation_phases.csv")
+# to_csv(phase2b, periods2, amplitudes2, "Experiment_phases.csv")
 
-# show_forcing_function_freq(bw, periods, amplitudes)
+show_forcing_function_freq(bw, periods, amplitudes)
 show_forcing_function_freq(bw2, periods2, amplitudes2)
-show_forcing_function(bw2, periods2, amplitudes2, phase1b)
-show_forcing_function(bw2, periods2, amplitudes2, phasemax2)
+# show_forcing_function(bw2, periods2, amplitudes2, phase1b)
+# show_forcing_function(bw2, periods2, amplitudes2, phasemax2)
 plt.show()

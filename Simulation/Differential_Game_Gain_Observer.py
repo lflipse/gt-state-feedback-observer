@@ -97,7 +97,7 @@ class ControllerNG:
         return u, uhat, L
 
     def update_cost(self, Lr, Lhat):
-        p = 1/self.beta * Lhat
+        p = 1 / self.beta * Lhat
         gamma_1 = self.alpha_1 - self.beta * Lr[0]
         gamma_2 = self.alpha_2 - self.beta * Lr[1]
         q_hhat1 = - 2 * gamma_1 * p[0] + Lhat[0] ** 2
@@ -171,7 +171,7 @@ class ControllerNG:
 
         for i in range(N):
             # Human cost is fixed, Robot cost based on estimator
-            Qr[i, :, :] = C #- Qhhat[i, :, :]
+            Qr[i, :, :] = C - Qhhat[i, :, :]
             try:
                 Qh[i, :, :] = np.array([[Qh1[i], 0], [0, Qh2[i]]])
             except:

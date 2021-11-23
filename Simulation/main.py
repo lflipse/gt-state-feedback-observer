@@ -25,7 +25,7 @@ from Simulation.plots import PlotStuff
 def ask_input():
     # Option to choose what kind of experiment
     # Option 0, show 1 controller. Option 1, compare 2 controllers, Option 3, sensitivity analysis (Normalized Gradient)
-    print("Choose an experiment type, 0: Controller Performance, 1: Compare Controller, 2: Sensitivity analysis")
+    print("Choose an experiment type, 0: Controller Performance, 1: Compare Controller, 2: Sensitivity analysis, -1: Li et al.")
     e = input()
     experiment = ""
     if int(e) == 0:
@@ -34,6 +34,8 @@ def ask_input():
         experiment = "Comparison"
     elif int(e) == 2:
         experiment = "Analysis"
+    elif int(e) == -1:
+        experiment = "Li"
 
     # Dynamics to use
     dynamics = "Example System"
@@ -51,9 +53,17 @@ def ask_input():
             if int(c) == 1:
                 controller = "Differential Game"
                 controller_name = "Full-information_Differential_Game"
+            else:
+                c = 3
+                controller = "Normalized Gradient Descent"
+                controller_name = "Differential_Game_Normalized_gradient_cost_estimator"
+        elif int(e) == -1:
+            c = 2
+            controller = "Li et al. (2019)"
+            controller_name = "Differential_Game_Lyapunov_cost_estimator_(Li2019)"
         else:
             c = 3
-            controller = "Differential Game Normalized gradient cost estimator"
+            controller = "Normalized Gradient Descent"
             controller_name = "Differential_Game_Normalized_gradient_cost_estimator"
 
         # For the case we are comparing
@@ -71,7 +81,7 @@ def ask_input():
                 controller_compare_name = "Full-information_Differential_Game"
 
             elif int(c_compare) == 2:
-                controller_compare = "Li et al. (2019) Algorithm"
+                controller_compare = "Li et al. (2019)"
                 controller_compare_name = "Differential_Game_Lyapunov_cost_estimator_(Li2019)"
 
             else:
@@ -84,7 +94,7 @@ def ask_input():
             controller_compare_name = ""
     else:
         c = 3
-        controller = "Differential Game Normalized gradient cost estimator"
+        controller = "Normalized Gradient Descent"
         controller_name = "Differential_Game_Normalized_gradient_cost_estimator"
         c_compare = -1
         controller_compare = ""
@@ -155,10 +165,10 @@ def generate_controls(controller, input_dict, v=None, v_val=1.0):
         controls = ControllerDG(A, B, mu, sigma, False)
         inputs["robot_weight"] = C
 
-    elif controller == "Li et al. (2019) Algorithm":
+    elif controller == "Li et al. (2019)":
         # Lyapunov (Li2019)
         # Different convergence rates for different dynamics
-        alpha = 1000
+        alpha = 2*np.array([[10, 0], [0, 4]])
         Gamma = np.array([[2, 0], [0, 2]])
         controls = ControllerLi(A, B, mu, sigma, False)
         inputs["alpha"] = alpha
@@ -167,9 +177,9 @@ def generate_controls(controller, input_dict, v=None, v_val=1.0):
 
     else:
         # Normalized Gradient Cost Observer
-        alpha = 100
+        alpha = 10
         Gamma = 4 * np.array([[2, 0], [0, 2]])
-        K = alpha * np.array([[8, 0], [0, 3]])
+        K = alpha * np.array([[30, 0], [0, 5]])
         kappa = 1
         controls = ControllerNGObs(A, B, mu, sigma, False)
 
@@ -211,8 +221,9 @@ initial_input = 0
 
 # Simulated Human Settings
 # True cost values
-Qh = np.array([[20, 0], [0, 0.5]])
-C = np.array([[50, 0], [0, 1]])
+Qh = np.array([[10, 0], [0, 0.4]])
+# C = np.array([[15, 0], [0, 0.6]])
+C = np.array([[25, 0], [0, 1]])
 
 A, B, e, c, c_compare, save, controller, controller_name, controller_compare, \
 controller_compare_name, dynamics, dynamics_name, r, ref = ask_input()

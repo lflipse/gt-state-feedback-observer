@@ -12,7 +12,7 @@ class Strategy():
         self.legend_font = {'family': 'Georgia', 'size': 16}
 
         # Colors
-        tud_black = "#000000"
+        self.tud_black = "#000000"
         self.tud_blue = "#0066A2"
         self.tud_red = "#c3312f"
         self.tud_green = "#00A390"
@@ -26,6 +26,7 @@ class Strategy():
         self.plot_strategies(outputs)
     
     def run(self):
+        print("started")
         # Take 100 steps of possible gains and costs
         n = 200  # steps
         m = 3  # strategies
@@ -98,13 +99,13 @@ class Strategy():
                     Lr2[i, :] = np.array([0, 0])
 
                 try:
-                    C1a[i], Lr1a[i, :], Lh1a[i, :] = self.compute_gains(Qha[i, :, :], Qr1a[i, :, :], A, B)
+                    C1a[i], Lr1a[i, :], Lh1a[i, :] = self.compute_gains(Qr1a[i, :, :], Qha[i, :, :], A, B)
                 except:
                     Lr1a[i, :] = np.array([0, 0])
 
 
                 try:
-                    C2a[i], Lr2a[i, :], Lh2a[i, :] = self.compute_gains(Qha[i, :, :], Qr2a[i, :, :], A, B)
+                    C2a[i], Lr2a[i, :], Lh2a[i, :] = self.compute_gains(Qr2a[i, :, :], Qha[i, :, :], A, B)
                 except:
                     Lr2a[i, :] = np.array([0, 0])
 
@@ -129,6 +130,7 @@ class Strategy():
         #     "auth_pos": C1,
         #     "auth_neg": C2,
         # }
+        print("finished")
         outputs = {
             "cost_human_pos": Qha,
             "cost_human_neg": Qha,
@@ -138,8 +140,8 @@ class Strategy():
             "gain_human_pos": Lh2a,
             "cost_robot_neg": Qr2a,
             "gain_robot_neg": Lr2a,
-            "auth_pos": C1,
-            "auth_neg": C2,
+            "auth_pos": C1a,
+            "auth_neg": C2a,
         }
         return outputs
 
@@ -284,5 +286,5 @@ class Strategy():
         C = (Lh[0, 0] - Lr[0, 0]) / (Lr[0, 0] + Lh[0, 0] + 0.001)
         return C, Lr, Lh
 
-# strategy = Strategy()
-# strategy.do()
+strategy = Strategy()
+strategy.do()
