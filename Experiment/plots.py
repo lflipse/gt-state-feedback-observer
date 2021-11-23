@@ -32,11 +32,11 @@ class PlotStuff:
         self.tud_black = "#000000"
         self.tud_blue = "#0066A2"
         self.tud_red = "#c3312f"
-        self.tud_green = "#00A390"
+        self.tud_green = "#99D28C"
         self.tud_yellow = "#F1BE3E"
         self.tud_orange = "#EB7245"
         self.tud_lightblue = "#00B7D3"
-        self.tud_otherblue = "#61A4B4"
+        self.tud_otherblue = "#007188"
 
         self.colors = {"Manual Control": self.tud_orange, "Negative Reinforcement": self.tud_otherblue,
                        "Positive Reinforcement": self.tud_green,}
@@ -360,10 +360,12 @@ class PlotStuff:
                 auth = data_now["authority"][key]
                 # lr = data_now["gain_robot"][key]
 
+                markers = ["o", "p", "s"]
+
                 if i == 0:
                     figd.scatter(-100, -100, s=size,
                                  edgecolor=self.colormap[j],
-                                 marker="o", linewidths=3, facecolors=self.colormap[j], label=condition)
+                                 marker=markers[j], linewidths=3, facecolors=self.colormap[j], label=condition)
                     figd.legend(prop=self.legend_font_large)
 
                 im1 = figd.scatter(data_now["gain_system"][key], data_now["performance"][key], s=size, c=auth, edgecolor=self.colormap[j],
