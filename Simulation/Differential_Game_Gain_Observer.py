@@ -171,7 +171,7 @@ class ControllerNG:
 
         for i in range(N):
             # Human cost is fixed, Robot cost based on estimator
-            Qr[i, :, :] = C - Qhhat[i, :, :]
+            Qr[i, :, :] = C #- Qhhat[i, :, :]
             try:
                 Qh[i, :, :] = np.array([[Qh1[i], 0], [0, Qh2[i]]])
             except:

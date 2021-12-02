@@ -404,7 +404,7 @@ class PlotStuff:
                  label="Estimated human gain")
         plt.plot(t_vir, Lh_pos_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
                  label="Virtual human gain")
-        # self.stepinfo(t_vir, Lhhat_pos_vir, Lh_pos_vir)
+        self.stepinfo(t_vir, Lhhat_pos_vir, Lh_pos_vir)
         plt.title('Virtual human: Steering angle gain', **self.csfont)
         plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Gain value ($Nm/rad$)', **self.hfont)
@@ -420,7 +420,7 @@ class PlotStuff:
                  label="Estimated human gain")
         plt.plot(t_vir, Lh_vel_vir, self.tud_black, linewidth=self.lw, linestyle="-", alpha=0.7,
                  label="Virtual human gain")
-        # self.stepinfo(t_vir, Lhhat_vel_vir, Lh_vel_vir)
+        self.stepinfo(t_vir, Lhhat_vel_vir, Lh_vel_vir)
         plt.title('Virtual human: Steering rate gain', **self.csfont)
         plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Gain value ($Nms/rad$)', **self.hfont)
@@ -434,18 +434,25 @@ class PlotStuff:
 
     def stepinfo(self, t, L, Lref):
         n = len(L)
+        t_stop = 200/6
         dL = np.array(L) / Lref[int(n/12)]
         print(t[-1])
-        end_index = int(min(np.argwhere(np.array(t) > 15)))
+        end_index = int(min(np.argwhere(np.array(t) > t_stop)))
         rise_start = int(min(np.argwhere(dL[0:end_index] > 0.1)))
+        # try:
         rise_end = int(min(np.argwhere(dL[0:end_index] > 0.9)))
+        # except:
+        #     rise_end = 0
         if len(np.argwhere(dL[0:end_index] > 1.05)) > 0:
             try:
                 settling_time = int(max(max(np.argwhere(0.95 > dL[0:end_index])), max(np.argwhere(1.05 < dL[0:end_index]))))
             except:
-                settling_time = 15
+                settling_time = t_stop
         else:
-            settling_time = int(max(np.argwhere(0.95 > dL[0:end_index])))
+            try:
+                settling_time = int(max(np.argwhere(0.95 > dL[0:end_index])))
+            except:
+                settling_time = t_stop
         print("settling time: ", t[settling_time])
 
         rise_time = t[rise_end] - t[rise_start]
@@ -470,7 +477,7 @@ class PlotStuff:
         plt.plot([t[settling_time], t[settling_time]], [-20, L[settling_time]], 'k--', alpha=0.7)
         plt.plot([t[0], t[-1]], [1.05 * Lref[int(n/12)], 1.05 * Lref[int(n/12)]], 'k--', alpha=0.4)
         plt.plot([t[0], t[-1]], [0.95 * Lref[int(n/12)], 0.95 * Lref[int(n/12)]], 'k--', alpha=0.4)
-        if t[settling_time] < 14.5:
+        if t[settling_time] < t_stop-0.5:
             plt.plot([t[settling_time]], [L[settling_time]], 'ko', alpha=0.7)
             options = {"arrowstyle": '->'}
             plt.annotate("Settling time", (t[settling_time], L[settling_time]), xytext=(t[settling_time]*0.8, Lref[int(n/12)]*0.8), arrowprops=options)
