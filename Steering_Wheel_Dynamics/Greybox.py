@@ -149,10 +149,10 @@ class GreyBox:
     def generate_data_set(self, validation):
         if validation is False:
             # Identification set
-            b = [0.1, 0.3]
+            b = [0.1, 0.2, 0.3, 0.4]
         else:
             # Validation set
-            b = [0.05, 0.2]
+            b = [0.1, 0.2, 0.3, 0.4]
 
         time.sleep(1.0)
         t_start = time.time()
@@ -326,7 +326,7 @@ class GreyBox:
         dphi = np.array(phi) - np.array(phi_sim)
         dphidot = np.array(phidot) - np.array(phidot_sim)
         N = len(phi)
-        cost = 1/N * (5*np.inner(dphi, dphi) + 30*np.inner(dphidot, dphidot))
+        cost = 1/N * (5*np.inner(dphi, dphi) + 10*np.inner(dphidot, dphidot))
         return cost
 
     def compute_metrics(self):
@@ -347,9 +347,11 @@ class GreyBox:
         var_dyhat_i = np.var(dphi_i)
         var_dyhat_f = np.var(dphi_f)
         var_dyhat_l = np.var(dphi_l)
+
         var_dydothat_i = np.var(dphidot_i)
         var_dydothat_f = np.var(dphidot_f)
         var_dydothat_l = np.var(dphidot_l)
+
         vaf_phi_i = 100 * (1 - (var_dyhat_i / var_y))
         vaf_phi_f = 100 * (1 - (var_dyhat_f / var_y))
         vaf_phi_l = 100 * (1 - (var_dyhat_l / var_y))
