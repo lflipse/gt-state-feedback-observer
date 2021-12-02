@@ -159,7 +159,7 @@ class Experiment:
         self.duration = self.t_warmup + self.t_exp + self.t_cooldown
 
         # Loop over 1 trial
-        while self.time < self.duration:
+        while self.time < 0.2*self.duration:
             # Check whether the process has not been quited
             self.quit = self.visualize.check_quit()
             if self.quit:
