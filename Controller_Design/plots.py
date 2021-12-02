@@ -143,7 +143,6 @@ class PlotStuff:
         plt.ylim(-1.5, 1.5)
         plt.tight_layout(pad=1)
 
-
         # Steering angle
         plt.figure()
         plt.title("Measured and estimated steering angle", **self.csfont)
@@ -408,9 +407,9 @@ class PlotStuff:
         plt.title('Virtual human: Steering angle gain', **self.csfont)
         plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Gain value ($Nm/rad$)', **self.hfont)
-        plt.legend(prop=self.legend_font, loc='upper right')
-        plt.xlim(0, 15)
-        plt.ylim(-0.1, 1.9)
+        plt.legend(prop=self.legend_font, loc='upper left')
+        plt.xlim(0, 33)
+        plt.ylim(-0.1, 2.5)
         plt.tight_layout(pad=1)
 
         plt.figure()
@@ -424,8 +423,8 @@ class PlotStuff:
         plt.title('Virtual human: Steering rate gain', **self.csfont)
         plt.xlabel('Time ($s$)', **self.hfont)
         plt.ylabel('Gain value ($Nms/rad$)', **self.hfont)
-        plt.legend(prop=self.legend_font, loc='upper right')
-        plt.xlim(0, 15)
+        plt.legend(prop=self.legend_font, loc='upper left')
+        plt.xlim(0, 33)
         plt.ylim(-0.1, 0.6)
         plt.tight_layout(pad=1)
 
