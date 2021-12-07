@@ -48,7 +48,7 @@ class Analysis():
             print("done pickling")
             self.trials = 12
             self.robot_trials = 10
-            self.participants = 3
+            self.participants = 18
             # print(self.raw_data)
         self.plot_stuff = PlotStuff()
 
@@ -127,8 +127,8 @@ class Analysis():
         # Plot individual data
         print("number of participants = ", self.participants)
         self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 1)
-        # self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 4)
-        # self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 7)
+        self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 4)
+        self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 7)
         self.plot_stuff.plot_metrics(self.metrics, conditions=self.conditions, participant=self.participants - 1)
 
         # Plot metrics
@@ -139,7 +139,7 @@ class Analysis():
         # plt.close()
 
     def save_all_figures(self):
-        pp = PdfPages('..\\Experiment\\figures\\test.pdf')
+        pp = PdfPages('..\\Experiment\\figures\\experiment.pdf')
         figs = None
         if figs is None:
             figs = [plt.figure(n) for n in plt.get_fignums()]
@@ -299,9 +299,9 @@ class Analysis():
                 system_angle_cost.append(np.median(system_cost))
 
                 # Average gains
-                human_gain = self.filtered_data[i][j]["estimated_human_gain_pos"]
-                robot_gain = self.filtered_data[i][j]["robot_gain_pos"]
-                system_gain = np.array(human_gain) + np.array(robot_gain)
+                human_gain = np.array(self.filtered_data[i][j]["estimated_human_gain_pos"]) * 180/np.pi
+                robot_gain = np.array(self.filtered_data[i][j]["robot_gain_pos"]) * 180/np.pi
+                system_gain = human_gain + robot_gain
                 human_angle_gain.append(np.median(human_gain))
                 robot_angle_gain.append(np.median(robot_gain))
                 system_angle_gain.append(np.median(system_gain))
@@ -351,6 +351,7 @@ class Analysis():
 
         # Costs
         cost_human = []
+        cost_human_var = []
         cost_robot = []
         cost_system = []
 
@@ -400,6 +401,9 @@ class Analysis():
                                positive_control["robot_angle_cost"].mean()])
             cost_system.append([manual_control["system_angle_cost"].mean(), negative_control["system_angle_cost"].mean(),
                                positive_control["system_angle_cost"].mean()])
+            cost_human_var.append(
+                [manual_control["system_angle_cost"].var(), negative_control["system_angle_cost"].var(),
+                 positive_control["system_angle_cost"].var()])
 
             # Gains
             gain_human.append([manual_control["human_angle_gain"].mean(), negative_control["human_angle_gain"].mean(),
@@ -463,6 +467,7 @@ class Analysis():
         self.metrics_averaged["increase"] = [item for sublist in increase for item in sublist]
         self.metrics_averaged["performance"] = [item for sublist in performance for item in sublist]
         self.metrics_averaged["cost_human"] = [item for sublist in cost_human for item in sublist]
+        self.metrics_averaged["cost_human_var"] = [item for sublist in cost_human_var for item in sublist]
         self.metrics_averaged["cost_robot"] = [item for sublist in cost_robot for item in sublist]
         self.metrics_averaged["cost_system"] = [item for sublist in cost_system for item in sublist]
         self.metrics_averaged["gain_human"] = [item for sublist in gain_human for item in sublist]

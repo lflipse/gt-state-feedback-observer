@@ -159,7 +159,7 @@ class Experiment:
         self.duration = self.t_warmup + self.t_exp + self.t_cooldown
 
         # Loop over 1 trial
-        while self.time < 0.2*self.duration:
+        while self.time < 1.0*self.duration:
             # Check whether the process has not been quited
             self.quit = self.visualize.check_quit()
             if self.quit:
@@ -211,11 +211,11 @@ class Experiment:
                     Qh, vhg = self.smooth_virtual_human()
                     self.send_dict["virtual_human_gain"] = vhg
                     virtual_gain = vhg[0]
-                    bottom_text = "Gains; H:" + str(round(estimated_gain_pos, 2)) + " R: " + str(
+                    bottom_text = "Gains; Human:" + str(round(estimated_gain_pos, 2)) + " Robot: " + str(
                         round(robot_gain_pos, 2)) \
                                   + " Virtual H: " + str(round(virtual_gain, 2))
                 else:
-                    bottom_text = "Gains; H:" + str(round(estimated_gain_pos, 2)) + " R: " + str(
+                    bottom_text = "Gains; Human:" + str(round(estimated_gain_pos, 2)) + " Robot: " + str(
                         round(robot_gain_pos, 2))
 
 
@@ -223,8 +223,8 @@ class Experiment:
                 text = ""
 
                 # Uncomment to remove text
-                top_text = ""
-                bottom_text = ""
+                # top_text = ""
+                # bottom_text = ""
 
             # COOLDOWN
             else:

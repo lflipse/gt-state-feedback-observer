@@ -15,11 +15,11 @@ class Strategy():
         self.tud_black = "#000000"
         self.tud_blue = "#0066A2"
         self.tud_red = "#c3312f"
-        self.tud_green = "#00A390"
+        self.tud_green = "#99D28C"
         self.tud_yellow = "#F1BE3E"
         self.tud_orange = "#EB7245"
         self.tud_lightblue = "#00B7D3"
-        self.tud_otherblue = "#61A4B4"
+        self.tud_otherblue = "#007188"
     
     def do(self):
         outputs = self.run()

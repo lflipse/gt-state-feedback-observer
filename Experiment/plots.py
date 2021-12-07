@@ -41,11 +41,13 @@ class PlotStuff:
 
         self.colors = {"Manual Control": self.tud_orange, "Negative Reinforcement": self.tud_otherblue,
                        "Positive Reinforcement": self.tud_green,}
+        self.colors2 = {"Negative Reinforcement": self.tud_otherblue,
+                       "Positive Reinforcement": self.tud_green, }
 
         self.order = ["Manual Control", "Negative Reinforcement", "Positive Reinforcement"]
 
         self.colormap = [self.tud_orange, self.tud_otherblue, self.tud_green, self.tud_blue, self.tud_red, self.tud_lightblue, self.tud_yellow]
-        self.colormap2 = [self.tud_lightblue, self.tud_red, self.tud_green2]
+        self.colormap2 = [self.tud_lightblue, self.tud_red, self.tud_green]
 
         # sns.set_palette(sns.color_palette(self.colormap))
         sns.color_palette("Spectral", as_cmap=True)
@@ -73,6 +75,7 @@ class PlotStuff:
         metrics_pd = pd.DataFrame(metrics)
         # print(metrics_pd)
         metrics_pd_no_manual = metrics_pd.loc[metrics_pd["condition"] != "Manual Control"]
+        # print(metrics_pd_no_manual["condition"] == "Manual Control")
         metrics_part = metrics_pd.loc[metrics_pd["participant"] == participant]
         metrics_no_manual = metrics_part.loc[metrics_part["condition"] != "Manual Control"]
         metrics_positive_uns = metrics_pd.loc[metrics_pd["condition"] == "Positive Reinforcement"]
@@ -86,19 +89,19 @@ class PlotStuff:
 
         # Control authority
         figa, axa = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
-        figa.suptitle("Control Share", **self.csfont)
-        sns.boxplot(data=metrics_pd, x="condition", y="authority", palette=self.colors, ax=axa[0], order=self.order)
-        sns.swarmplot(data=metrics_pd, x="condition", y="authority", palette=self.colors, ax=axa[0], order=self.order,
+        figa.suptitle("Objective control Share", **self.csfont)
+        sns.boxplot(data=metrics_pd_no_manual, x="condition", y="authority", palette=self.colors2, ax=axa[0], order=self.order[1:3])
+        sns.swarmplot(data=metrics_pd_no_manual, x="condition", y="authority", palette=self.colors2, ax=axa[0], order=self.order[1:3],
                       alpha=0.6, size=6, linewidth=1)
-        axa[0].set_xticklabels(labels)
+        axa[0].set_xticklabels(labels[1:3])
         axa[0].set_xlabel("")
         # self.annotate_significance(2, axa[0], ["***"])
         ylims = axa[0].get_ylim()
-        axa[0].set_ylabel("Control share (-)", **self.hfont)
+        axa[0].set_ylabel("Objective control share (-)", **self.hfont)
         delta_y = ylims[1] - ylims[0]
         width = delta_y / 40
-        sns.histplot(data=metrics_pd, y="authority", hue="condition", ax=axa[1],
-                     palette=self.colors, binwidth=width)
+        sns.histplot(data=metrics_pd_no_manual, y="authority", hue="condition", ax=axa[1],
+                     palette=self.colors2, binwidth=width)
         axa[1].get_legend().remove()
         axa[1].axes.get_yaxis().set_visible(False)
         plt.tight_layout(pad=1)
@@ -174,6 +177,7 @@ class PlotStuff:
         plt.title("Human control strategy", **self.csfont)
         plt.tight_layout(pad=1)
 
+
         fig1 = plt.figure().gca()
         try:
             fa = sns.scatterplot(data=metrics_positive, x="repetition", y="human_angle_gain", hue="label", ax=fig1,palette=self.colormap2[0:3],
@@ -187,7 +191,7 @@ class PlotStuff:
                               estimator=None, lw=2.5, units="participant", palette=self.colormap2[0:2], )
 
         plt.title("Positive adaptation strategy", **self.csfont)
-        fig1.set_ylabel("Human steering angle gain ($Nm/rad$)", **self.hfont)
+        fig1.set_ylabel("Human steering angle gain ($Nm/^\circ$)", **self.hfont)
         fig1.set_xlabel("Trial number", **self.hfont)
         fig1.set_xticks([1, 2, 3, 4])
         # fig1.get_legend().remove()
@@ -206,7 +210,7 @@ class PlotStuff:
                           estimator=None, lw=2.5, units="participant", palette=self.colormap2[0:2], )
 
         plt.title("Negative adaptation strategy", **self.csfont)
-        fig2.set_ylabel("Human steering angle gain ($Nm/rad$)", **self.hfont)
+        fig2.set_ylabel("Human steering angle gain ($Nm/^\circ$)", **self.hfont)
         fig2.set_xlabel("Trial number", **self.hfont)
         fig2.set_xticks([1, 2, 3, 4])
         # fig2.get_legend().remove()
@@ -225,7 +229,7 @@ class PlotStuff:
                               estimator=None, lw=2.5, units="participant", palette=self.colormap2[0:2], )
 
         plt.title("Manual control", **self.csfont)
-        fig3.set_ylabel("Human steering angle gain ($Nm/rad$)", **self.hfont)
+        fig3.set_ylabel("Human steering angle gain ($Nm/^\circ$)", **self.hfont)
         fig3.set_xlabel("Trial number", **self.hfont)
         fig3.set_xticks([1, 2, 3, 4])
         # fig3.get_legend().remove()
@@ -283,6 +287,18 @@ class PlotStuff:
             hb = sns.lineplot(data=metrics_negative, x="system_angle_gain", y="rms_angle_error", hue="label",
                               ax=fig6,
                               estimator=None, lw=1, units="participant", palette=self.colormap2[0:2], sort=False)
+
+        fig7 = plt.figure().gca()
+        plt.title("Effect of human cost function on team performance", **self.csfont)
+        ha = sns.scatterplot(data=metrics_pd, x="human_angle_cost", y="rms_angle_error", hue="condition",
+                             ax=fig7,
+                             palette=self.colors, s=40) #size="repetition",
+        # hb = sns.lineplot(data=metrics_pd, x="human_angle_cost", y="rms_angle_error", hue="condition", ax=fig7,
+        #                   estimator=None, lw=0.5, units="participant", palette=self.colormap2[0:3], sort=False)
+        fig7.set_ylabel("RMS Steering Error ($^\circ$)", **self.hfont)
+        fig7.set_xlabel("Estimated Human Cost Function Weight (-)", **self.hfont)
+        fig7.legend(title="Condition")
+        plt.tight_layout(pad=1)
 
 
         fig4.set_ylabel("delta error", **self.hfont)
@@ -358,8 +374,51 @@ class PlotStuff:
         data_manual_pd = mean_metrics_pd.loc[mean_metrics_pd["condition"] == "Manual Control"]
         data_negative_pd = mean_metrics_pd.loc[mean_metrics_pd["condition"] == "Negative Reinforcement"]
         data_positive_pd = mean_metrics_pd.loc[mean_metrics_pd["condition"] == "Positive Reinforcement"]
+        metrics_pd_no_manual = mean_metrics_pd.loc[mean_metrics_pd["condition"] != "Manual Control"]
 
+        labels = ["Manual \n Control", "Negative \n Reinforcement", "Positive \n Reinforcement"]
 
+        # Control authority
+        figa, axa = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
+        figa.suptitle("Trial-by-trial variability", **self.csfont)
+        sns.boxplot(data=mean_metrics_pd, x="condition", y="cost_human_var", palette=self.colors, ax=axa[0], order=self.order)
+        sns.swarmplot(data=mean_metrics_pd, x="condition", y="cost_human_var", palette=self.colors, ax=axa[0], order=self.order,
+                      alpha=0.6, size=6, linewidth=1)
+        axa[0].set_xticklabels(labels)
+        axa[0].set_xlabel("")
+        # self.annotate_significance(2, axa[0], ["***"])
+        ylims = axa[0].get_ylim()
+        axa[0].set_ylabel("Cost function weight (-)", **self.hfont)
+        delta_y = ylims[1] - ylims[0]
+        width = delta_y / 40
+        sns.histplot(data=mean_metrics_pd, y="cost_human_var", hue="condition", ax=axa[1],
+                     palette=self.colors, binwidth=width)
+        axa[1].get_legend().remove()
+        axa[1].axes.get_yaxis().set_visible(False)
+        plt.tight_layout(pad=1)
+        axa[0].set_ylim(0, 40)
+        axa[1].set_ylim(0, 40)
+
+        # Subjective control authority
+        figb, axb = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
+        figb.suptitle("Subjective control share", **self.csfont)
+        sns.boxplot(data=metrics_pd_no_manual, x="condition", y="subjective_authority", palette=self.colors2, ax=axb[0],
+                    order=self.order[1:3])
+        sns.swarmplot(data=metrics_pd_no_manual, x="condition", y="subjective_authority", palette=self.colors2, ax=axb[0],
+                      order=self.order[1:3],
+                      alpha=0.6, size=6, linewidth=1)
+        axb[0].set_xticklabels(labels[1:3])
+        axb[0].set_xlabel("")
+        # self.annotate_significance(2, axa[0], ["***"])
+        ylims = axb[0].get_ylim()
+        axb[0].set_ylabel("Subjective control share (-)", **self.hfont)
+        delta_y = ylims[1] - ylims[0]
+        width = delta_y / 40
+        sns.histplot(data=metrics_pd_no_manual, y="subjective_authority", hue="condition", ax=axb[1],
+                     palette=self.colors2, binwidth=width)
+        axb[1].get_legend().remove()
+        axb[1].axes.get_yaxis().set_visible(False)
+        plt.tight_layout(pad=1)
 
 
         h = sns.jointplot(data=mean_metrics_pd, x="authority", y="subjective_authority", hue="condition",
@@ -451,19 +510,18 @@ class PlotStuff:
 
                 plt.tight_layout()
 
-
-
                 if j == 0 and i == 0:
-                    figd.plot(data_robot["robot_angle_gain"], data_robot["rms_angle_error"], self.tud_blue,
+                    figd.plot(np.array(data_robot["robot_angle_gain"]) *180/np.pi, data_robot["rms_angle_error"], self.tud_blue,
                                  linewidth=self.linewidth, alpha=0.7, label="Optimal Control",)
 
-                figd.set_xlim(1, 6)
+                figd.set_xlim(1*180/np.pi, 6*180/np.pi)
                 figd.set_ylim(0, 13)
                 if j == 0:
                     figd.legend(prop=self.legend_font_large)
-                figd.set_xlabel("Total Estimated System Gain ($Nm/rad$)", **self.hfont)
-                figd.set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
-                figd.set_title("Comparison", **self.csfont)
+                figd.set_title("Interaction mode, system gain and performance", **self.csfont)
+                figd.set_xlabel("Total Estimated System Gain ($Nm/^\circ$)", **self.hfont)
+                figd.set_ylabel("Mean RMS Steering Error ($^{\circ}$)", **self.hfont)
+
 
                 # Figure 3a.
                 # axs5[j].scatter(data_now["human_power"][key], data_now["robot_power"][key], s=size, label=label)
@@ -488,7 +546,7 @@ class PlotStuff:
                     fige.legend(prop=self.legend_font_large)
                 fige.set_xlabel("RMS Estimated Human Power ($W$)", **self.hfont)
                 fige.set_ylabel("RMS Robot Power ($W$)", **self.hfont)
-                fige.set_title("Comparison", **self.csfont)
+                fige.set_title("Relation between human and robot power", **self.csfont)
 
 
 
@@ -515,10 +573,10 @@ class PlotStuff:
 
             x_hat = data["state_estimate_pos"]
             xdot = data["steering_rate"]
-            Lhhat_pos = data["estimated_human_gain_pos"]
-            Lhhat_vel = data["estimated_human_gain_vel"]
-            Lr_pos = data["robot_gain_pos"]
-            Lr_vel = data["robot_gain_vel"]
+            Lhhat_pos = np.array(data["estimated_human_gain_pos"]) *180/np.pi
+            Lhhat_vel = np.array(data["estimated_human_gain_vel"]) * 180/np.pi
+            Lr_pos = np.array(data["robot_gain_pos"]) *180/np.pi
+            Lr_vel = np.array(data["robot_gain_vel"]) *180/np.pi
             Qhhat_pos = data["estimated_human_cost_1"]
             Qr_pos = data["robot_cost_pos"]
 
@@ -583,7 +641,7 @@ class PlotStuff:
                 for stack, hatch in zip(stacks, hatches):
                     stack.set_hatch(hatch)
 
-                axa[0, 0].set_ylabel('Gain ($Nm/rad$)', **self.hfont_small)
+                axa[0, 0].set_ylabel('Gain ($Nm/^\circ$)', **self.hfont_small)
                 axa[0, 0].legend(prop=self.legend_font_small, loc='upper left')
                 axa[0, 0].set_xticks([])
                 axa[0, 0].set_xlim(t_start, t_example)
@@ -677,7 +735,7 @@ class PlotStuff:
 
                 plt.tight_layout(pad=1)
 
-            auth_est = (np.array(Lr_pos) - np.array(Lhhat_pos)) / (np.array(Lr_pos) + np.array(Lhhat_pos) + 0.001)
+            auth_est = (np.array(Lhhat_pos) - np.array(Lr_pos)) / (np.array(Lr_pos) + np.array(Lhhat_pos) + 0.001)
             figb.suptitle("Estimated Control Share", **self.csfont)
             if c > 0:
                 axs[repetition, c - 1].plot(t, auth_est)
@@ -702,18 +760,23 @@ class PlotStuff:
             hatches = ["\\\\", "//"]
             for stack, hatch in zip(stacks, hatches):
                 stack.set_hatch(hatch)
-            axsb[repetition, c].set_ylim(-1, 12)
+            axsb[repetition, c].set_ylim(-1*180/np.pi, 12*180/np.pi)
             axsb[repetition, c].set_xlim(t_start, t_end)
             if repetition == 0:
                 axsb[repetition, c].set_title(title, **self.hfont)
                 axsb[repetition, c].set_xticks([])
                 axsb[repetition, c].legend(prop=self.legend_font_small, loc='upper left')
+
             if repetition == 3:
                 axsb[repetition, c].set_xlabel('Time ($s$)', **self.hfont)
             else:
                 axsb[repetition, c].set_xticks([])
             if c == 0:
-                axsb[repetition, c].set_ylabel("Gain \n ($Nm/rad$)", **self.hfont_small)
+                axsb[repetition, c].set_ylabel("Gain \n ($Nm/^\circ$)", **self.hfont_small)
+            else:
+                axsb[repetition, c].set_yticks([])
+            # axsb[repetition, c].ticklabel_format(axis="y", style="sci", scilimits=(0,0))
             plt.tight_layout(pad=1)
+
 
 

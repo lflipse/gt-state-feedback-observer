@@ -93,7 +93,7 @@ class Reference:
     def generate_reference(self, t, sigma, player, ref_sign):
         period = self.forcing_function["periods"]
         phases = self.forcing_function["phases"]
-        amplitude = self.forcing_function["amplitudes"]
+        amplitude = 1.5*self.forcing_function["amplitudes"]
         ref_position = 0
         ref_velocity = 0
 
