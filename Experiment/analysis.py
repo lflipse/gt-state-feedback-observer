@@ -1,5 +1,6 @@
 import sys
 import os
+import pickle
 sys.path.insert(1, '..')
 import pandas as pd
 import numpy as np
@@ -10,10 +11,10 @@ import scipy.stats as stat
 from matplotlib.backends.backend_pdf import PdfPages
 from Experiment.subjective import Subjective
 
-
 class Analysis():
     def __init__(self):
         # Unpack data
+        self.a = None
         self.raw_data = {}
         self.raw_data_robot = {}
         self.filtered_data = {}
@@ -22,7 +23,7 @@ class Analysis():
         self.metrics_robot = {}
         self.metrics_averaged = {}
         self.plot_stuff = None
-        self.trials = 16
+        self.trials = 12
         self.participants = 0
         self.periods = 4
         self.conditions = 3
@@ -35,7 +36,20 @@ class Analysis():
         self.subjective = Subjective()
 
     def initialize(self):
-        self.unpack_data()
+        self.a = input("Create metrics? 0: No, Yes: 1.  Your answer = ")
+        if int(self.a) == 1:
+            self.unpack_data()
+        else:
+            print("pickling stuff")
+            pickle_off = open("data_experiment", 'rb')
+            self.raw_data = pickle.load(pickle_off)
+            pickle_robot = open("data_robot", 'rb')
+            self.raw_data_robot = pickle.load(pickle_robot)
+            print("done pickling")
+            self.trials = 12
+            self.robot_trials = 10
+            self.participants = 3
+            # print(self.raw_data)
         self.plot_stuff = PlotStuff()
 
     def unpack_data(self):
@@ -54,6 +68,11 @@ class Analysis():
             except:
                 exit("Something went wrong")
 
+        # Save as pickle element
+        pickling_robot = open("data_robot", "wb")
+        pickle.dump(self.raw_data_robot, pickling_robot)
+        pickling_robot.close()
+
         list_dir = os.listdir(path)
         self.participants = len(list_dir)
         for i in range(self.participants):
@@ -71,21 +90,45 @@ class Analysis():
                 except:
                     exit("Something went wrong")
 
+        # Save as pickle element
+        pickling_on = open("data_experiment", "wb")
+        pickle.dump(self.raw_data, pickling_on)
+        pickling_on.close()
+
     def analyse(self):
         # First, build some metrics
         for i in range(self.participants):
             for j in range(self.trials):
                 self.cut_data(i, j)
-
-        self.build_metrics()
-        self.build_individual_metrics()
-        self.perform_analysis()
+        print(self.a)
+        if int(self.a) == 1:
+            print("we here")
+            self.build_metrics()
+            self.build_individual_metrics()
+            # Save as pickle element
+            pickling_on1 = open("metrics", "wb")
+            pickling_on2 = open("metrics_ind", "wb")
+            pickling_on3 = open("metrics_robot", "wb")
+            pickle.dump(self.metrics, pickling_on1)
+            pickle.dump(self.metrics_averaged, pickling_on2)
+            pickle.dump(self.metrics_robot, pickling_on3)
+            pickling_on1.close()
+            pickling_on2.close()
+            pickling_on3.close()
+        else:
+            print("we not here")
+            pickle_off1 = open("metrics", 'rb')
+            pickle_off2 = open("metrics_ind", 'rb')
+            pickle_off3 = open("metrics_robot", 'rb')
+            self.metrics = pickle.load(pickle_off1)
+            self.metrics_averaged = pickle.load(pickle_off2)
+            self.metrics_robot = pickle.load(pickle_off3)
 
         # Plot individual data
         print("number of participants = ", self.participants)
         self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 1)
-        self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 4)
-        self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 7)
+        # self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 4)
+        # self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 7)
         self.plot_stuff.plot_metrics(self.metrics, conditions=self.conditions, participant=self.participants - 1)
 
         # Plot metrics
@@ -96,7 +139,7 @@ class Analysis():
         # plt.close()
 
     def save_all_figures(self):
-        pp = PdfPages('..\\Experiment\\figures\\experiment.pdf')
+        pp = PdfPages('..\\Experiment\\figures\\test.pdf')
         figs = None
         if figs is None:
             figs = [plt.figure(n) for n in plt.get_fignums()]
@@ -104,68 +147,7 @@ class Analysis():
             fig.savefig(pp, format='pdf')
         pp.close()
 
-    def perform_analysis(self):
-        metrics = pd.DataFrame(self.metrics)
-        metrics_positive = metrics.loc[metrics["condition"] == "Positive Reinforcement"]
-        metrics_negative = metrics.loc[metrics["condition"] == "Negative Reinforcement"]
-        metrics_manual = metrics.loc[metrics["condition"] == "Manual Control"]
-        metrics_no_manual = metrics.loc[metrics["condition"] != "Manual Control"]
-        metrics_av = pd.DataFrame(self.metrics_averaged)
 
-        self.save_data(metrics, "metrics.csv")
-        self.save_data(metrics_no_manual, "metrics_no_manual.csv")
-        self.save_data(metrics_av, "metrics_av.csv")
-
-        # # Hypothesis 1. Control authority
-        # print("looks significant?")
-        # self.test_two(metrics_positive['authority'], metrics_negative['authority'], "Control Authority")
-        #
-        # # Hypothesis 2. RMS human power
-        # print("looks not significant?")
-        # self.test_two(metrics_positive['rms_human_power'], metrics_negative['rms_human_power'], "Estimated RMS Human Input Power")
-        #
-        # # Hypothesis 3. RMS error
-        # print("looks significant?")
-        # self.test_two(metrics_positive['rms_angle_error'], metrics_negative['rms_angle_error'], "RMS Steering Angle Error")
-        #
-        # # Hypothesis 4. Consistency
-        # # 4a. between participants
-        # self.test_multiple(metrics_manual, "human_angle_cost", "participant", ['repetition'])  # Manual
-        # self.test_multiple(metrics_positive, "human_angle_cost", "participant", ['repetition'])  # Positive Reinforcement
-        # self.test_multiple(metrics_negative, "human_angle_cost", "participant", ['repetition'])  # Negative Reinforcement
-        #
-        # # 4a. between conditions
-        # self.test_multiple(metrics, "human_angle_cost", "condition", ['participant', 'repetition'])  # Manual
-        # # self.test_multiple(metrics_positive, "human_angle_cost", "condition")  # Positive Reinforcement
-        # # self.test_multiple(metrics_negative, "human_angle_cost", "condition")  # Negative Reinforcement
-
-
-    # def test_two(self, data1, data2, test_name):
-    #     # Descriptive statistics
-    #     descriptive1 = stat.describe(data1)
-    #     descriptive2 = stat.describe(data2)
-    #
-    #     # Test for normal distribution
-    #     shapiro_test1 = stat.shapiro(data1)
-    #     shapiro_test2 = stat.shapiro(data2)
-    #
-    #     # Test for significance using Shapiro-Wilk test
-    #     if shapiro_test1.pvalue < 0.05 and shapiro_test2.pvalue < 0.05:
-    #         print("We are normally distributed, use t-test")
-    #         test_difference = stat.ttest_ind(data1, data2, equal_var=False)
-    #
-    #     else:
-    #         print("Distribution not normally distributed, Ranksum test used")
-    #         test_difference = stat.mannwhitneyu(x=data1, y=data2, alternative = 'two-sided')
-    #         z = abs(stat.norm.ppf(test_difference.pvalue / 2))
-    #
-    #     print(test_difference, z)
-    #
-    # def test_multiple(self, data, dependent, independent, within):
-    #     # print(data)
-    #     outcome = AnovaRM(data=data, depvar=dependent, subject=independent, within=within).fit()
-    #     print(outcome)
-    #
 
     def save_data(self, data, file):
         df = pd.DataFrame(data=data)
@@ -194,12 +176,15 @@ class Analysis():
         self.metrics["condition_number"] = {}
         self.metrics["repetition"] = {}
         self.metrics["cost_variability"] = {}
+        self.metrics["trial"] = {}
+        # self.metrics["label"] = {}
+        # self.metrics["gains_normalized"] = {}
+        # self.metrics["error_normalized"] = {}
 
         # Robot RMS and gains
-        self.metrics_robot["rms_angle_error"] = {}
-        self.metrics_robot["rms_angle_error_rad"] = {}
-        self.metrics_robot["robot_angle_gain"] = {}
-
+        self.metrics_robot["rms_angle_error"] = []
+        self.metrics_robot["rms_angle_error_rad"] = []
+        self.metrics_robot["robot_angle_gain"] = []
 
 
         # RMS
@@ -230,7 +215,6 @@ class Analysis():
         # Co-adaptation
         authority = []
         cost_variability = []
-
         conflicts = []
 
         # Info
@@ -239,6 +223,8 @@ class Analysis():
         condition_numbers = []
         participant = []
         settings = []
+        trial_order = [0, 1, 10, 11, 2, 3, 4, 5, 6, 7, 8, 9]
+        trials = []
 
         for k in range(self.robot_trials):
             # Robot
@@ -268,7 +254,7 @@ class Analysis():
                     print("nope")
                 conditions.append(condition)
                 condition_numbers.append(condit_nr)
-                repetitions.append(repetition)
+                repetitions.append(repetition+1)
                 participant.append(i)
                 set = self.filtered_data[i][j]["setting"]
                 setting = set[10]  # Not very nicely done this
@@ -303,6 +289,7 @@ class Analysis():
                 conflict = self.compute_conflict(robot_torque, real_human_torque)
                 conflicts.append(conflict)
 
+
                 # Average cost functions
                 human_cost = self.filtered_data[i][j]["estimated_human_cost_1"]
                 robot_cost = self.filtered_data[i][j]["robot_cost_pos"]
@@ -325,6 +312,7 @@ class Analysis():
                 cost_var = np.var(human_angle_cost)
                 cost_variability.append(cost_var)
                 authority.append(C)
+            trials.extend(trial_order)
 
         # Save to metrics dictionary
         self.metrics["rms_angle_error_rad"] = rms_angle_error_rad
@@ -352,6 +340,7 @@ class Analysis():
         self.metrics_robot["robot_angle_gain"] = robot_gains
         self.metrics["rms_human_power"] = rms_human_power
         self.metrics["rms_robot_power"] = rms_robot_power
+        self.metrics["trial"] = trials
 
     def build_individual_metrics(self):
         conditions = []
@@ -380,6 +369,12 @@ class Analysis():
 
         # authority
         auth = []
+
+        # labels
+        labels = []
+
+        error_normalized = []
+        gains_normalized = []
 
         metrics = pd.DataFrame.from_dict(self.metrics)
         for i in range(self.participants):
@@ -413,6 +408,35 @@ class Analysis():
                                positive_control["robot_angle_gain"].mean()])
             gain_system.append([manual_control["system_angle_gain"].mean(), negative_control["system_angle_gain"].mean(),
                                positive_control["system_angle_gain"].mean()])
+
+            participant_now = metrics.loc[metrics['participant'] == i]
+            skill = manual_control["system_angle_gain"].mean()
+            error_skill = manual_control["rms_angle_error"].mean()
+
+            negative_gains = negative_control["human_angle_gain"].values
+            trials_neg = negative_control["repetition"].values
+            trials_ordered = participant_now["repetition"].values
+            gains_ordered_neg = negative_gains[trials_neg - 1]
+            # print(trials_ordered)
+            # print(participant_now["human_angle_gain"].values[trials_ordered - 1])
+
+            gains_normalized.extend(participant_now["human_angle_gain"].values - skill)
+            error_normalized.extend(participant_now["rms_angle_error"].values - error_skill)
+
+
+            # print(negative_gains)
+            # print(trials)
+            # print(negative_gains[trials-1])
+
+            if gains_ordered_neg[0] - gains_ordered_neg[3] > 1 or gains_ordered_neg[0] - gains_ordered_neg[2] > 1:
+                label = "Slacker"
+            elif negative_gains[0] < 0 and negative_gains[1] < 0 and negative_gains[2] < 0 and negative_gains[3] < 0:
+                label = "Fighter"
+            else:
+                label = "Cooperator"
+
+            labels.extend([label] * self.trials)
+
 
             # Inputs
             inputs_human.append([manual_control["rms_estimated_human_torque"].mean(),
@@ -451,11 +475,18 @@ class Analysis():
         self.metrics_averaged["authority"] = [item for sublist in auth for item in sublist]
 
         # Subjective measures
-        self.metrics_averaged["subjective_1"] = self.subjective.s1_ordered
-        self.metrics_averaged["subjective_2"] = self.subjective.s2_ordered
-        self.metrics_averaged["subjective_3"] = self.subjective.s3_ordered
-        self.metrics_averaged["subjective_4"] = self.subjective.s4_ordered
-        self.metrics_averaged["subjective_authority"] = self.subjective.auth_ordered
+        self.metrics_averaged["subjective_1"] = self.subjective.s1_ordered[0:self.participants*3]
+        self.metrics_averaged["subjective_2"] = self.subjective.s2_ordered[0:self.participants*3]
+        self.metrics_averaged["subjective_3"] = self.subjective.s3_ordered[0:self.participants*3]
+        self.metrics_averaged["subjective_4"] = self.subjective.s4_ordered[0:self.participants*3]
+        self.metrics_averaged["subjective_authority"] = self.subjective.auth_ordered[0:self.participants*3]
+
+        print("made it here")
+        # Label participants
+        self.metrics["label"] = labels
+        self.metrics["error_normalized"] = error_normalized
+        self.metrics["gains_normalized"] = gains_normalized
+        # print(self.metrics["error_normalized"] )
 
     def cut_data(self, participant, trial):
         # Cut data
