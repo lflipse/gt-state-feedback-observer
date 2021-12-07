@@ -89,7 +89,7 @@ class PlotStuff:
 
         # Control authority
         figa, axa = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
-        figa.suptitle("Objective control Share", **self.csfont)
+        figa.suptitle("Estimated control Share", **self.csfont)
         sns.boxplot(data=metrics_pd_no_manual, x="condition", y="authority", palette=self.colors2, ax=axa[0], order=self.order[1:3])
         sns.swarmplot(data=metrics_pd_no_manual, x="condition", y="authority", palette=self.colors2, ax=axa[0], order=self.order[1:3],
                       alpha=0.6, size=6, linewidth=1)
@@ -97,7 +97,7 @@ class PlotStuff:
         axa[0].set_xlabel("")
         # self.annotate_significance(2, axa[0], ["***"])
         ylims = axa[0].get_ylim()
-        axa[0].set_ylabel("Objective control share (-)", **self.hfont)
+        axa[0].set_ylabel("Estimated control share (-)", **self.hfont)
         delta_y = ylims[1] - ylims[0]
         width = delta_y / 40
         sns.histplot(data=metrics_pd_no_manual, y="authority", hue="condition", ax=axa[1],
@@ -258,7 +258,7 @@ class PlotStuff:
                               estimator=None, lw=1, units="participant", palette=self.colormap2[0:2], sort=False)
         # Positive reinforcement
         fig5 = plt.figure().gca()
-        plt.title("Negative Reinforcement", **self.csfont)
+        plt.title("Negative reinforcement", **self.csfont)
         try:
             ha = sns.scatterplot(data=metrics_negative, x="gains_normalized", y="error_normalized", hue="label", ax=fig5,
                                  palette=self.colormap2[0:3], size="repetition", sizes=(10, 40))
@@ -272,7 +272,7 @@ class PlotStuff:
 
         # Positive reinforcement
         fig6 = plt.figure().gca()
-        plt.title("Negative Reinforcement", **self.csfont)
+        plt.title("Negative reinforcement", **self.csfont)
         try:
             ha = sns.scatterplot(data=metrics_negative, x="system_angle_gain", y="rms_angle_error", hue="label",
                                  ax=fig6,
@@ -295,8 +295,8 @@ class PlotStuff:
                              palette=self.colors, s=40) #size="repetition",
         # hb = sns.lineplot(data=metrics_pd, x="human_angle_cost", y="rms_angle_error", hue="condition", ax=fig7,
         #                   estimator=None, lw=0.5, units="participant", palette=self.colormap2[0:3], sort=False)
-        fig7.set_ylabel("RMS Steering Error ($^\circ$)", **self.hfont)
-        fig7.set_xlabel("Estimated Human Cost Function Weight (-)", **self.hfont)
+        fig7.set_ylabel("RMS steering error ($^\circ$)", **self.hfont)
+        fig7.set_xlabel("Estimated human cost function weight (-)", **self.hfont)
         fig7.legend(title="Condition")
         plt.tight_layout(pad=1)
 
@@ -401,7 +401,7 @@ class PlotStuff:
 
         # Subjective control authority
         figb, axb = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
-        figb.suptitle("Subjective control share", **self.csfont)
+        figb.suptitle("Perceived control share", **self.csfont)
         sns.boxplot(data=metrics_pd_no_manual, x="condition", y="subjective_authority", palette=self.colors2, ax=axb[0],
                     order=self.order[1:3])
         sns.swarmplot(data=metrics_pd_no_manual, x="condition", y="subjective_authority", palette=self.colors2, ax=axb[0],
@@ -411,7 +411,8 @@ class PlotStuff:
         axb[0].set_xlabel("")
         # self.annotate_significance(2, axa[0], ["***"])
         ylims = axb[0].get_ylim()
-        axb[0].set_ylabel("Subjective control share (-)", **self.hfont)
+        axb[0].set_ylabel("Perceived control share (-)", **self.hfont)
+
         delta_y = ylims[1] - ylims[0]
         width = delta_y / 40
         sns.histplot(data=metrics_pd_no_manual, y="subjective_authority", hue="condition", ax=axb[1],
@@ -423,10 +424,10 @@ class PlotStuff:
 
         h = sns.jointplot(data=mean_metrics_pd, x="authority", y="subjective_authority", hue="condition",
                       palette=self.colors, hue_order=self.order, kind="scatter", joint_kws={"s":100})
-        h.fig.suptitle("Subjective and objective control share", **self.csfont)
+        h.fig.suptitle("The interaction from two perspectives", **self.csfont)
         # jp.fig.legend(fontsize=self.legend_size, title=[])
-        h.ax_joint.set_xlabel("Objective control share", **self.hfont)
-        h.ax_joint.set_ylabel("Subjective control share", **self.hfont)
+        h.ax_joint.set_xlabel("Robot: Estimated control share", **self.hfont)
+        h.ax_joint.set_ylabel("Human: Perceived control share", **self.hfont)
         h.ax_joint.legend(loc="lower right", title=[])
         ticks = [-2, -1, 0, 1]
         labels = ["Competition", "Robot Only", "Cooperation", "Human Only"]
@@ -436,7 +437,9 @@ class PlotStuff:
         h.ax_joint.set_yticklabels(labels)
         h.ax_joint.set_xlim(-2.2, 1.7)
         h.ax_joint.set_ylim(-2.2, 1.7)
+        h.ax_joint.legend(title="Condition")
         h.fig.tight_layout()
+
 
 
         for i in range(participants):
@@ -519,8 +522,8 @@ class PlotStuff:
                 if j == 0:
                     figd.legend(prop=self.legend_font_large)
                 figd.set_title("Interaction mode, system gain and performance", **self.csfont)
-                figd.set_xlabel("Total Estimated System Gain ($Nm/^\circ$)", **self.hfont)
-                figd.set_ylabel("Mean RMS Steering Error ($^{\circ}$)", **self.hfont)
+                figd.set_xlabel("Total estimated system gain ($Nm/^\circ$)", **self.hfont)
+                figd.set_ylabel("Mean RMS steering error ($^{\circ}$)", **self.hfont)
 
 
                 # Figure 3a.
@@ -544,8 +547,8 @@ class PlotStuff:
                     fige.plot([1.8, -0.3], [-0.3, 1.8], color=self.tud_blue, alpha=0.2, linewidth=3)
                 if i == 0:
                     fige.legend(prop=self.legend_font_large)
-                fige.set_xlabel("RMS Estimated Human Power ($W$)", **self.hfont)
-                fige.set_ylabel("RMS Robot Power ($W$)", **self.hfont)
+                fige.set_xlabel("RMS estimated human power ($W$)", **self.hfont)
+                fige.set_ylabel("RMS robot power ($W$)", **self.hfont)
                 fige.set_title("Relation between human and robot power", **self.csfont)
 
 
@@ -607,17 +610,17 @@ class PlotStuff:
             elif condition == "Positive Reinforcement":
                 ls = '-'
                 line_color = self.tud_red
-                title = "Positive Re."
+                title = "Positive re."
                 c = 1
             elif condition == "Negative Reinforcement":
                 ls = '-'
                 line_color = self.tud_blue
-                title = "Negative Re."
+                title = "Negative re."
                 c = 2
             elif condition == "Mixed Reinforcement":
                 ls = '-'
                 line_color = self.tud_green
-                title = "Mixed Re."
+                title = "Mixed re."
                 c = 3
             else:
                 ls = '.'
@@ -714,7 +717,7 @@ class PlotStuff:
                 hatches = ["\\\\", "//"]
                 for stack, hatch in zip(stacks, hatches):
                     stack.set_hatch(hatch)
-                axa[3, 0].set_ylabel('Cost Weight (-)', **self.hfont_small)
+                axa[3, 0].set_ylabel('Cost weight (-)', **self.hfont_small)
                 axa[3, 0].legend(prop=self.legend_font_small, loc='upper left')
                 axa[3, 0].set_ylim(ymin_t, ymax_t)
                 axa[3, 0].set_xlim(t_start, t_example)
@@ -736,7 +739,7 @@ class PlotStuff:
                 plt.tight_layout(pad=1)
 
             auth_est = (np.array(Lhhat_pos) - np.array(Lr_pos)) / (np.array(Lr_pos) + np.array(Lhhat_pos) + 0.001)
-            figb.suptitle("Estimated Control Share", **self.csfont)
+            figb.suptitle("Estimated control share", **self.csfont)
             if c > 0:
                 axs[repetition, c - 1].plot(t, auth_est)
                 # axs[repetition, c - 1].plot(t, auth, alpha=0.3, label='Measured authority')
