@@ -7,13 +7,14 @@ import scipy.linalg as cp
 import pandas as pd
 import random
 import os
+import sys
 
-from Experiment.reference_trajectory import Reference
-from Controller_Design.SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
-from Experiment.experiment import Experiment
-from Controller_Design.Controllers.Differential_Game_Gain_Observer import ControllerDGObs
-from Experiment.visuals import Visualize
-from Demo.analysis import Analysis
+from reference_trajectory import Reference
+from SensoDrive.SensoDriveMultiprocessing import SensoDriveModule
+from experiment import Experiment
+from Differential_Game_Gain_Observer import ControllerDGObs
+from visuals import Visualize
+from analysis import Analysis
 
 def to_csv(to_be_saved, file):
     columns = []
@@ -60,6 +61,7 @@ if __name__ == "__main__":
     kappa = 1
     C = np.array([[15, 0.0], [0.0, 0.1]])
 
+
     # Experiment data
     t_warmup = 5
     t_cooldown = 5
@@ -84,6 +86,7 @@ if __name__ == "__main__":
         trials = 1
 
     # Visual stuff
+    # automatically find correct height and width
     screen_width = 1920
     screen_height = 1080
 

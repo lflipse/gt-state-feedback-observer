@@ -9,3 +9,6 @@ CMake
 control
 pygame
 scipy
+wres
+keyboard
+seaborn

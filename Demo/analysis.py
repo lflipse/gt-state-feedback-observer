@@ -3,7 +3,7 @@ import os
 sys.path.insert(1, '..')
 import pandas as pd
 import numpy as np
-from Experiment.plots import PlotStuff
+from plots import PlotStuff
 import matplotlib.pyplot as plt
 
 
