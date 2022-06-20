@@ -15,6 +15,91 @@ from experiment import Experiment
 from Differential_Game_Gain_Observer import ControllerDGObs
 from visuals import Visualize
 from analysis import Analysis
+from PyQt5 import QtWidgets
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtCore import QCoreApplication
+
+class MyWindow(QMainWindow):
+    def __init__(self, optionHandler):
+        super(MyWindow, self).__init__()
+        self.initUI()
+        self.setGeometry(100, 100, 600, 400)
+        self.setWindowTitle("Demonstrator")
+        self.option = -2
+        self.optionHandler = optionHandler
+
+    def initUI(self):
+        self.label = QtWidgets.QLabel(self)
+        self.label.setFont(QFont("Arial", 18))
+        self.label.setText("Please choose one of \n the following demos")
+        self.label.setGeometry(200, 50, 100, 40)
+        self.label.adjustSize()
+
+        self.button1 = QtWidgets.QPushButton(self)
+        self.button1.setFont(QFont("Arial", 18))
+        self.button1.setText("Mini experiment")
+        self.button1.move(25, 150)
+        self.button1.clicked.connect(self.clicked_4)
+        self.button1.adjustSize()
+
+        self.button2 = QtWidgets.QPushButton(self)
+        self.button2.setFont(QFont("Arial", 18))
+        self.button2.setText("Manual Control")
+        self.button2.move(300, 150)
+        self.button2.clicked.connect(self.clicked_1)
+        self.button2.adjustSize()
+
+        self.button3 = QtWidgets.QPushButton(self)
+        self.button3.setFont(QFont("Arial", 18))
+        self.button3.setText("Positive Reinforcement")
+        self.button3.move(25, 300)
+        self.button3.clicked.connect(self.clicked_2)
+        self.button3.adjustSize()
+
+        self.button4 = QtWidgets.QPushButton(self)
+        self.button4.setFont(QFont("Arial", 18))
+        self.button4.setText("Negative Reinforcement")
+        self.button4.move(300, 300)
+        self.button4.clicked.connect(self.clicked_3)
+        self.button4.adjustSize()
+
+    def clicked_1(self):
+        self.option = 0
+        self.optionHandler.update_option(self.option)
+        run_demo()
+        self.close()
+
+    def clicked_2(self):
+        self.option = 1
+        self.optionHandler.update_option(self.option)
+        run_demo()
+        self.close()
+
+    def clicked_3(self):
+        self.option = 2
+        self.optionHandler.update_option(self.option)
+        run_demo()
+        self.close()
+
+    def clicked_4(self):
+        self.option = -1
+        self.optionHandler.update_option(self.option)
+        run_demo()
+        self.close()
+
+    def closeEvent(self, *args, **kwargs):
+        super(MyWindow, self).closeEvent(*args, **kwargs)
+
+class optionHandler:
+    def __init__(self):
+        self.option = -2
+
+    def update_option(self, option):
+        self.option = option
+
+    def return_option(self):
+        return self.option
 
 def to_csv(to_be_saved, file):
     columns = []
@@ -33,17 +118,14 @@ def load_data_set(file):
 
     return data_set
 
-def choose_condition():
+def choose_demo(option_handler):
     print("Choose an experimental condition")
-    condition = int(input("-1: Full experiment, 0: Manual, 1: Positive reinforcement, 2: Negative reinforcement  Your answer = "))
-    return condition
+    app = QApplication(sys.argv)
+    win = MyWindow(option_handler)
+    win.show()
+    sys.exit(app.exec_())
 
-
-# This statement is necessary to allow for multiprocessing
-if __name__ == "__main__":
-    if platform.system() == 'Windows':
-        import wres
-
+def run_demo():
     # Simulation parameters
     reference = Reference(duration=None)
 
@@ -61,11 +143,10 @@ if __name__ == "__main__":
     kappa = 1
     C = np.array([[15, 0.0], [0.0, 0.1]])
 
-
     # Experiment data
     t_warmup = 5
     t_cooldown = 5
-    t_period = 77.5
+    t_period = 40
     sigma = [0.005, 0.065]
     periods = 1
     t_exp = periods * t_period
@@ -79,7 +160,8 @@ if __name__ == "__main__":
     duration = t_warmup + t_cooldown + t_exp
 
     # Choose a condition
-    condition = choose_condition()
+
+    condition = option_handler.return_option()
     if condition < 0:
         trials = conditions
     else:
@@ -178,7 +260,6 @@ if __name__ == "__main__":
         else:
             cond = condits[condition]
 
-
         if platform.system() == 'Windows':
             with wres.set_resolution(10000):
                 # Do trial (trial -1 is the robot only run)
@@ -195,3 +276,11 @@ if __name__ == "__main__":
     analysis = Analysis()
     analysis.initialize()
     analysis.analyse()
+
+# This statement is necessary to allow for multiprocessing
+if __name__ == "__main__":
+    if platform.system() == 'Windows':
+        import wres
+
+    option_handler = optionHandler()
+    choose_demo(option_handler)
