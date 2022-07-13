@@ -16,7 +16,7 @@ class ControllerDGObs:
         x_dot = states["state_derivative"]
         xi_hat = states["estimated_error_state"]
         x_hat = states["estimated_state"]
-        xi_tilde = xi_hat - xi
+        xi_tilde = x_hat - x
         xi_dot = states["error_state_derivative"]
         Lh_hat = states["estimated_human_gain"]
         Qh = states["estimated_human_cost"]
@@ -104,13 +104,13 @@ class ControllerDGObs:
 
     def nonlinear_term(self, x):
         g = 9.81
-        m = 0.47426441550449755
-        dh = 0.04856599995887999
-        dl = 0.007921400008340136
-        vt = 0.2850153620588755
+        m = 0.25577512040264017
+        dh = 0.08868507357869222
+        dl = 0.0207971806237164
+        vt = 0.3578151261152145
         vsp = 2 * vt
-        tau_d = -0.09551579889787694
-        tau_fric = 0.02622587046565122
+        tau_d = -0.11322530785321677
+        tau_fric = 0.031177592111752105
 
         # Gravity
         tau_g = - m * g * dh * np.sin(x[0, 0]) - m * g * dl * np.cos(x[0, 0])

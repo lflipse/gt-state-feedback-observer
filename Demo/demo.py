@@ -64,6 +64,13 @@ class MyWindow(QMainWindow):
         self.button4.clicked.connect(self.clicked_3)
         self.button4.adjustSize()
 
+        self.button5 = QtWidgets.QPushButton(self)
+        self.button5.setFont(QFont("Arial", 18))
+        self.button5.setText("Plot data")
+        self.button5.move(25, 450)
+        self.button5.clicked.connect(self.clicked_5)
+        self.button5.adjustSize()
+
     def clicked_1(self):
         self.option = 0
         self.optionHandler.update_option(self.option)
@@ -84,6 +91,12 @@ class MyWindow(QMainWindow):
 
     def clicked_4(self):
         self.option = -1
+        self.optionHandler.update_option(self.option)
+        run_demo()
+        self.close()
+
+    def clicked_5(self):
+        self.option = 5
         self.optionHandler.update_option(self.option)
         run_demo()
         self.close()
@@ -126,152 +139,157 @@ def choose_demo(option_handler):
     sys.exit(app.exec_())
 
 def run_demo():
-    # Simulation parameters
-    reference = Reference(duration=None)
-
-    # Dynamics
-    Jw = 0.04914830792783059
-    Bw = 0.3  # Max = 0.5
-    Kw = 0.0  # Max = 2.5
-    A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
-    B = np.array([[0], [1 / Jw]])
-
-    # Controller settings
-    Gamma = 4 * np.array([[2, 0], [0, 2]])
-    alpha = 2.5
-    K = alpha * np.array([[10.0, 0], [0, 0.0]])
-    kappa = 1
-    C = np.array([[15, 0.0], [0.0, 0.1]])
-
-    # Experiment data
-    t_warmup = 5
-    t_cooldown = 5
-    t_period = 40
-    sigma = [0.005, 0.065]
-    periods = 1
-    t_exp = periods * t_period
-    t_prev = 0.1
-    repetitions = 1
-    visual_conditions = 1
-    haptic_conditions = 3
-    robot_conditions = 1
-    conditions = repetitions * visual_conditions * haptic_conditions + robot_conditions
-    conditions = 3
-    duration = t_warmup + t_cooldown + t_exp
-
-    # Choose a condition
-
     condition = option_handler.return_option()
-    if condition < 0:
-        trials = conditions
+    if condition > 3:
+        pass
     else:
-        trials = 1
+        # Simulation parameters
+        reference = Reference(duration=None)
 
-    # Visual stuff
-    # automatically find correct height and width
-    screen_width = 1920
-    screen_height = 1080
+        # Dynamics
+        Jw = 0.04914830792783059
+        Bw = 0.3  # Max = 0.5
+        Kw = 0.0  # Max = 2.5
+        A = np.array([[0, 1], [- Kw / Jw, - Bw / Jw]])
+        B = np.array([[0], [1 / Jw]])
 
-    # Insert controller
-    controller = ControllerDGObs(A, B, K, Gamma, kappa)
-    controller_type = "Cost_observer"
-    initial_human = np.array([0, 0])
+        # Controller settings
+        Gamma = 4 * np.array([[2, 0], [0, 2]])
+        alpha = 2.5
+        K = alpha * np.array([[10.0, 0], [0, 0.0]])
+        kappa = 1
+        C = np.array([[15, 0.0], [0.0, 0.1]])
 
-    # Start the senso drive parallel process
-    parent_conn, child_conn = mp.Pipe(True)
-    senso_dict = {
-        "stiffness": Kw,
-        "damping": Bw,
-        "alpha_1": A[1, 0],
-        "alpha_2": A[1, 1],
-        "beta": B[1, 0],
-        "controller": controller,
-        "controller_type": controller_type,
-        "parent_conn": parent_conn,
-        "child_conn": child_conn,
-        "initial_human": initial_human,
-    }
-    senso_drive_process = SensoDriveModule(senso_dict)
+        # Experiment data
+        t_warmup = 5
+        t_cooldown = 5
+        t_period = 40
+        sigma = [0.005, 0.065]
+        periods = 1
+        t_exp = periods * t_period
+        t_prev = 0.1
+        repetitions = 1
+        visual_conditions = 1
+        haptic_conditions = 3
+        robot_conditions = 1
+        conditions = repetitions * visual_conditions * haptic_conditions + robot_conditions
+        conditions = 3
+        duration = t_warmup + t_cooldown + t_exp
 
-    # Time to do an experiment!
-    full_screen = True
-    preview = True
-    do_exp = True
+        # Choose a condition
 
-    experiment_input = {
-        "damping": Bw,
-        "stiffness": Kw,
-        "reference": reference,
-        "controller_type": controller_type,
-        "parent_conn": parent_conn,
-        "child_conn": child_conn,
-        "senso_drive": senso_drive_process,
-        "screen_width": screen_width,
-        "screen_height": screen_height,
-        "full_screen": full_screen,
-        "preview": preview,
-        "preview_time": t_prev,
-        "warm_up_time": t_warmup,
-        "experiment_time": t_exp,
-        "cooldown_time": t_cooldown,
-        "period_time": t_period,
-        "virtual_human": False,
-        "virtual_human_gain": None,
-        "virtual_human_cost": None,
-        "init_robot_cost": None,
-        "final_robot_cost": None,
-        "sharing_rule": C,
-        "periods": periods,
-        "trials": trials,
-        "repetitions": repetitions,
-        "visual_conditions": visual_conditions,
-        "sigma": sigma,
-    }
 
-    # Make folder for the participant
-    try:
-        dirlist = os.listdir("data")
-        new_list = [int(i) for i in dirlist]
-        print("last folder: ", max(new_list))
-        print("folders: ", new_list)
-        participant = max(new_list) + 1
-    except:
-        participant = 0
-
-    print("now making folder for participant: ", participant)
-    folder_name = "data\\" + str(participant)
-    os.mkdir(folder_name)
-    senso_drive_process.start()
-    print("process started!")
-
-    # Initialize pygame visualization
-    visualize = Visualize(screen_width, screen_height, full_screen)
-    experiment_handler = Experiment(experiment_input, visualize)
-
-    # conditions = 3
-    if condition >= 0:
-        conditions = 1
-
-    condits = ["Manual Control", "Positive Reinforcement", "Negative Reinforcement", "Mixed Reinforcement"]
-
-    for i in range(conditions):
         if condition < 0:
-            cond = condits[i]
+            trials = conditions
         else:
-            cond = condits[condition]
+            trials = 1
 
-        if platform.system() == 'Windows':
-            with wres.set_resolution(10000):
-                # Do trial (trial -1 is the robot only run)
-                ready, experiment_data = experiment_handler.experiment(condition=cond, repetition=0, trial=i)
+        # Visual stuff
+        # automatically find correct height and width
+        screen_width = 1920
+        screen_height = 1080
 
-                # Save data
-                string = "data\\" + str(participant) + "\\trial_" + str(i) + ".csv"
-                to_csv(experiment_data, string)
+        # Insert controller
+        controller = ControllerDGObs(A, B, K, Gamma, kappa)
+        controller_type = "Cost_observer"
+        initial_human = np.array([0, 0])
 
-    visualize.quit()
-    senso_drive_process.join(timeout=0)
-    # live_plotter_process.join(timeout=0)
+        # Start the senso drive parallel process
+        parent_conn, child_conn = mp.Pipe(True)
+        senso_dict = {
+            "stiffness": Kw,
+            "damping": Bw,
+            "alpha_1": A[1, 0],
+            "alpha_2": A[1, 1],
+            "beta": B[1, 0],
+            "controller": controller,
+            "controller_type": controller_type,
+            "parent_conn": parent_conn,
+            "child_conn": child_conn,
+            "initial_human": initial_human,
+        }
+        senso_drive_process = SensoDriveModule(senso_dict)
+
+        # Time to do an experiment!
+        full_screen = True
+        preview = True
+        do_exp = True
+
+        experiment_input = {
+            "damping": Bw,
+            "stiffness": Kw,
+            "reference": reference,
+            "controller_type": controller_type,
+            "parent_conn": parent_conn,
+            "child_conn": child_conn,
+            "senso_drive": senso_drive_process,
+            "screen_width": screen_width,
+            "screen_height": screen_height,
+            "full_screen": full_screen,
+            "preview": preview,
+            "preview_time": t_prev,
+            "warm_up_time": t_warmup,
+            "experiment_time": t_exp,
+            "cooldown_time": t_cooldown,
+            "period_time": t_period,
+            "virtual_human": False,
+            "virtual_human_gain": None,
+            "virtual_human_cost": None,
+            "init_robot_cost": None,
+            "final_robot_cost": None,
+            "sharing_rule": C,
+            "periods": periods,
+            "trials": trials,
+            "repetitions": repetitions,
+            "visual_conditions": visual_conditions,
+            "sigma": sigma,
+        }
+
+        # Make folder for the participant
+        try:
+            dirlist = os.listdir("data")
+            new_list = [int(i) for i in dirlist]
+            print("last folder: ", max(new_list))
+            print("folders: ", new_list)
+            participant = max(new_list) + 1
+        except:
+            participant = 0
+
+        print("now making folder for participant: ", participant)
+        folder_name = "data\\" + str(participant)
+        os.mkdir(folder_name)
+        senso_drive_process.start()
+        print("process started!")
+
+        # Initialize pygame visualization
+        visualize = Visualize(screen_width, screen_height, full_screen)
+        experiment_handler = Experiment(experiment_input, visualize)
+
+
+        # conditions = 3
+        if condition >= 0:
+            conditions = 1
+
+        condits = ["Manual Control", "Positive Reinforcement", "Negative Reinforcement"]
+
+        for i in range(conditions):
+            if condition < 0:
+                cond = condits[i]
+            else:
+                cond = condits[condition]
+
+            if platform.system() == 'Windows':
+                with wres.set_resolution(10000):
+                    # Do trial (trial -1 is the robot only run)
+                    ready, experiment_data = experiment_handler.experiment(condition=cond, repetition=0, trial=i)
+
+                    # Save data
+                    string = "data\\" + str(participant) + "\\trial_" + str(i) + ".csv"
+                    to_csv(experiment_data, string)
+
+        visualize.quit()
+        senso_drive_process.join(timeout=0)
+        # live_plotter_process.join(timeout=0)
 
     analysis = Analysis()
     analysis.initialize()

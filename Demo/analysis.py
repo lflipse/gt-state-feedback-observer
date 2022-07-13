@@ -16,7 +16,7 @@ class Analysis():
         self.metrics = {}
         self.metrics_individuals = {}
         self.plot_stuff = None
-        self.trials = 16
+        self.trials = 3
         self.participants = 0
         self.periods = 4
         self.conditions = 4
@@ -57,7 +57,7 @@ class Analysis():
 
         # Plot individual data
         self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 1)
-        # self.plot_stuff.plot_data(self.raw_data, trials=self.trials, participant=self.participants - 2)
+        # self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 2)
 
         # Plot metrics
         # self.plot_stuff.plot_experiment(self.metrics, self.metrics_individuals, self.metrics_individuals, self.participants, False)

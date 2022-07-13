@@ -11,6 +11,7 @@ import seaborn as sns
 from strategy import Strategy
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib
+from Demo.SensoDrive.Lowpassfilter_Biquad import LowPassFilterBiquad
 
 class PlotStuff:
     def __init__(self):
@@ -56,19 +57,22 @@ class PlotStuff:
                       "robot_gain": [],
                       "Condition": []}
 
-    def annotate_significance(self, no_boxes, ax, significance):
-        if no_boxes == 2:
-            lines = 1
-        elif no_boxes == 3:
-            lines = 3
+    def filter(self, data, filter):
+        fs = 500
 
-        x = [0, 1, 1, 2, 0, 2]
+        if filter == 0:
+            fc = 15
+        else:
+            fc = 5
 
-        for i in range(lines):
-            ylims = ax.get_ylim()
-            ax.plot([x[2*i], x[2*i], x[2*i+1], x[2*i+1]], [ylims[1] + 0.1 * abs(ylims[1]), ylims[1] + 0.3 * abs(ylims[1]),
-                                       ylims[1] + 0.3 * abs(ylims[1]), ylims[1] + 0.1 * abs(ylims[1])], self.tud_black)
-            ax.text((x[2*i] + x[2*i+1]) / 2, ylims[1] + 0.35 * abs(ylims[1]), significance[i])
+        lowpass_filter = LowPassFilterBiquad(fs, fc)
+        N = len(data)
+        filtered_data = np.zeros(N)
+        for i in range(N):
+            filtered_data[i] = lowpass_filter.step(data[i])
+
+        return filtered_data
+
 
     def plot_metrics(self, metrics, participant, conditions):
         # mainly used to show consitency
@@ -555,8 +559,10 @@ class PlotStuff:
 
     def plot_participant(self, raw_data, trials, participant):
         print("plotting for participant ", participant)
-        figb, axs = plt.subplots(4, 2)
-        figc, axsb = plt.subplots(4, 3)
+        figb, axs = plt.subplots(2, 1)
+        figc, axsb = plt.subplots(3, 1)
+
+        figd, axsd = plt.subplots(3, 2)
 
         for i in range(trials):
             data = raw_data[participant][i]
@@ -587,6 +593,8 @@ class PlotStuff:
 
             uhtilde = data["input_estimation_error"]
             uh_rec = np.array(uhhat) - np.array(uhtilde)
+            uhtilde_filt = self.filter(uhtilde, 1)
+            uh_rec_filt = self.filter(uh_rec, 0)
 
             Pr = np.array(ur) * np.array(xdot)
             Ph = np.array(uhhat) * np.array(xdot)
@@ -740,45 +748,56 @@ class PlotStuff:
 
             auth_est = (np.array(Lhhat_pos) - np.array(Lr_pos)) / (np.array(Lr_pos) + np.array(Lhhat_pos) + 0.001)
             figb.suptitle("Estimated control share", **self.csfont)
-            if c > 0:
-                axs[repetition, c - 1].plot(t, auth_est)
-                # axs[repetition, c - 1].plot(t, auth, alpha=0.3, label='Measured authority')
-                axs[repetition, c - 1].set_ylim(-1.5, 1.5)
-                axs[repetition, c - 1].set_xlim(t_start, t_end)
-                if repetition == 0:
-                    axs[repetition, c - 1].set_title(title)
-                    axs[repetition, c - 1].set_xticks([])
-                    # axs[repetition, c - 1].legend(prop={"size": 8}, loc='lower right')
-                elif repetition == 3:
-                    axs[repetition, c - 1].set_xlabel('Time ($s$)', **self.hfont)
-                else:
-                    axs[repetition, c - 1].set_xticks([])
-            if c == 1:
-                axs[repetition, c - 1].set_ylabel('Share (-)', **self.hfont_small)
-            plt.tight_layout(pad=1)
+            # if c > 0:
+            #     axs[i].plot(t, auth_est)
+            #     # axs[repetition, c - 1].plot(t, auth, alpha=0.3, label='Measured authority')
+            #     axs[i].set_ylim(-1.5, 1.5)
+            #     axs[i].set_xlim(t_start, t_end)
+            #     if [i] == 0:
+            #         axs[i].set_title(title)
+            #         axs[i].set_xticks([])
+            #         # axs[i], c - 1].legend(prop={"size": 8}, loc='lower right')
+            #     elif i == 3:
+            #         axs[i].set_xlabel('Time ($s$)', **self.hfont)
+            #     else:
+            #         axs[i].set_xticks([])
+            # if c == 1:
+            #     axs[i].set_ylabel('Share (-)', **self.hfont_small)
+            # plt.tight_layout(pad=1)
 
             figc.suptitle("Controller gain distribution", **self.csfont)
-            stacks = axsb[repetition, c].stackplot(t, Lhhat_pos, Lr_pos, baseline='zero', colors=colors,
+            stacks = axsb[i].stackplot(t, Lhhat_pos, Lr_pos, baseline='zero', colors=colors,
                                               edgecolor='black', linewidth=0.8, labels=labels)
             hatches = ["\\\\", "//"]
             for stack, hatch in zip(stacks, hatches):
                 stack.set_hatch(hatch)
-            axsb[repetition, c].set_ylim(-1*180/np.pi, 12*180/np.pi)
-            axsb[repetition, c].set_xlim(t_start, t_end)
-            if repetition == 0:
-                axsb[repetition, c].set_title(title, **self.hfont)
-                axsb[repetition, c].set_xticks([])
-                axsb[repetition, c].legend(prop=self.legend_font_small, loc='upper left')
+            axsb[i].set_ylim(-1*180/np.pi, 12*180/np.pi)
+            axsb[i].set_xlim(t_start, t_end)
+            if i == 0:
+                axsb[i].set_title(title, **self.hfont)
+                axsb[i].set_xticks([])
+                axsb[i].legend(prop=self.legend_font_small, loc='upper left')
 
-            if repetition == 3:
-                axsb[repetition, c].set_xlabel('Time ($s$)', **self.hfont)
+            if i == 3:
+                axsb[i].set_xlabel('Time ($s$)', **self.hfont)
             else:
-                axsb[repetition, c].set_xticks([])
+                axsb[i].set_xticks([])
             if c == 0:
-                axsb[repetition, c].set_ylabel("Gain \n ($Nm/^\circ$)", **self.hfont_small)
+                axsb[i].set_ylabel("Gain \n ($Nm/^\circ$)", **self.hfont_small)
             else:
-                axsb[repetition, c].set_yticks([])
-            # axsb[repetition, c].ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+                axsb[i].set_yticks([])
+            # axsb[i, c].ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+
+            figd.suptitle("Human model", **self.csfont)
+            axsd[i, 0].plot(t, uh_rec, self.tud_red, alpha=0.2, linewidth=2)
+            axsd[i, 0].plot(t, uh_rec_filt, self.tud_red, alpha=1, linewidth=2)
+            axsd[i, 0].plot(t, uhhat, self.tud_orange, alpha=1, linewidth=2)
+            axsd[i, 0].set_xlim(t_start, t_end)
+
+            axsd[i, 1].plot(t, uhtilde, self.tud_red, alpha=0.2, linewidth=2)
+            axsd[i, 1].plot(t, uhtilde_filt, self.tud_orange, alpha=1, linewidth=2)
+            axsd[i, 1].set_xlim(t_start, t_end)
+
             plt.tight_layout(pad=1)
 
 
