@@ -70,14 +70,14 @@ class PlotStuff:
                                        ylims[1] + 0.3 * abs(ylims[1]), ylims[1] + 0.1 * abs(ylims[1])], self.tud_black)
             ax.text((x[2*i] + x[2*i+1]) / 2, ylims[1] + 0.35 * abs(ylims[1]), significance[i])
 
-    def plot_metrics(self, metrics, participant, conditions):
+
+    def plot_metrics(self, metrics, participants, conditions):
         # mainly used to show consitency
         metrics_pd = pd.DataFrame(metrics)
-        # print(metrics_pd)
         metrics_pd_no_manual = metrics_pd.loc[metrics_pd["condition"] != "Manual Control"]
-        # print(metrics_pd_no_manual["condition"] == "Manual Control")
-        metrics_part = metrics_pd.loc[metrics_pd["participant"] == participant]
-        metrics_no_manual = metrics_part.loc[metrics_part["condition"] != "Manual Control"]
+        metrics_pd_no_negative = metrics_pd.loc[metrics_pd["condition"] != "Negative Reinforcement"]
+        metrics_pd_no_positive = metrics_pd.loc[metrics_pd["condition"] != "Positive Reinforcement"]
+
         metrics_positive_uns = metrics_pd.loc[metrics_pd["condition"] == "Positive Reinforcement"]
         metrics_negative_uns = metrics_pd.loc[metrics_pd["condition"] == "Negative Reinforcement"]
         metrics_manual_uns = metrics_pd.loc[metrics_pd["condition"] == "Manual Control"]
@@ -85,7 +85,7 @@ class PlotStuff:
         metrics_negative = metrics_negative_uns.sort_values(by=['trial'])
         metrics_manual = metrics_manual_uns.sort_values(by=['trial'])
 
-        labels = ["Manual \n Control", "Negative \n Reinforcement", "Positive \n Reinforcement"]
+        labels = ["Manual control", "Effort sharing", "Mirrored effort"]
 
         # Control authority
         figa, axa = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
@@ -116,7 +116,7 @@ class PlotStuff:
         axb[0].set_xlabel("")
         # self.annotate_significance(3, axb[0], ["***", "***", "***"])
         ylims = axb[0].get_ylim()
-        axb[0].set_ylabel("RMS error ($^{\circ}$)", **self.hfont)
+        axb[0].set_ylabel("RMS Error ($^{\circ}$)", **self.hfont)
         delta_y = ylims[1] - ylims[0]
         width = delta_y / 40
         sns.histplot(data=metrics_pd, y="rms_angle_error", hue="condition", ax=axb[1], kde=False,
@@ -135,7 +135,7 @@ class PlotStuff:
                       alpha=0.6, size=6, linewidth=1)
         axc[0].set_xticklabels(labels)
         axc[0].set_xlabel("")
-        axc[0].set_ylabel("RMS power ($W$)", **self.hfont)
+        axc[0].set_ylabel("RMS Power ($W$)", **self.hfont)
         ylims = axc[0].get_ylim()
         delta_y = ylims[1] - ylims[0]
         width = delta_y / 40
@@ -173,120 +173,174 @@ class PlotStuff:
 
         # Differences in control strategy
         plt.figure()
-        sns.boxplot(data=metrics_pd, x="participant", y="human_angle_cost", hue="condition", palette=self.colors, hue_order=self.order,)
+        plot = sns.boxplot(data=metrics_pd, x="participant", y="human_angle_cost", hue="condition", palette=self.colors, hue_order=self.order,)
+
+        my_labels = ['Manual control', 'Effect sharing', 'Mirrored effort']
+        plt.legend(title='Condition', labels=my_labels)
         plt.title("Human control strategy", **self.csfont)
+        plt.ylabel("Cost function weight [-]", **self.hfont)
+        plt.xlabel("Participant nr.", **self.hfont)
+        plt.tight_layout(pad=1)
+
+        # Differences in control strategy
+        plt.figure()
+        plt.scatter(-100, -100, c=self.colormap[0])
+        plt.scatter(-100, -100, c=self.colormap[1])
+        plt.scatter(-100, -100, c=self.colormap[2])
+        sns.pointplot(data=metrics_pd, x="participant", y="human_angle_cost", hue="condition", palette=self.colors, hue_order=self.order, )
+        plt.legend(title='Condition', labels=my_labels, )
+        plt.xlim(-1, 18)
+        plt.ylim(-60, 20)
+        plt.title("Human control strategy", **self.csfont)
+        plt.ylabel("Cost function weight [-]", **self.hfont)
+        plt.xlabel("Participant nr.", **self.hfont)
+        plt.tight_layout(pad=1)
+
+        # Differences in control strategy
+        plt.figure()
+        sns.boxplot(data=metrics_pd_no_negative, x="participant", y="human_angle_cost", hue="condition", palette=self.colors, hue_order=self.order, )
+        plt.title("Human control strategy", **self.csfont)
+        plt.ylabel("Cost function weight [-]", **self.hfont)
+        plt.xlabel("Participant nr.", **self.hfont)
+        plt.tight_layout(pad=1)
+
+        # Differences in control strategy
+        plt.figure()
+        sns.boxplot(data=metrics_pd_no_positive, x="participant", y="human_angle_cost", hue="condition", palette=self.colors, hue_order=self.order, )
+        plt.title("Human control strategy", **self.csfont)
+        plt.ylabel("Cost function weight [-]", **self.hfont)
+        plt.xlabel("Participant nr.", **self.hfont)
         plt.tight_layout(pad=1)
 
 
         fig1 = plt.figure().gca()
-        try:
-            fa = sns.scatterplot(data=metrics_positive, x="repetition", y="human_angle_gain", hue="label", ax=fig1,palette=self.colormap2[0:3],
-                              s=60)
-            fb = sns.lineplot(data=metrics_positive, x="repetition", y="human_angle_gain", hue="label", ax=fig1, estimator=None, lw=2.5, units="participant", palette=self.colormap2[0:3],)
-        except:
-            fa = sns.scatterplot(data=metrics_positive, x="repetition", y="human_angle_gain", hue="label", ax=fig1,
-                                 palette=self.colormap2[0:2],
-                                 s=60)
-            fb = sns.lineplot(data=metrics_positive, x="repetition", y="human_angle_gain", hue="label", ax=fig1,
-                              estimator=None, lw=2.5, units="participant", palette=self.colormap2[0:2], )
-
+        fa = sns.scatterplot(data=metrics_positive, x="repetition", y="human_angle_cost", hue="participant", ax=fig1,
+                          s=60)
+        fb = sns.lineplot(data=metrics_positive, x="repetition", y="human_angle_cost", hue="participant", ax=fig1, estimator=None, lw=2.5, units="participant", )
         plt.title("Positive adaptation strategy", **self.csfont)
-        fig1.set_ylabel("Human steering angle gain ($Nm/^\circ$)", **self.hfont)
+        fig1.set_ylabel("Human steering cost weight (-)", **self.hfont)
         fig1.set_xlabel("Trial number", **self.hfont)
         fig1.set_xticks([1, 2, 3, 4])
-        # fig1.get_legend().remove()
+        fig1.get_legend().remove()
         plt.tight_layout(pad=1)
 
         fig2 = plt.figure().gca()
-        try:
-            ga = sns.scatterplot(data=metrics_negative, x="repetition", y="human_angle_gain", hue="label", ax=fig2,palette=self.colormap2[0:3],
-                              s=60)
-            gb = sns.lineplot(data=metrics_negative, x="repetition", y="human_angle_gain", hue="label", ax=fig2, estimator=None, lw=2.5, units="participant",palette=self.colormap2[0:3],)
-        except:
-            ga = sns.scatterplot(data=metrics_negative, x="repetition", y="human_angle_gain", hue="label", ax=fig2,
-                             palette=self.colormap2[0:2],
-                             s=60)
-            gb = sns.lineplot(data=metrics_negative, x="repetition", y="human_angle_gain", hue="label", ax=fig2,
-                          estimator=None, lw=2.5, units="participant", palette=self.colormap2[0:2], )
-
+        # try:
+        ga = sns.scatterplot(data=metrics_negative, x="repetition", y="human_angle_cost", hue="participant", ax=fig2, s=60)
+        gb = sns.lineplot(data=metrics_negative, x="repetition", y="human_angle_cost", hue="participant", ax=fig2, estimator=None, lw=2.5, units="participant")
         plt.title("Negative adaptation strategy", **self.csfont)
-        fig2.set_ylabel("Human steering angle gain ($Nm/^\circ$)", **self.hfont)
+        fig2.set_ylabel("Human steering cost weight (-)", **self.hfont)
         fig2.set_xlabel("Trial number", **self.hfont)
         fig2.set_xticks([1, 2, 3, 4])
-        # fig2.get_legend().remove()
+        fig2.get_legend().remove()
         plt.tight_layout(pad=1)
 
         fig3 = plt.figure().gca()
-        try:
-            ha = sns.scatterplot(data=metrics_manual, x="repetition", y="human_angle_gain", hue="label", ax=fig3,palette=self.colormap2[0:3],
-                              s=60)
-            hb = sns.lineplot(data=metrics_manual, x="repetition", y="human_angle_gain", hue="label", ax=fig3, estimator=None, lw=2.5, units="participant",palette=self.colormap2[0:3],)
-        except:
-            ha = sns.scatterplot(data=metrics_manual, x="repetition", y="human_angle_gain", hue="label", ax=fig3,
-                                 palette=self.colormap2[0:2],
-                                 s=60)
-            hb = sns.lineplot(data=metrics_manual, x="repetition", y="human_angle_gain", hue="label", ax=fig3,
-                              estimator=None, lw=2.5, units="participant", palette=self.colormap2[0:2], )
-
+        ha = sns.scatterplot(data=metrics_manual, x="repetition", y="human_angle_cost", hue="participant", ax=fig3,s=60)
+        hb = sns.lineplot(data=metrics_manual, x="repetition", y="human_angle_cost", hue="participant", ax=fig3, estimator=None, lw=2.5, units="participant")
         plt.title("Manual control", **self.csfont)
-        fig3.set_ylabel("Human steering angle gain ($Nm/^\circ$)", **self.hfont)
+        fig3.set_ylabel("Human steering cost weight (-)", **self.hfont)
         fig3.set_xlabel("Trial number", **self.hfont)
         fig3.set_xticks([1, 2, 3, 4])
-        # fig3.get_legend().remove()
+        fig3.get_legend().remove()
+        plt.tight_layout(pad=1)
+
+        manual_costs = metrics_manual_uns["human_angle_cost"].values
+        negative_costs = metrics_negative_uns["human_angle_cost"].values
+        positive_costs = metrics_positive_uns["human_angle_cost"].values
+
+        fig3 = plt.figure().gca()
+        fig4 = plt.figure().gca()
+        for i in range(participants):
+            c = self.colormap[i % len(self.colormap)]
+            trials = 4
+
+            # fig4.scatter(manual_costs[trials * i:trials * i + trials], negative_costs[trials * i:trials * i + trials], c=c, s=[0.4, 0.75, 1.5, 3])
+            fig3.arrow(manual_costs[trials * i], positive_costs[trials * i], manual_costs[trials * i + 1] - manual_costs[trials * i],
+                       positive_costs[trials * i + 1] - positive_costs[trials * i], color=c, width=0.04, length_includes_head=True)
+            fig3.arrow(manual_costs[trials * i + 1], positive_costs[trials * i + 1], manual_costs[trials * i + 2] - manual_costs[trials * i + 1],
+                       positive_costs[trials * i + 2] - positive_costs[trials * i + 1], color=c, width=0.04, length_includes_head=True)
+            fig3.arrow(manual_costs[trials * i + 2], positive_costs[trials * i + 2], manual_costs[trials * i + 3] - manual_costs[trials * i + 2],
+                       positive_costs[trials * i + 3] - positive_costs[trials * i + 2], color=c, width=0.04, length_includes_head=True)
+
+            # fig4.scatter(manual_costs[trials * i:trials * i + trials], negative_costs[trials * i:trials * i + trials], c=c, s=[0.4, 0.75, 1.5, 3])
+            fig4.arrow(manual_costs[trials * i], negative_costs[trials * i], manual_costs[trials * i + 1] - manual_costs[trials * i],
+                       negative_costs[trials * i + 1] - negative_costs[trials * i], color=c, width = 0.04, length_includes_head = True)
+            fig4.arrow(manual_costs[trials * i + 1], negative_costs[trials * i + 1], manual_costs[trials * i + 2] - manual_costs[trials * i + 1],
+                       negative_costs[trials * i + 2] - negative_costs[trials * i + 1], color=c, width=0.04, length_includes_head=True)
+            fig4.arrow(manual_costs[trials * i + 2], negative_costs[trials * i + 2], manual_costs[trials * i + 3] - manual_costs[trials * i + 2],
+                       negative_costs[trials * i + 3] - negative_costs[trials * i + 2], color=c, width=0.04, length_includes_head=True)
+
+
+
+        # ha = sns.scatterplot(data=metrics_manual, x="repetition", y="human_angle_cost", hue="participant", ax=fig3, s=60)
+        # hb = sns.lineplot(data=metrics_manual, x="repetition", y="human_angle_cost", hue="participant", ax=fig3, estimator=None, lw=2.5, units="participant")
+        fig3.set_title("Positive reinforcement cost weights evolution", **self.csfont)
+        fig3.set_ylabel("Shared control median cost weight (-)", **self.hfont)
+        fig3.set_xlabel("Manual control median cost weight (-)", **self.hfont)
+        fig3.set_ylim(0, 20)
+        fig3.set_xlim(0, 20)
+        plt.tight_layout(pad=1)
+
+        fig4.set_title("Negative reinforcement cost weights evolution", **self.csfont)
+        fig4.set_ylabel("Shared control median cost weight (-)", **self.hfont)
+        fig4.set_xlabel("Manual control median cost weight (-)", **self.hfont)
+        fig4.set_ylim(-60, 15)
+        fig4.set_xlim(-40, 35)
         plt.tight_layout(pad=1)
 
         # metrics_pd.loc[metrics_pd["condition"] == "Positive Reinforcement"]
 
-        # Positive reinforcement
-        fig4 = plt.figure().gca()
-        plt.title("Positive reinforcement", **self.csfont)
-        try:
-            ha = sns.scatterplot(data=metrics_positive, x="gains_normalized", y="error_normalized", hue="label", ax=fig4,
-                                 palette=self.colormap2[0:3], size="repetition", sizes=(20, 80))
-            hc = sns.scatterplot(data=metrics_manual, x="gains_normalized", y="error_normalized", hue="label",
-                                 ax=fig4,
-                                 palette=self.colormap2[0:3], size="repetition", sizes=(20, 80))
-            hb = sns.lineplot(data=metrics_positive, x="gains_normalized", y="error_normalized", hue="label", ax=fig4,
-                              estimator=None, lw=1, units="participant", palette=self.colormap2[0:3], sort=False)
-        except:
-            ha = sns.scatterplot(data=metrics_positive, x="gains_normalized", y="error_normalized", hue="label", ax=fig4,
-                                 palette=self.colormap2[0:2], size="repetition", sizes=(10, 40))
-            hc = sns.scatterplot(data=metrics_manual, x="gains_normalized", y="error_normalized", hue="label",
-                                 ax=fig4,
-                                 palette=self.colormap2[0:2], size="repetition", sizes=(20, 80))
-            hb = sns.lineplot(data=metrics_positive, x="gains_normalized", y="error_normalized", hue="label", ax=fig4,
-                              estimator=None, lw=1, units="participant", palette=self.colormap2[0:2], sort=False)
-        # Positive reinforcement
-        fig5 = plt.figure().gca()
-        plt.title("Negative reinforcement", **self.csfont)
-        try:
-            ha = sns.scatterplot(data=metrics_negative, x="gains_normalized", y="error_normalized", hue="label", ax=fig5,
-                                 palette=self.colormap2[0:3], size="repetition", sizes=(10, 40))
-            hb = sns.lineplot(data=metrics_negative, x="gains_normalized", y="error_normalized", hue="label", ax=fig5,
-                              estimator=None, lw=1, units="participant", palette=self.colormap2[0:3], sort=False)
-        except:
-            ha = sns.scatterplot(data=metrics_negative, x="gains_normalized", y="error_normalized", hue="label", ax=fig5,
-                                 palette=self.colormap2[0:2], size="repetition", sizes=(10, 40))
-            hb = sns.lineplot(data=metrics_negative, x="gains_normalized", y="error_normalized", hue="label", ax=fig5,
-                              estimator=None, lw=1, units="participant", palette=self.colormap2[0:2], sort=False)
-
-        # Positive reinforcement
-        fig6 = plt.figure().gca()
-        plt.title("Negative reinforcement", **self.csfont)
-        try:
-            ha = sns.scatterplot(data=metrics_negative, x="system_angle_gain", y="rms_angle_error", hue="label",
-                                 ax=fig6,
-                                 palette=self.colormap2[0:3], size="repetition", sizes=(10, 40))
-            hb = sns.lineplot(data=metrics_negative, x="system_angle_gain", y="rms_angle_error", hue="label",
-                              ax=fig6,
-                              estimator=None, lw=1, units="participant", palette=self.colormap2[0:3], sort=False)
-        except:
-            ha = sns.scatterplot(data=metrics_negative, x="system_angle_gain", y="rms_angle_error", hue="label",
-                                 ax=fig6,
-                                 palette=self.colormap2[0:2], size="repetition", sizes=(10, 40))
-            hb = sns.lineplot(data=metrics_negative, x="system_angle_gain", y="rms_angle_error", hue="label",
-                              ax=fig6,
-                              estimator=None, lw=1, units="participant", palette=self.colormap2[0:2], sort=False)
+        # # Positive reinforcement
+        # fig4 = plt.figure().gca()
+        # plt.title("Positive reinforcement", **self.csfont)
+        # try:
+        #     ha = sns.scatterplot(data=metrics_positive, x="gains_normalized", y="error_normalized", hue="label", ax=fig4,
+        #                          palette=self.colormap2[0:3], size="repetition", sizes=(20, 80))
+        #     hc = sns.scatterplot(data=metrics_manual, x="gains_normalized", y="error_normalized", hue="label",
+        #                          ax=fig4,
+        #                          palette=self.colormap2[0:3], size="repetition", sizes=(20, 80))
+        #     hb = sns.lineplot(data=metrics_positive, x="gains_normalized", y="error_normalized", hue="label", ax=fig4,
+        #                       estimator=None, lw=1, units="participant", palette=self.colormap2[0:3], sort=False)
+        # except:
+        #     ha = sns.scatterplot(data=metrics_positive, x="gains_normalized", y="error_normalized", hue="label", ax=fig4,
+        #                          palette=self.colormap2[0:2], size="repetition", sizes=(10, 40))
+        #     hc = sns.scatterplot(data=metrics_manual, x="gains_normalized", y="error_normalized", hue="label",
+        #                          ax=fig4,
+        #                          palette=self.colormap2[0:2], size="repetition", sizes=(20, 80))
+        #     hb = sns.lineplot(data=metrics_positive, x="gains_normalized", y="error_normalized", hue="label", ax=fig4,
+        #                       estimator=None, lw=1, units="participant", palette=self.colormap2[0:2], sort=False)
+        # # Positive reinforcement
+        # fig5 = plt.figure().gca()
+        # plt.title("Negative reinforcement", **self.csfont)
+        # try:
+        #     ha = sns.scatterplot(data=metrics_negative, x="gains_normalized", y="error_normalized", hue="label", ax=fig5,
+        #                          palette=self.colormap2[0:3], size="repetition", sizes=(10, 40))
+        #     hb = sns.lineplot(data=metrics_negative, x="gains_normalized", y="error_normalized", hue="label", ax=fig5,
+        #                       estimator=None, lw=1, units="participant", palette=self.colormap2[0:3], sort=False)
+        # except:
+        #     ha = sns.scatterplot(data=metrics_negative, x="gains_normalized", y="error_normalized", hue="label", ax=fig5,
+        #                          palette=self.colormap2[0:2], size="repetition", sizes=(10, 40))
+        #     hb = sns.lineplot(data=metrics_negative, x="gains_normalized", y="error_normalized", hue="label", ax=fig5,
+        #                       estimator=None, lw=1, units="participant", palette=self.colormap2[0:2], sort=False)
+        #
+        # # Positive reinforcement
+        # fig6 = plt.figure().gca()
+        # plt.title("Negative reinforcement", **self.csfont)
+        # try:
+        #     ha = sns.scatterplot(data=metrics_negative, x="system_angle_gain", y="rms_angle_error", hue="label",
+        #                          ax=fig6,
+        #                          palette=self.colormap2[0:3], size="repetition", sizes=(10, 40))
+        #     hb = sns.lineplot(data=metrics_negative, x="system_angle_gain", y="rms_angle_error", hue="label",
+        #                       ax=fig6,
+        #                       estimator=None, lw=1, units="participant", palette=self.colormap2[0:3], sort=False)
+        # except:
+        #     ha = sns.scatterplot(data=metrics_negative, x="system_angle_gain", y="rms_angle_error", hue="label",
+        #                          ax=fig6,
+        #                          palette=self.colormap2[0:2], size="repetition", sizes=(10, 40))
+        #     hb = sns.lineplot(data=metrics_negative, x="system_angle_gain", y="rms_angle_error", hue="label",
+        #                       ax=fig6,
+        #                       estimator=None, lw=1, units="participant", palette=self.colormap2[0:2], sort=False)
 
         fig7 = plt.figure().gca()
         plt.title("Effect of human cost function on team performance", **self.csfont)
@@ -301,16 +355,16 @@ class PlotStuff:
         plt.tight_layout(pad=1)
 
 
-        fig4.set_ylabel("delta error", **self.hfont)
-        fig4.set_xlabel("delta gain", **self.hfont)
-        # fig3.get_legend().remove()
-        plt.tight_layout(pad=1)
-
-
-        fig5.set_ylabel("delta error", **self.hfont)
-        fig5.set_xlabel("delta gain", **self.hfont)
-        # fig3.get_legend().remove()
-        plt.tight_layout(pad=1)
+        # fig4.set_ylabel("delta error", **self.hfont)
+        # fig4.set_xlabel("delta gain", **self.hfont)
+        # # fig3.get_legend().remove()
+        # plt.tight_layout(pad=1)
+        #
+        #
+        # fig5.set_ylabel("delta error", **self.hfont)
+        # fig5.set_xlabel("delta gain", **self.hfont)
+        # # fig3.get_legend().remove()
+        # plt.tight_layout(pad=1)
 
         # self.save_all_figures()
 
@@ -332,7 +386,7 @@ class PlotStuff:
         # C1 = inputs["auth_pos"]
         # C2 = inputs["auth_neg"]
 
-        print(mean_metrics_pd)
+        # print(mean_metrics_pd)
 
         # Let's go chronologically
         # # 1. Costs
@@ -397,26 +451,26 @@ class PlotStuff:
         axl[1].axes.get_yaxis().set_visible(False)
         plt.tight_layout(pad=1)
 
-        # Control authority
-        figa, axa = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
-        figa.suptitle("Trial-by-trial variability", **self.csfont)
-        sns.boxplot(data=mean_metrics_pd, x="condition", y="cost_human_var", palette=self.colors, ax=axa[0], order=self.order)
-        sns.swarmplot(data=mean_metrics_pd, x="condition", y="cost_human_var", palette=self.colors, ax=axa[0], order=self.order,
-                      alpha=0.6, size=6, linewidth=1)
-        axa[0].set_xticklabels(labels)
-        axa[0].set_xlabel("")
-        # self.annotate_significance(2, axa[0], ["***"])
-        ylims = axa[0].get_ylim()
-        axa[0].set_ylabel("Cost function weight (-)", **self.hfont)
-        delta_y = ylims[1] - ylims[0]
-        width = delta_y / 40
-        sns.histplot(data=mean_metrics_pd, y="cost_human_var", hue="condition", ax=axa[1],
-                     palette=self.colors, binwidth=width)
-        axa[1].get_legend().remove()
-        axa[1].axes.get_yaxis().set_visible(False)
-        plt.tight_layout(pad=1)
-        axa[0].set_ylim(0, 40)
-        axa[1].set_ylim(0, 40)
+        # # Control authority
+        # figa, axa = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
+        # figa.suptitle("Trial-by-trial variability", **self.csfont)
+        # sns.boxplot(data=mean_metrics_pd, x="condition", y="cost_human_var", palette=self.colors, ax=axa[0], order=self.order)
+        # sns.swarmplot(data=mean_metrics_pd, x="condition", y="cost_human_var", palette=self.colors, ax=axa[0], order=self.order,
+        #               alpha=0.6, size=6, linewidth=1)
+        # axa[0].set_xticklabels(labels)
+        # axa[0].set_xlabel("")
+        # # self.annotate_significance(2, axa[0], ["***"])
+        # ylims = axa[0].get_ylim()
+        # axa[0].set_ylabel("Cost function weight (-)", **self.hfont)
+        # delta_y = ylims[1] - ylims[0]
+        # width = delta_y / 40
+        # sns.histplot(data=mean_metrics_pd, y="cost_human_var", hue="condition", ax=axa[1],
+        #              palette=self.colors, binwidth=width)
+        # axa[1].get_legend().remove()
+        # axa[1].axes.get_yaxis().set_visible(False)
+        # plt.tight_layout(pad=1)
+        # axa[0].set_ylim(0, 40)
+        # axa[1].set_ylim(0, 40)
 
         # Subjective control authority
         figb, axb = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 1]})
@@ -640,13 +694,17 @@ class PlotStuff:
 
         figje = plt.figure().gca()
         sns.boxplot(data=data_costs_pd, x="labels", y="costs", palette=self.colors, ax=figje)
-        sns.swarmplot(data=data_costs_pd, x="labels", y="costs", palette=self.colors, ax=figje,
-                      alpha=0.6, size=6, linewidth=1)
+        # sns.swarmplot(data=data_costs_pd, x="labels", y="costs", palette=self.colors, ax=figje,
+        #               alpha=0.6, size=6, linewidth=1)
 
-        nieuw_fig = plt.figure().gca()
+        # nieuw_fig = plt.figure().gca()
         for i in range(participants):
-            nieuw_fig.scatter([0, 1, 2], [cost_t[i], cost_t[participants+i], cost_t[participants*2+i]])
-            nieuw_fig.plot([0, 1, 2], [cost_t[i], cost_t[participants + i], cost_t[participants * 2 + i]])
+            figje.scatter([0, 1, 2], [cost_t[i], cost_t[participants+i], cost_t[participants*2+i]])
+            figje.plot([0, 1, 2], [cost_t[i], cost_t[participants + i], cost_t[participants * 2 + i]])
+
+        figje.set_title("Boxplots, with individual lines", **self.csfont)
+        figje.set_xlabel("Human cost function weight values (-)", **self.hfont)
+        figje.set_ylabel("Estimate human cost function weight (-)", **self.hfont)
 
         data_man_vs_shared = {"manual": manual, "costs": costs,
                               "labels": labels}
@@ -667,6 +725,8 @@ class PlotStuff:
         )
         h1.ax_joint.set_xlim(-30, 30)
         h1.ax_joint.set_ylim(-30, 30)
+        h1.ax_joint.set_xlabel("Manual control human cost weight (-)", **self.hfont)
+        h1.ax_joint.set_ylabel("Shared control human cost weight (-)", **self.hfont)
 
         # ax = plt.figure().gca()
         #one joint figure
@@ -717,16 +777,24 @@ class PlotStuff:
         # ax.set_xlim(-30, 30)
         # ax.set_ylim(-30, 30)
 
+    def raw_data(self, raw_data, participants, trials):
+        participants_list = range(participants)
+        trials_list = range(trials)
+        for participant in participants_list:
+            for trial in trials_list:
+                data = raw_data[participant][trial]
+                print(data)
+
     def plot_participant(self, raw_data, trials, participant):
         print("plotting for participant ", participant)
-        figb, axs = plt.subplots(4, 2)
+        # figb, axs = plt.subplots(4, 2)
         figc, axsb = plt.subplots(4, 3)
-        ax1 = plt.figure().gca()
-        plt.title("Human Cost, Manual")
-        ax2 = plt.figure().gca()
-        plt.title("Human Cost, Positive")
-        ax3 = plt.figure().gca()
-        plt.title("Human Cost, Negative")
+        # ax1 = plt.figure().gca()
+        # plt.title("Human Cost, Manual")
+        # ax2 = plt.figure().gca()
+        # plt.title("Human Cost, Positive")
+        # ax3 = plt.figure().gca()
+        # plt.title("Human Cost, Negative")
         # cost2 = plt.figure()
         # cost3 = plt.figure()
         # cost1.suptitle("Human cost function", **self.csfont)
@@ -746,6 +814,8 @@ class PlotStuff:
             t = data["time"]
             ur = data["torque"]
             uhhat = data["estimated_human_input"]
+            uh = data["computed_human_input"]
+            uh_meas = data["measured_human_input"]
             x = data["steering_angle"]
             r = data["reference_angle"]
             xdot = data["steering_rate"]
@@ -812,110 +882,117 @@ class PlotStuff:
             t_end = t[-1]
             t_example = t_end
 
-            # Plot time data
             if repetition == 0:
+                plt.figure()
+                plt.plot()
+                plt.plot(t, uh, 'r')
+                plt.plot(t, uhhat, 'b')
+                plt.plot(t, uh_meas, 'y')
+
+            # Plot time data
+            # if repetition == 0:
                 # fig, axa = plt.subplots(3, 4)
-                fig, axa = plt.subplots(4, 2, gridspec_kw={'width_ratios': [5, 1]})
-
-                fig.suptitle(condition, **self.csfont)
-                stacks = axa[0, 0].stackplot(t, Lhhat_pos, Lr_pos, colors=colors, labels=labels, edgecolor='black', linewidth=0.8)
-                hatches = ["\\\\", "//"]
-                for stack, hatch in zip(stacks, hatches):
-                    stack.set_hatch(hatch)
-
-                axa[0, 0].set_ylabel('Gain ($Nm/^\circ$)', **self.hfont_small)
-                axa[0, 0].legend(prop=self.legend_font_small, loc='upper left')
-                axa[0, 0].set_xticks([])
-                axa[0, 0].set_xlim(t_start, t_example)
-                Lt = np.array(Lhhat_pos) + np.array(Lr_pos)
-                ymin_t = min(Lhhat_pos)
-                ymax_t = max(Lt)
-                axa[0, 0].set_ylim(ymin_t, ymax_t)
-
-                data_gains = pd.DataFrame({"gains": Lhhat_pos})
-                sns.histplot(data=data_gains, y="gains", ax=axa[0, 1], kde=True, color=self.tud_red, binwidth=0.1)
-                axa[0, 1].set_xticks([])
-                axa[0, 1].set_ylabel("")
-                axa[0, 1].set_xlabel("")
-                axa[0, 1].set_title("Distribution", **self.hfont)
-                axa[0, 1].set_ylim(ymin_t, ymax_t)
-                med = np.median(Lhhat_pos)
-                ymin = min(Lhhat_pos)
-                ymax = max(Lhhat_pos)
-                axa[0, 1].set_yticks([ymin, med,  ymax])
-                axa[0, 1].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-
-
-                axa[1, 0].plot(t, error, self.tud_blue)
-                axa[1, 0].set_ylabel('Error ($^{\circ}$)', **self.hfont_small)
-                axa[1, 0].set_xticks([])
-                axa[1, 0].set_xlim(t_start, t_example)
-
-                data_error = pd.DataFrame({"RMSE": error})
-                sns.histplot(data=data_error, y="RMSE", ax=axa[1, 1], kde=True, color=self.tud_blue)
-                axa[1, 1].set_yticks([])
-                axa[1, 1].set_xticks([])
-                axa[1, 1].set_ylabel("")
-                axa[1, 1].set_xlabel("")
-                ymin = min(error)
-                ymax = max(error)
-                med = np.median(error)
-                axa[1, 1].set_yticks([ymin, med, ymax])
-                axa[1, 1].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-
-
-                stacks = axa[2, 0].stackplot(t, uhhat, ur, -np.array(uhtilde), colors=[self.tud_red, self.tud_blue, self.tud_orange],
-                              labels=['Estimated Human', 'Robot', 'Estimation Error'], edgecolor='black', linewidth=0.2)
-
-                hatches = ["\\\\", "//"]
-                for stack, hatch in zip(stacks, hatches):
-                    stack.set_hatch(hatch)
-                axa[2, 0].set_ylabel('Torque ($Nm$)', **self.hfont_small)
-                axa[2, 0].legend(prop=self.legend_font_small, loc='upper left')
-                axa[2, 0].set_xlim(t_start, t_example)
-                axa[2, 0].set_xticks([])
-
-                data_inputs = pd.DataFrame({"Input torque": uhhat})
-                sns.histplot(data=data_inputs, y=uhhat, ax=axa[2, 1], kde=True, color=self.tud_red)
-                axa[2, 1].set_yticks([])
-                axa[2, 1].set_xticks([])
-                axa[2, 1].set_ylabel("")
-                axa[2, 1].set_xlabel("")
-                ymin = min(uhhat)
-                ymax = max(uhhat)
-                med = np.median(error)
-                axa[2, 1].set_yticks([ymin, med, ymax])
-                axa[2, 1].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-
-                Qt = np.array(Qhhat_pos) + np.array(Qr_pos)
-                ymin_t = min(Qhhat_pos)
-                ymax_t = max(Qt)
-
-                stacks = axa[3, 0].stackplot(t, Qhhat_pos, Qr_pos, colors=colors, labels=labels, edgecolor='black',
-                                    linewidth=0.8)
-                hatches = ["\\\\", "//"]
-                for stack, hatch in zip(stacks, hatches):
-                    stack.set_hatch(hatch)
-                axa[3, 0].set_ylabel('Cost weight (-)', **self.hfont_small)
-                axa[3, 0].legend(prop=self.legend_font_small, loc='upper left')
-                axa[3, 0].set_ylim(ymin_t, ymax_t)
-                axa[3, 0].set_xlim(t_start, t_example)
-                axa[3, 0].set_xlabel("Time ($s$)")
-
-                data_gains = pd.DataFrame({"costs": Qhhat_pos})
-                sns.histplot(data=data_gains, y="costs", ax=axa[3, 1], kde=True, color=self.tud_red)
-                axa[3, 1].set_yticks([])
-                axa[3, 1].set_xticks([])
-                axa[3, 1].set_ylim(ymin_t, ymax_t)
-                axa[3, 1].set_ylabel("")
-                axa[3, 1].set_xlabel("")
-                ymin = min(Qhhat_pos)
-                ymax = max(Qhhat_pos)
-                med = np.median(data_gains)
-                axa[3, 1].set_yticks([ymin, med, ymax])
-                axa[3, 1].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-
-                plt.tight_layout(pad=1)
+                # fig, axa = plt.subplots(4, 2, gridspec_kw={'width_ratios': [5, 1]})
+                #
+                # fig.suptitle(condition, **self.csfont)
+                # stacks = axa[0, 0].stackplot(t, Lhhat_pos, Lr_pos, colors=colors, labels=labels, edgecolor='black', linewidth=0.8)
+                # # hatches = ["\\\\", "//"]
+                # # for stack, hatch in zip(stacks, hatches):
+                # #     stack.set_hatch(hatch)
+                #
+                # axa[0, 0].set_ylabel('Gain ($Nm/^\circ$)', **self.hfont_small)
+                # axa[0, 0].legend(prop=self.legend_font_small, loc='upper left')
+                # axa[0, 0].set_xticks([])
+                # axa[0, 0].set_xlim(t_start, t_example)
+                # Lt = np.array(Lhhat_pos) + np.array(Lr_pos)
+                # ymin_t = min(Lhhat_pos)
+                # ymax_t = max(Lt)
+                # axa[0, 0].set_ylim(ymin_t, ymax_t)
+                #
+                # data_gains = pd.DataFrame({"gains": Lhhat_pos})
+                # sns.histplot(data=data_gains, y="gains", ax=axa[0, 1], kde=True, color=self.tud_red, binwidth=0.1)
+                # axa[0, 1].set_xticks([])
+                # axa[0, 1].set_ylabel("")
+                # axa[0, 1].set_xlabel("")
+                # axa[0, 1].set_title("Distribution", **self.hfont)
+                # axa[0, 1].set_ylim(ymin_t, ymax_t)
+                # med = np.median(Lhhat_pos)
+                # ymin = min(Lhhat_pos)
+                # ymax = max(Lhhat_pos)
+                # axa[0, 1].set_yticks([ymin, med,  ymax])
+                # axa[0, 1].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+                #
+                #
+                # axa[1, 0].plot(t, error, self.tud_blue)
+                # axa[1, 0].set_ylabel('Error ($^{\circ}$)', **self.hfont_small)
+                # axa[1, 0].set_xticks([])
+                # axa[1, 0].set_xlim(t_start, t_example)
+                #
+                # data_error = pd.DataFrame({"RMSE": error})
+                # sns.histplot(data=data_error, y="RMSE", ax=axa[1, 1], kde=True, color=self.tud_blue)
+                # axa[1, 1].set_yticks([])
+                # axa[1, 1].set_xticks([])
+                # axa[1, 1].set_ylabel("")
+                # axa[1, 1].set_xlabel("")
+                # ymin = min(error)
+                # ymax = max(error)
+                # med = np.median(error)
+                # axa[1, 1].set_yticks([ymin, med, ymax])
+                # axa[1, 1].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+                #
+                #
+                # stacks = axa[2, 0].stackplot(t, uhhat, ur, -np.array(uhtilde), colors=[self.tud_red, self.tud_blue, self.tud_orange],
+                #               labels=['Estimated Human', 'Robot', 'Estimation Error'], edgecolor='black', linewidth=0.2)
+                #
+                # # hatches = ["\\\\", "//"]
+                # # for stack, hatch in zip(stacks, hatches):
+                # #     stack.set_hatch(hatch)
+                # axa[2, 0].set_ylabel('Torque ($Nm$)', **self.hfont_small)
+                # axa[2, 0].legend(prop=self.legend_font_small, loc='upper left')
+                # axa[2, 0].set_xlim(t_start, t_example)
+                # axa[2, 0].set_xticks([])
+                #
+                # data_inputs = pd.DataFrame({"Input torque": uhhat})
+                # sns.histplot(data=data_inputs, y=uhhat, ax=axa[2, 1], kde=True, color=self.tud_red)
+                # axa[2, 1].set_yticks([])
+                # axa[2, 1].set_xticks([])
+                # axa[2, 1].set_ylabel("")
+                # axa[2, 1].set_xlabel("")
+                # ymin = min(uhhat)
+                # ymax = max(uhhat)
+                # med = np.median(error)
+                # axa[2, 1].set_yticks([ymin, med, ymax])
+                # axa[2, 1].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+                #
+                # Qt = np.array(Qhhat_pos) + np.array(Qr_pos)
+                # ymin_t = min(Qhhat_pos)
+                # ymax_t = max(Qt)
+                #
+                # stacks = axa[3, 0].stackplot(t, Qhhat_pos, Qr_pos, colors=colors, labels=labels, edgecolor='black',
+                #                     linewidth=0.8)
+                # # hatches = ["\\\\", "//"]
+                # # for stack, hatch in zip(stacks, hatches):
+                # #     stack.set_hatch(hatch)
+                # axa[3, 0].set_ylabel('Cost weight (-)', **self.hfont_small)
+                # axa[3, 0].legend(prop=self.legend_font_small, loc='upper left')
+                # axa[3, 0].set_ylim(ymin_t, ymax_t)
+                # axa[3, 0].set_xlim(t_start, t_example)
+                # axa[3, 0].set_xlabel("Time ($s$)")
+                #
+                # data_gains = pd.DataFrame({"costs": Qhhat_pos})
+                # sns.histplot(data=data_gains, y="costs", ax=axa[3, 1], kde=True, color=self.tud_red)
+                # axa[3, 1].set_yticks([])
+                # axa[3, 1].set_xticks([])
+                # axa[3, 1].set_ylim(ymin_t, ymax_t)
+                # axa[3, 1].set_ylabel("")
+                # axa[3, 1].set_xlabel("")
+                # ymin = min(Qhhat_pos)
+                # ymax = max(Qhhat_pos)
+                # med = np.median(data_gains)
+                # axa[3, 1].set_yticks([ymin, med, ymax])
+                # axa[3, 1].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+                #
+                # plt.tight_layout(pad=1)
 
             # auth_est = (np.array(Lhhat_pos) - np.array(Lr_pos)) / (np.array(Lr_pos) + np.array(Lhhat_pos) + 0.001)
             # figb.suptitle("Estimated control share", **self.csfont)
@@ -936,13 +1013,15 @@ class PlotStuff:
             #     axs[repetition, c - 1].set_ylabel('Share (-)', **self.hfont_small)
             # plt.tight_layout(pad=1)
 
-            figc.suptitle("Controller gain distribution", **self.csfont)
-            stacks = axsb[repetition, c].stackplot(t, Lhhat_pos, Lr_pos, baseline='zero', colors=colors,
+            supertitle = "Cost function weight \n distribution for participant " + str(participant)
+
+            figc.suptitle(supertitle, **self.csfont)
+            stacks = axsb[repetition, c].stackplot(t, Qhhat_pos, Qr_pos, baseline='zero', colors=colors,
                                               edgecolor='black', linewidth=0.8, labels=labels)
-            hatches = ["\\\\", "//"]
-            for stack, hatch in zip(stacks, hatches):
-                stack.set_hatch(hatch)
-            axsb[repetition, c].set_ylim(-1*180/np.pi, 12*180/np.pi)
+            # hatches = ["\\\\", "//"]
+            # for stack, hatch in zip(stacks, hatches):
+            #     stack.set_hatch(hatch)
+            axsb[repetition, c].set_ylim(-10, 30)
             axsb[repetition, c].set_xlim(t_start, t_end)
             if repetition == 0:
                 axsb[repetition, c].set_title(title, **self.hfont)
@@ -962,14 +1041,14 @@ class PlotStuff:
 
             # plot a 3D surface like in the example mplot3d/surface3d_demo
 
-            reps = np.tile(repetition, len(Qhhat_pos))
-            # ax1.plot(t, reps, Qhhat_pos, line_color)
-            if c == 0:
-                ax1.plot(t, Qhhat_pos)
-            elif c == 1:
-                ax2.plot(t, Qhhat_pos)
-            else:
-                ax3.plot(t, Qhhat_pos)
+            # reps = np.tile(repetition, len(Qhhat_pos))
+            # # ax1.plot(t, reps, Qhhat_pos, line_color)
+            # if c == 0:
+            #     ax1.plot(t, Qhhat_pos)
+            # elif c == 1:
+            #     ax2.plot(t, Qhhat_pos)
+            # else:
+            #     ax3.plot(t, Qhhat_pos)
             # surf = axsd.plot3d(t, reps, Qhhat_pos, rstride=1, cstride=1,
             #                        linewidth=1, antialiased=False)
 

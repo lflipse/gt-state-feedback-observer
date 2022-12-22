@@ -86,6 +86,11 @@ class Analysis():
                 try:
                     df = pd.read_csv(path_trial, index_col=0)
                     self.raw_data[participant][j] = df.to_dict(orient='list')
+                    self.raw_data[participant][j]["computed_human_input"] = self.compute_human_input(self.raw_data[participant][j]["time"],
+                                                                                                     self.raw_data[participant][j]["steering_angle"],
+                                                                                                     self.raw_data[participant][j]["steering_rate"],
+                                                                                                     # self.raw_data[participant][j]["steering_acc"],
+                                                                                                     self.raw_data[participant][j]["torque"])
                     print("loaded ", path_trial)
                 except:
                     exit("Something went wrong")
@@ -95,6 +100,45 @@ class Analysis():
         pickle.dump(self.raw_data, pickling_on)
         pickling_on.close()
 
+    def _system_matrices(self):
+        # Compute system matrices from steering wheel parameters
+        inertia = 0.04914830792783059
+        damping = 0.3
+        stiffness = 0.
+        A = np.array([[0, 1], [-stiffness / inertia, - damping / inertia]])
+        B = np.array([[0], [1 / inertia]])
+        observer_matrix = 20 * np.array([[2, 0], [0, 2]])
+        alpha = 2.5
+        return A, B, observer_matrix, alpha
+
+    def _estimate_human_control(self, steering_state, delta_t, x_hat, torque, estimated_human_torque):
+        # Compose states
+        A, B, observer_matrix, alpha = self._system_matrices()
+        x = steering_state
+        xi_tilde = x_hat - x
+        x_hat_dot = np.matmul(A, x_hat) + B * (torque + estimated_human_torque) - np.matmul(observer_matrix, xi_tilde)
+        estimated_human_torque += - alpha * np.matmul(xi_tilde.transpose(), B) * delta_t
+        x_hat += x_hat_dot * delta_t
+        return x_hat, estimated_human_torque
+
+    def compute_human_input(self, time, steering_angle, steering_rate, input_torque):
+        n = len(steering_angle)
+        human_input_torque = []
+        x_hat_old = np.array([[steering_angle[0]], [steering_rate[0]]])
+        estimated_human_torque_old = 0
+        for i in range(n):
+            if i > 0 and i < n:
+                delta_t = time[i] - time[i - 1]
+            else:
+                delta_t = 0
+            steering_state = np.array([[steering_angle[i]], [steering_rate[i]]])
+            x_hat_new, estimated_human_torque_new = self._estimate_human_control(steering_state, delta_t, x_hat_old, input_torque[i], estimated_human_torque_old)
+            x_hat_old = x_hat_new
+            estimated_human_torque_old = estimated_human_torque_new
+            human_input_torque.append(float(estimated_human_torque_new))
+        # human_input_torque.flatten()
+        return np.array(human_input_torque)
+
     def analyse(self):
         # First, build some metrics
         for i in range(self.participants):
@@ -102,7 +146,7 @@ class Analysis():
                 self.cut_data(i, j)
         print(self.a)
         if int(self.a) == 1:
-            print("we here")
+            print("Building metrics")
             self.build_metrics()
             self.build_individual_metrics()
             # Save as pickle element
@@ -115,8 +159,9 @@ class Analysis():
             pickling_on1.close()
             pickling_on2.close()
             pickling_on3.close()
+            self.save_data(self.metrics_averaged, "metrics_averaged.csv")
         else:
-            print("we not here")
+            print("Loading metrics")
             pickle_off1 = open("metrics", 'rb')
             pickle_off2 = open("metrics_ind", 'rb')
             pickle_off3 = open("metrics_robot", 'rb')
@@ -126,12 +171,15 @@ class Analysis():
 
         # Plot individual data
         print("number of participants = ", self.participants)
+        # for i in range(self.participants):
+        #     self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=i)
+        #
         # self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 1)
-        self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 4)
-        # self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 7)
-        self.plot_stuff.plot_metrics(self.metrics, conditions=self.conditions, participant=self.participants - 1)
-
-        # Plot metrics
+        # self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 4)
+        # # self.plot_stuff.plot_participant(self.raw_data, trials=self.trials, participant=self.participants - 7)
+        self.plot_stuff.plot_metrics(self.metrics, conditions=self.conditions, participants=self.participants)
+        #
+        # # Plot metrics
         self.plot_stuff.plot_experiment(self.metrics_averaged, self.metrics_robot, self.participants, self.conditions)
 
         # plt.show()
@@ -269,12 +317,12 @@ class Analysis():
                 # RMSU
                 estimated_human_torque = self.filtered_data[i][j]["estimated_human_input"]
                 estimation_error_human_torque = self.filtered_data[i][j]["input_estimation_error"]
-                real_human_torque = np.array(estimated_human_torque) - np.array(estimation_error_human_torque)
+                real_human_torque = self.filtered_data[i][j]["computed_human_input"]
                 robot_torque = self.filtered_data[i][j]["torque"]
                 steering_rate = self.filtered_data[i][j]["steering_rate"]
 
                 # Power
-                human_power = np.array(estimated_human_torque) * np.array(steering_rate)
+                human_power = np.array(real_human_torque) * np.array(steering_rate)
                 robot_power = np.array(robot_torque) * np.array(steering_rate)
 
                 rms_estimated_human_torque.append(np.sqrt(1 / (len(rate_error)) * np.inner(estimated_human_torque, estimated_human_torque)))
@@ -286,7 +334,6 @@ class Analysis():
                 # Force conflicts
                 conflict = self.compute_conflict(robot_torque, real_human_torque)
                 conflicts.append(conflict)
-
 
                 # Average cost functions
                 human_cost = self.filtered_data[i][j]["estimated_human_cost_1"]
@@ -520,3 +567,4 @@ class Analysis():
                 conflicts += 1
         conflict = conflicts/n
         return conflict
+
